@@ -56,6 +56,44 @@ application/database containers. That startup path remains an operational gap;
 frontend-only publication avoids it. Previous versioned artifacts and the
 pre-recovery database backup remain available.
 
+## Runtime Qualification — Single-Application Candidate, 2026-09-14
+
+A local process-interruption run killed the app with two real jobs generating,
+one queued job and two existing partial files. The database/output volumes were
+retained. After restart, both abandoned jobs became FAILED with the interrupted
+reason, the queued job completed, the preceding ready CSV remained byte-identical,
+and a linked retry returned the expected two repeated 450 readings. Incomplete
+outputs were rejected and both partial files were removed. Leases expired
+naturally; the test did not modify their timestamps.
+
+The run exposed a deployment discrepancy: Tomcat loaded the same WAR at the
+explicit `/api/OpenELIS-Global/` path and the automatically discovered
+`/OpenELIS-Global` path. A read-stall probe observed two export workers in one
+container, contrary to the plan's one-worker limit. The 42 reporting class files
+in the local WAR match the public `d56922c11e` artifact exactly; this is a runtime
+configuration issue.
+
+The scoped [runtime tools](../../projects/reporting-uat/README.md) disable Tomcat
+application discovery while preserving the explicit native API contexts, and
+remove the reporting proxy's replacement of the API prefix. The corrected local
+instance logged one Spring root initialization, started in 212.652 seconds, and
+a repeated probe observed one generating job with two queued jobs. Four real
+browser workflows passed through the native API route: spreadsheet CSV, failed
+retry, expired re-run and Reports navigation with Back/Forward/reload. The five
+reported checks include authentication. The public host's narrow configuration
+probe confirmed the same two discovery flags and prefix-removing API route; no
+active reporting jobs were present. The public update is being prepared.
+
+The original full-configuration read was rejected by automatic approval review.
+A narrower probe succeeded and returned only routing flags, mapping counts and
+active-job count. Server configuration contents remain on the deployment host.
+
+Recovery fixture correction `e6b34a4d2a` has now passed its full backend CI run
+`34834207814`, in addition to frontend and the actual E2E checkpoint. The newer
+source-preparation revisions still have fresh CI in flight. Multi-instance crash
+isolation, retention, migration rollback, large-volume and public cancellation
+qualification remain open; this local run does not close all of T021/T028.
+
 ## Source Preparation — Frontend Published, 2026-09-14
 
 The shared builder starts newly chosen configured reports with zero columns, as
@@ -86,7 +124,7 @@ date interpretations are covered without choosing the unresolved product default
 - CI at `e6b34a4d2a` has passed frontend and the actual
   [end-to-end checkpoint](https://github.com/DIGI-UW/OpenELIS-Global-2/actions/runs/34834965016),
   verified through its commit status (not merely the shared-build workflow).
-  Its full backend run remains in progress. These results precede this preparation.
+  Its full backend run subsequently passed. These results precede this preparation.
 - Frontend `0d65ccaac4` is now public on unchanged backend `d56922c11e`.
   All three affected public workflows pass: explicit configured-report columns
   with CSV output, hidden-filter removal with CSV output, and Reports navigation
@@ -129,8 +167,8 @@ on [M1 #4292](https://github.com/DIGI-UW/OpenELIS-Global-2/pull/4292), based on 
   replace. The corrected tests create their own real user and explicit role grant.
   Running UserRoleServiceTest before the recovery tests reproduced all seven
   failures; the same 14-test sequence passes after correction. All 67 reporting
-  tests also pass after that role fixture (74 tests total). Full-suite CI still
-  needs to verify the corrected revision. Frontend and E2E CI passed at `d56922c11e`.
+  tests also pass after that role fixture (74 tests total). Full-suite CI at `e6b34a4d2a`
+  now passes, confirming the corrected fixture. Frontend and E2E CI passed at `d56922c11e`.
   Fresh CI for the source-preparation checkpoint remains in flight.
 - 26 component tests, frontend/hook lint, formatting, production frontend build
   and Java 21 packaging passed for the loading fix. Delayed-catalog and genuinely

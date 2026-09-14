@@ -151,7 +151,10 @@ applications.
       concurrent claims and claim/cancel races. Failed retry and expired re-run also pass in the real browser with actual
       CSVs. Local browser cancellation also passed. Full-suite fixture isolation,
       public queued-fixture UAT and broader failure/limit/retention qualification
-      remain open.
+      remain open. Full-suite fixture isolation now passes CI. A real local
+      process kill/restart preserves queued and completed work, fails abandoned
+      jobs, removes partial files and permits a successful linked retry; see the
+      runtime qualification record.
 - [ ] T022 [US1] Add Referral and Non-Conformance source mappings/configured
       definitions using the same feature under
       `src/main/java/org/openelisglobal/reports/dataexport/` and the existing
