@@ -53,8 +53,8 @@ public class ReportingExportController extends BaseRestController {
     }
 
     @GetMapping("/saved-configs")
-    public Object savedReports(@RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size, @RequestParam(defaultValue = "") String search) {
+    public Object savedReports(@RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "20") int size,
+            @RequestParam(defaultValue = "") String search) {
         return savedReports.list(owner(), page, size, search);
     }
 

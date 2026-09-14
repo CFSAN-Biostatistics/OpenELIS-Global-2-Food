@@ -43,10 +43,8 @@ public class ReportingSavedConfigServiceTest {
 
     @Before
     public void setUp() {
-        service = new ReportingSavedConfigService(definitions, catalog, access,
-                Clock.fixed(NOW, ZoneOffset.UTC));
-        saved = new SavedReportDefinition(1, "SAMPLE_TESTING", "SPREADSHEET",
-                List.of("accessionNumber", "test:7"),
+        service = new ReportingSavedConfigService(definitions, catalog, access, Clock.fixed(NOW, ZoneOffset.UTC));
+        saved = new SavedReportDefinition(1, "SAMPLE_TESTING", "SPREADSHEET", List.of("accessionNumber", "test:7"),
                 new SavedReportFilters(List.of("4"), List.of("7"), List.of("FINALIZED")));
         when(catalog.validateSaved("11", saved)).thenReturn(saved);
         when(definitions.insert(any())).thenAnswer(call -> ((ReportDefinition) call.getArgument(0)).getId());
@@ -96,8 +94,7 @@ public class ReportingSavedConfigServiceTest {
         });
         SavedReportMutation stale = new SavedReportMutation("New", "2026-09-12T00:00:00Z", saved);
 
-        ReportingException error = assertThrows(ReportingException.class,
-                () -> service.update("12", "CSV-1", stale));
+        ReportingException error = assertThrows(ReportingException.class, () -> service.update("12", "CSV-1", stale));
         assertEquals(409, error.status());
 
         var updated = service.update("12", "CSV-1",
