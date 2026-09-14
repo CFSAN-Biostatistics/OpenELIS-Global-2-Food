@@ -27,6 +27,7 @@ public class ReportingMigrationRollbackTest {
     private static final String ALL = "liquibase/reporting-mvp-rollback.xml";
     private static final String M1 = "liquibase/3.6.x.x/003-configurable-reporting.xml";
     private static final String M2 = "liquibase/3.6.x.x/004-reporting-recovery.xml";
+    private static final String MENU = "liquibase/3.6.x.x/005-menu-presentation.xml";
 
     @Test
     public void freshDatabaseRegistersReportingAndCanUninstallAndReapplyIt() throws Exception {
@@ -132,6 +133,10 @@ public class ReportingMigrationRollbackTest {
     }
 
     private void initialize(PostgreSQLContainer<?> postgres) throws Exception {
+        initialize(postgres, false);
+    }
+
+    private void initialize(PostgreSQLContainer<?> postgres, boolean retainMenuPresentation) throws Exception {
         postgres.withCopyFileToContainer(MountableFile.forClasspathResource("postgre-db-init"),
                 "/docker-entrypoint-initdb.d");
         postgres.withEnv("POSTGRES_INITDB_ARGS", "--auth-host=md5");
@@ -140,6 +145,58 @@ public class ReportingMigrationRollbackTest {
         // Full application changelog proves that the real versioned includes are
         // registered.
         migrate(postgres, "liquibase/base-changelog.xml", 0);
+        // Reporting rollback remains scoped to its four changesets. The menu
+        // migration is qualified independently below, including full registration.
+        if (!retainMenuPresentation) {
+            migrate(postgres, MENU, 1);
+        }
+    }
+
+    @Test
+    public void menuPresentationUpgradeAndRollbackPreserveAllExistingMenuFields() throws Exception {
+        try (PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:14.4")) {
+            initialize(postgres, true);
+            try (Connection connection = postgres.createConnection("")) {
+                assertEquals(1, columnCount(connection, "menu", "presentation_style"));
+                assertEquals(1, columnCount(connection, "menu", "icon"));
+                assertEquals(1, columnCount(connection, "menu", "last_updated"));
+                migrate(postgres, MENU, 1);
+                execute(connection, """
+                        INSERT INTO clinlims.menu
+                          (id,element_id,presentation_order,display_key,action_url,is_active)
+                        SELECT 900000+i,'migration-menu-'||i,i,'instance.menu',
+                          '/Report?instance='||i, i%2=0 FROM generate_series(1,1000) i
+                        """);
+                String before = otherMenusFingerprint(connection);
+                migrate(postgres, MENU, 0);
+                assertEquals(before, legacyMenuFieldsFingerprint(connection));
+                assertEquals(1000, count(connection, """
+                        SELECT count(*) FROM clinlims.menu WHERE element_id LIKE 'migration-menu-%'
+                        AND presentation_style IS NULL AND icon IS NULL AND last_updated IS NOT NULL
+                        """));
+                execute(connection, """
+                        UPDATE clinlims.menu SET presentation_style='section',icon='reports'
+                        WHERE element_id='migration-menu-1'
+                        """);
+                assertEquals(before, legacyMenuFieldsFingerprint(connection));
+                migrate(postgres, MENU, 1);
+                assertEquals(0, columnCount(connection, "menu", "presentation_style"));
+                assertEquals(0, columnCount(connection, "menu", "icon"));
+                assertEquals(0, columnCount(connection, "menu", "last_updated"));
+                assertEquals(before, otherMenusFingerprint(connection));
+                migrate(postgres, MENU, 0);
+                migrate(postgres, MENU, 0);
+                assertEquals(before, legacyMenuFieldsFingerprint(connection));
+                assertEquals(5, appliedChanges(connection));
+            }
+        }
+    }
+
+    private String legacyMenuFieldsFingerprint(Connection connection) throws Exception {
+        return scalar(connection, """
+                SELECT md5(string_agg((to_jsonb(m)-'presentation_style'-'icon'-'last_updated')::text,'' ORDER BY id))
+                FROM clinlims.menu m WHERE element_id <> 'menu_reports_custom_data_export'
+                """);
     }
 
     private void migrate(PostgreSQLContainer<?> postgres, String changelog, int rollbackCount) throws Exception {

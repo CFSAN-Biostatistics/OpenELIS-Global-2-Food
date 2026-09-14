@@ -1014,3 +1014,91 @@ test("administration uses the same navigation typography and readable sections",
     fullPage: true,
   });
 });
+
+test("menu administration saves database icons and identifies instance-controlled settings", async ({
+  page,
+}, testInfo) => {
+  test.skip(
+    process.env.REPORTING_INSTANCE_NAV !== "true",
+    "Requires the Reporting UAT instance profile.",
+  );
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto("/MasterListsPage/globalMenuManagement");
+  const form = page.getByRole("form", {
+    name: "Global Menu Management",
+    exact: true,
+  });
+  await expect(
+    form.getByText(
+      "Update menu visibility, section headings and icons. Settings managed by this instance are read-only here.",
+    ),
+  ).toBeVisible();
+  await form
+    .getByRole("button", { name: "Administration", exact: true })
+    .click();
+  await form.getByRole("button", { name: "More tools", exact: true }).click();
+  await form.getByRole("button", { name: "Alerts", exact: true }).click();
+  const fields = page.getByTestId("menu-fields-menu_alerts_standalone");
+  const icon = fields.getByRole("combobox", { name: "Icon", exact: true });
+  await expect(icon).toBeEnabled();
+  const previousIcon = await icon.inputValue();
+  const selectedIcon = previousIcon === "patient" ? "reports" : "patient";
+  try {
+    await icon.selectOption(selectedIcon);
+    await form.getByRole("button", { name: "Save", exact: true }).click();
+    await expect(
+      form.getByText("Menu settings saved.", { exact: true }),
+    ).toBeVisible();
+    await page.reload();
+    await form
+      .getByRole("button", { name: "Administration", exact: true })
+      .click();
+    await form.getByRole("button", { name: "More tools", exact: true }).click();
+    await form.getByRole("button", { name: "Alerts", exact: true }).click();
+    await expect(icon).toHaveValue(selectedIcon);
+    await icon.scrollIntoViewIfNeeded();
+    await page.screenshot({
+      path: testInfo.outputPath("app-menu-settings-desktop.png"),
+      animations: "disabled",
+    });
+    await page.setViewportSize({ width: 390, height: 844 });
+    await icon.scrollIntoViewIfNeeded();
+    await expect(icon).toBeVisible();
+    await expect
+      .poll(async () => (await form.boundingBox())?.width || 0)
+      .toBeGreaterThan(300);
+    await expect
+      .poll(() =>
+        page.evaluate(
+          () => document.documentElement.scrollWidth <= window.innerWidth,
+        ),
+      )
+      .toBe(true);
+    await page.screenshot({
+      path: testInfo.outputPath("app-menu-settings-narrow.png"),
+      animations: "disabled",
+    });
+  } finally {
+    await icon.selectOption(previousIcon);
+    await form.getByRole("button", { name: "Save", exact: true }).click();
+    await expect(
+      form.getByText("Menu settings saved.", { exact: true }),
+    ).toBeVisible();
+  }
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page
+    .getByTestId("menu-settings-menu_section_reports")
+    .getByRole("button", { name: "Reports", exact: true })
+    .click();
+  await page
+    .getByTestId("menu-settings-menu_reports")
+    .getByRole("button", { name: "Reports", exact: true })
+    .click();
+  const managed = page.getByTestId("menu-fields-menu_reports");
+  await expect(
+    managed.getByRole("combobox", { name: "Icon", exact: true }),
+  ).toBeDisabled();
+  await expect(
+    managed.getByText("Managed by instance configuration"),
+  ).toHaveCount(2);
+});

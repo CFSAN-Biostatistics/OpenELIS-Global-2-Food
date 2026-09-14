@@ -19,7 +19,10 @@ reports retain their saved selections. The remaining steps below retain the full
 planned acceptance contract; pending functionality is not represented as working.
 
 The public recovery stage adds RPT-302 (failed retry) and RPT-304 (expired re-run),
-bringing the live checklist to five stories and 14 required steps. Both prepared
+bringing that recovery-stage checklist to five stories and 14 required steps.
+The subsequent navigation stage adds RPT-S06 and RPT-501–RPT-503 (six stories,
+17 steps). RPT-504 is added with the database-backed menu editor stage; the
+current deployment receipt identifies whether that increment is published. Both prepared
 examples remain reusable after a run. RPT-303 is still planned: cancellation is
 connected and passed a local browser walkthrough, but its repeatable public queued
 fixture and narrow confirmation check are not yet available. No human acceptance
@@ -29,7 +32,7 @@ is implied by the agent's walkthrough or automated checks.
 
 - UAT host: `reporting.catalyst.openelis-global.org`
 - Checklist instance: `reporting`
-- Application route: `/CustomDataExport`
+- Application route: `/reports/custom-data-export` (the older `/CustomDataExport` redirects here)
 - Deployment identity: `/__review/target.json`
 - Public checklist: `https://grist.openelis-global.org/uat/reporting.json`
 - Fixture period: 2026-05-05 through 2026-05-05
@@ -162,6 +165,19 @@ turnaround in the same exported report.
    rows, Add Accession Number, Result Value and Resulted to Validated (min). Continue
    through filters with the same dates, then review. Generate
    and download the new file. Expect the same two result/interval pairs.
+
+## RPT-S06 — Navigate and Configure Reports Without Losing Work
+
+**User story**: As a report user, I can find routine workflows in a clear sidebar and move between a report and its queue without losing my draft. Sign in as admin using the supplied demo login and start from Home. The report steps change your browser draft. The final administration step changes one menu icon and restores its original value; it does not edit laboratory records. Check the sidebar, reporting address, retained draft, keyboard navigation and phone layout against the linked mock. Other reports and More tools intentionally retain older destinations.
+
+1. `RPT-501` required — Start at Home in a desktop-width browser. Inspect Main Menu, Patient & Orders, Reports and Administration in the sidebar. Open Reports, then Other reports; close Other reports again. Open More tools and locate Alerts, then close More tools. Under Reports choose Custom Data Export.
+   Expect: The four sections have readable, consistent labels and simple icons. Routine workflows are easy to find. Older reports and tools remain reachable in collapsed groups. Patient Report Print Queue is visibly Not yet connected. Custom Data Export opens at /reports/custom-data-export and exactly that sidebar entry is active.
+2. `RPT-502` required — From the reporting overview choose Start a new export, then Sample & Testing. Search for Accession Number and choose Add. Use the sidebar's My Report Queue entry, then browser Back, Forward and reload. Choose Custom Data Export in the sidebar, then Continue current export in the overview.
+   Expect: The queue address contains view=queue and only its menu entry is active. Back and Forward restore the corresponding view. Reload keeps the queue usable. Continue current export returns to Choose columns with Accession Number still selected. Any UAT parameters already present in the reporting address remain present when changing sidebar views.
+3. `RPT-503` required — With the sidebar open, use Tab to focus a reporting link and Enter to open it. Narrow the browser to a phone-sized window, open the menu button at the top left, expand Reports and choose My Report Queue. Restore desktop width, choose Admin, then Back to main menu.
+   Expect: Keyboard focus is visible. At phone width, selecting the queue closes the drawer and leaves the report usable. Main and admin navigation use consistent font sizes and readable wrapped labels. At desktop width the pinned sidebar does not cover the admin page heading. Back to main menu restores the configured sections.
+4. `RPT-504` required — As admin, open Admin, Menu Configuration, then Global Menu Configuration. Expand Administration, More tools, then Alerts. Note its current Icon, choose another icon and Save. Reload the page and reopen Alerts. Restore the original icon and Save. Expand the Reports section and its Reports menu; inspect the settings marked Managed by instance configuration.
+   Expect: The saved Alerts icon remains selected after reload, and restoring the original value succeeds. Instance-controlled settings stay visible and read-only. The editor is usable at desktop and phone widths. Returning to the main menu retains the configured sections and existing report destinations.
 
 ## Preflight and Human Acceptance
 

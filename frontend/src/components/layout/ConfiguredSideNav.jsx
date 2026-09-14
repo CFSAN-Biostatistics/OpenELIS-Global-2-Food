@@ -7,32 +7,12 @@ import {
   SideNavMenu,
   SideNavMenuItem,
 } from "@carbon/react";
-import {
-  Home,
-  DocumentAdd,
-  Chemistry,
-  CheckmarkOutline,
-  UserMultiple,
-  Report,
-  Settings,
-  Task,
-  OverflowMenuHorizontal,
-} from "@carbon/icons-react";
 import { useMenuAutoExpand } from "./useMenuAutoExpand";
 import { canonicalReportingUrl } from "../reports/CustomDataExport/routes";
 import { reportingMenuDestination } from "../reports/CustomDataExport/useReportingRoute";
 
-const icons = {
-  home: Home,
-  order: DocumentAdd,
-  results: Chemistry,
-  validation: CheckmarkOutline,
-  patient: UserMultiple,
-  reports: Report,
-  settings: Settings,
-  workplan: Task,
-  more: OverflowMenuHorizontal,
-};
+import { navigationIcons as icons } from "./navigationIcons";
+
 const legacyResults = new Set([
   "menu_results_logbook",
   "menu_results_patient",

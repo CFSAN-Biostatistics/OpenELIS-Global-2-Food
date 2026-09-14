@@ -220,6 +220,32 @@ Check real downloaded values, unexpected browser errors, accessibility and
 visual fidelity separately; a passing screenshot capture alone proves none of
 the others.
 
+### Navigation Configuration Contract
+
+Retain one navigation model: database menu definitions, explicit instance
+configuration overrides, existing filtering, then the shared Carbon renderer.
+The mock determines the Reporting UAT profile; its particular sections and
+destinations belong in that profile. Existing menu identities, hierarchy,
+ordering, translated labels, visibility and destinations remain configurable.
+
+Extend the database and configuration layers with the same optional section and
+icon metadata. The local menu persistence increment now supplies
+`presentationStyle` and `icon` through both database rows and mounted JSON,
+with administrative editing. Its publication and remaining runtime qualification
+are tracked in `execution.md`. Add them through the existing menu service and administration
+path, with a versioned, reversible migration and backward-compatible defaults.
+Show when an instance override controls an edited value so a successful save
+cannot misleadingly appear to have changed the effective navigation.
+
+Only explicitly supplied configuration fields override database values. Loading
+an instance profile must not persist its reorganized tree over database defaults.
+Verify saved metadata after reload and application restart, explicit override and
+override removal, preservation of unlisted extensions and existing filtering,
+and the effective server tree in the rendered sidebar. Use two distinct instance
+profiles without frontend edits, then repeat the mock, routing and retained-draft
+checks before publishing the increment. Database/editor support is not a gate
+for continued access to the already usable public stage.
+
 ### Low-Friction Interface and Shared Reports
 
 Use one builder with configuration-driven labels, groups, filters and defaults.

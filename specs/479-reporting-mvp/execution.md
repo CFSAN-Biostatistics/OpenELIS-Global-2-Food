@@ -5,6 +5,41 @@ usable stage to Reporting UAT. Both milestones remain in scope. The canonical
 mock defines the interface; MVP scope determines which functions are connected.
 Public availability, automated qualification and human acceptance are separate.
 
+## Local Candidate — Database Menu Presentation, 2026-09-14
+
+The navigation follow-through now persists optional section/icon metadata in the
+existing menu table and edits it through Global Menu Configuration. Server-owned
+configuration provenance makes instance-controlled fields read-only and prevents
+saving effective overrides into database defaults. Configuration-only grouping
+entries remain compact; database children remain editable. Successful writes
+refresh the editor with the effective server tree; failed writes retain edits.
+
+The menu entity now uses annotations in both application and test runtimes;
+`Menu.hbm.xml` was removed. Migration `479-005-menu-presentation` adds the two
+optional fields and the standard version timestamp. The initial persistence
+regressions failed with lost values. The completed checks pass: 26 backend cases,
+including real database round trips, override protection, mapping startup,
+existing menu APIs, fresh migration registration, 1,000-menu upgrade/rollback,
+and the existing 50,000-job reporting rollback checks.
+
+The local app was replaced once with the retained database, report files and
+logs, after a database backup. Container `6d7d3d387b8b` became ready after 198
+seconds. The actual browser saved and reloaded an Alerts icon, restored its
+previous value, and verified configured Reports fields remain read-only.
+Screenshot inspection caught a missing small-screen grid span and order-entry
+accordion styles leaking into this page. The grid now uses explicit Carbon
+breakpoints, the old styles are scoped to order entry, and the corrected editor
+uses 342 of the 390 phone pixels. The affected browser check passes again.
+
+Reporting spreadsheet CSV, column interactions, configured sidebar/history and
+admin typography pass locally with desktop/narrow captures compared directly
+with the pinned mock. The candidate is not yet the public deployment below.
+T041 still requires publication and broader restart/two-profile runtime evidence.
+Logs and screenshots: `/private/tmp/reporting-menu-final-backend.log`,
+`/private/tmp/reporting-menu-responsive-browser/`,
+`/private/tmp/reporting-menu-local-parity/`. RPT-504 has a prepared UAT step for
+menu save/reload/restore; apply it to Grist with the usable public increment.
+
 ## Current Public Stage — Configured Navigation and Audit, 2026-09-14
 
 The published stage consolidates the sidebar renderer and its shared Carbon

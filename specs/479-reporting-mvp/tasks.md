@@ -3,13 +3,16 @@
 **Inputs**: [spec.md](spec.md), [plan.md](plan.md),
 [data-model.md](data-model.md), [contract](contracts/export-api.md),
 [acceptance plan](quickstart.md), [UAT contract](uat.md).
-**Status**: Sample & Testing and queue recovery are publicly testable at frontend
-`0d65ccaac4` / backend `d56922c11e`. Seven public recovery-stage workflows passed;
-three affected workflows passed after the source-selection update. Runtime
-configuration `7780ee2cd9` removes duplicate application startup; five public
-workflows and matched mock captures pass after that update. The live UAT
-checklist has five stories and 14 steps. See [execution.md](execution.md) for the
-current receipt, the corrected full-suite recovery fixture and remaining qualification.
+**Status**: Sample & Testing, queue recovery and configured navigation are
+publicly testable at frontend/backend/instance configuration `65f96697e428`.
+Nine distinct public workflows pass; the initial post-startup spreadsheet test
+timeout and successful unchanged repeat are recorded in [execution.md](execution.md).
+Runtime configuration `7780ee2cd9` removes duplicate application startup. The
+live UAT checklist has six stories and 17 steps. Section/icon metadata currently
+comes from JSON in that public release. Database persistence and administration
+now pass local checks in T039/T040; publication and remaining runtime qualification
+are tracked by T041.
+See the current receipt and remaining qualification in `execution.md`.
 T027 now passes against the disposable local stack: both 50,000-result layouts,
 bounded fetches, one worker, the five-job limit, ordinary reads and desktop/phone
 downloads. These measurements are local; the public application is unchanged.
@@ -263,6 +266,33 @@ separate completion criterion. Repeat these delivery tasks for each stage.
       checklist revision, automated preflight evidence and remaining human UAT
       status in `execution.md`. Hand each usable stage to reviewers with its
       actual check results and known limitations; do not wait for the full MVP.
+
+## Navigation Configuration Follow-through
+
+The user requires the navigation cleanup to enhance both the database and
+instance configuration layers. Preserve the public profile and the existing
+reporting scope while completing the navigation contract in `plan.md`.
+
+- [x] T039 Add regression coverage for section/icon database persistence and
+      administrative save/reload, configuration precedence and removal,
+      unchanged database defaults, unlisted extensions and existing filtering.
+      Four new database checks prove persistence, overlay removal, preservation
+      of older requests, and protection of database defaults during an overlaid
+      save. Annotation startup and existing menu API/service checks pass. Three
+      isolated migration checks include 1,000 menu entries and retain the existing
+      reporting rollback coverage. The real local editor saves, reloads and
+      restores a database icon; controlled fields remain read-only.
+- [x] T040 Extend the existing menu model, service and administrative editing
+      path with optional section/icon metadata and a versioned, reversible
+      Liquibase migration. Use the same fields in JSON and the effective menu
+      response. Make configuration-controlled values clear during editing and
+      preserve deployments that do not supply the new fields. Make T039 pass.
+- [ ] T041 Verify two instance profiles without frontend changes, including
+      persisted edits after restart and restoration after removing an override.
+      Compare the effective sidebar with the mock at desktop and narrow widths,
+      exercise route/history/draft behavior, and publish the working increment
+      through T032–T038. Record database/editor support separately from the
+      already published JSON presentation support.
 
 ## Dependencies
 

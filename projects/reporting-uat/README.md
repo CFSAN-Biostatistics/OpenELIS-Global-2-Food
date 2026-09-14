@@ -38,10 +38,26 @@ Reports menu in a section:
 }
 ```
 
-These new presentation fields are configuration metadata in this increment; they
-are not database columns or new controls in the administrative menu editor. The
-frontend owns the reusable renderer and icon lookup, while the instance profile
-owns its sections, hierarchy and destinations.
+The menu persistence increment adds the same optional `presentationStyle` and
+`icon` fields to the database. Global Menu Configuration edits existing database
+menus and identifies fields controlled by this instance as read-only. JSON-only
+entries remain controlled by their instance profile. Saving a menu cannot copy
+its configured overrides into the database defaults. Removing the profile and
+rebuilding the menu restores the saved database values.
+
+The menu entity now uses annotations; the old XML mapping and both runtime
+registrations were removed. Migration `479-005-menu-presentation` adds the two
+optional fields and the standard version timestamp. Its rollback removes only
+these new columns. Preserve the pre-upgrade backup if new presentation values
+must be recovered after rollback. The configured menu file can optionally be
+located with `org.openelisglobal.menu.configuration.file`; the normal mounted
+path above remains the default.
+
+The frontend owns one renderer and icon registry. Section headings display their
+children without a destination or icon; menu items and expandable groups display
+the configured icon. The editor explains that distinction. The instance profile
+continues to own this deployment's sections, hierarchy and destinations.
+Publication of this increment is recorded separately in `execution.md`.
 
 The profile follows the pinned openelis-work mock: Main Menu, Patient & Orders,
 Reports and Administration, with Carbon icons inheriting the active OpenELIS
