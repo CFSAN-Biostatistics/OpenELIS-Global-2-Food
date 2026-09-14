@@ -3,7 +3,7 @@
 **Inputs**: [spec.md](spec.md), [plan.md](plan.md),
 [data-model.md](data-model.md), [contract](contracts/export-api.md),
 [acceptance plan](quickstart.md), [UAT contract](uat.md).
-**Status**: M1 implementation in progress. T001–T003, T007 and T011 are
+**Status**: M1 implementation in progress. T001–T003, T005 and T007 are
 complete; other tasks remain open until their full acceptance conditions pass. See
 [execution.md](execution.md) for current evidence and the subsequently authorized
 Catalyst deployment tasks.
@@ -66,6 +66,10 @@ completes the other mock source definitions and operational qualification.
       current configuration-loading conventions; load instance tests/components
       and supported additional fields by stable identity, without a fixed count
       or report-specific frontend list.
+      The existing initializer now loads versioned `reporting-sources/*.json`
+      into `CSV_SOURCE` definitions. Explicit defaults, dynamic group expansion
+      and invalid-update preservation pass database tests. Full source/catalog
+      qualification remains open with the rest of M1.
 - [ ] T010 [US1] Implement the Sample & Testing source mapping and bounded
       parameterized queries under
       `src/main/java/org/openelisglobal/reports/dataexport/dao/` and `service/`,

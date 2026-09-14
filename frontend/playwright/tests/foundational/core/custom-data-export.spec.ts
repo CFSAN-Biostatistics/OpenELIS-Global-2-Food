@@ -197,6 +197,47 @@ test("detailed layout exports both result identities and keeps the chosen period
   expect(new Set(identities).size).toBe(2);
 });
 
+test("another configured report uses its own defaults and the same builder and queue", async ({
+  page,
+}) => {
+  await openBuilder(page);
+  await page.getByRole("combobox", { name: "Report type" }).click();
+  await page
+    .getByRole("option", { name: "Sample summary", exact: true })
+    .click();
+  const preview = page.getByRole("region", { name: "CSV header preview" });
+  await expect(preview.getByRole("columnheader")).toHaveText([
+    "Specimen ID",
+    "Accession Number",
+  ]);
+  await expect(
+    page.getByRole("checkbox", { name: "Patient Name", exact: true }),
+  ).toHaveCount(0);
+  await expect(
+    page.getByRole("checkbox", { name: "Viral Load", exact: true }),
+  ).not.toBeChecked();
+  // Add an instance-configured test that is available but deliberately not a default.
+  await page
+    .locator("label")
+    .filter({ hasText: /^Viral Load$/ })
+    .click();
+  const { headers, records } = await downloadReport(page, 2);
+  expect(headers).toEqual(["Specimen ID", "Accession Number", "Viral Load"]);
+  expect(records.map((row) => row.slice(1))).toEqual([
+    [accession, "450"],
+    [accession, "450"],
+  ]);
+  await expect(
+    page.getByRole("region", { name: "Your current report" }),
+  ).toContainText("Sample summary");
+  await page
+    .getByRole("button", { name: "My Report Queue", exact: true })
+    .click();
+  await expect(
+    page.getByRole("region", { name: "My Report Queue" }),
+  ).toContainText("Sample summary");
+});
+
 test("an empty period produces a header-only download and an explicit zero-row result", async ({
   page,
 }) => {

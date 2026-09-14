@@ -2,10 +2,12 @@ package org.openelisglobal.reports.dataexport.service;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -52,7 +54,7 @@ public class ReportingCatalogService {
     public List<ReportSourceConfig> definitions() {
         Map<String, ReportSourceConfig> result = new LinkedHashMap<>();
         try (var input = new ClassPathResource("reporting/sample-testing.json").getInputStream()) {
-            var config = codec.read(input, sources.stream().map(ReportingSource::id).collect(Collectors.toSet()));
+            var config = readDefinition(input);
             result.put(config.id(), config);
         } catch (IOException e) {
             throw new IllegalStateException("reporting.definition.missing", e);
@@ -62,12 +64,40 @@ public class ReportingCatalogService {
                 result.remove(stored.getId());
                 continue;
             }
-            var config = codec.read(
-                    new ByteArrayInputStream(stored.getDefinitionJson().getBytes(StandardCharsets.UTF_8)),
-                    sources.stream().map(ReportingSource::id).collect(Collectors.toSet()));
+            var config = readDefinition(
+                    new ByteArrayInputStream(stored.getDefinitionJson().getBytes(StandardCharsets.UTF_8)));
+            if (!stored.getId().equals(config.id()))
+                throw new IllegalArgumentException("reporting.definition.identityMismatch");
             result.put(config.id(), config);
         }
         return List.copyOf(result.values());
+    }
+
+    public ReportSourceConfig readDefinition(InputStream input) {
+        var configuration = codec.read(input, sources.stream().map(ReportingSource::id).collect(Collectors.toSet()));
+        source(configuration.source()).validateConfiguration(configuration);
+        for (String layout : configuration.layouts())
+            defaultColumns(configuration, layout);
+        return configuration;
+    }
+
+    public List<String> defaultColumns(ReportSourceConfig definition, String layout) {
+        var fields = variables(definition, layout);
+        var available = fields.stream().map(ReportingVariable::id).collect(Collectors.toSet());
+        var defaults = new LinkedHashSet<String>();
+        for (String field : definition.defaultColumns().get(layout)) {
+            if (field.startsWith("catalog:")) {
+                String group = field.substring("catalog:".length());
+                fields.stream().filter(v -> v.group().equals(group)).map(ReportingVariable::id).forEach(defaults::add);
+            } else if (available.contains(field)) {
+                defaults.add(field);
+            } else {
+                throw new IllegalArgumentException("reporting.definition.defaultsInvalid");
+            }
+        }
+        if (defaults.isEmpty())
+            throw new IllegalArgumentException("reporting.definition.defaultsInvalid");
+        return List.copyOf(defaults);
     }
 
     public ReportSourceConfig definition(String id) {
@@ -89,10 +119,7 @@ public class ReportingCatalogService {
         var fields = variables(definition, layout);
         var sections = access.requestSections(owner);
         var sectionIds = sections.stream().map(s -> s.getId()).collect(Collectors.toSet());
-        List<String> defaults = new ArrayList<>(definition.defaultColumns().get(layout));
-        if ("SPREADSHEET".equals(layout)) {
-            fields.stream().filter(v -> v.group().equals("tests")).map(ReportingVariable::id).forEach(defaults::add);
-        }
+        List<String> defaults = defaultColumns(definition, layout);
         var tests = samples.tests().stream()
                 .filter(t -> t.getTestSection() != null && sectionIds.contains(t.getTestSection().getId()))
                 .map(t -> Map.of("id", t.getId(), "label", t.getDescription())).toList();

@@ -6,6 +6,7 @@ import static org.junit.Assert.assertThrows;
 
 import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.Set;
 import org.junit.Test;
 import org.openelisglobal.reports.dataexport.form.ReportSourceConfig;
@@ -59,5 +60,22 @@ public class ReportSourceConfigTest {
         ReportSourceConfig definition = parse(config("X", "SAMPLE_TESTING", "Report"));
         assertThrows(UnsupportedOperationException.class, () -> definition.attributes().add("another"));
         assertThrows(UnsupportedOperationException.class, () -> definition.defaultColumns().get("SPREADSHEET").clear());
+    }
+
+    @Test
+    public void dynamicDefaultGroupsAreExplicitAndMustBeAvailable() throws Exception {
+        String json = config("X", "SAMPLE_TESTING", "Report").replace("\"RESULT_LIST\":[\"accessionNumber\"]",
+                "\"RESULT_LIST\":[\"accessionNumber\",\"catalog:TEST_COMPONENTS\"]");
+        assertEquals(List.of("accessionNumber", "catalog:TEST_COMPONENTS"),
+                parse(json).defaultColumns().get("RESULT_LIST"));
+        assertThrows(IllegalArgumentException.class,
+                () -> parse(json.replace("catalog:TEST_COMPONENTS", "catalog:unknown")));
+    }
+
+    @Test
+    public void duplicateDefaultsAreRejected() {
+        assertThrows(IllegalArgumentException.class,
+                () -> parse(config("X", "SAMPLE_TESTING", "Report").replace("\"RESULT_LIST\":[\"accessionNumber\"]",
+                        "\"RESULT_LIST\":[\"accessionNumber\",\"accessionNumber\"]")));
     }
 }

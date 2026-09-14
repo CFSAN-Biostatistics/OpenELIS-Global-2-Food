@@ -91,4 +91,24 @@ BEGIN
     END IF;
 END
 $fixture$;
+
+-- Persisted form of fixtures/reporting-sources/sample-summary.json. The backend
+-- integration test exercises the configuration loader; browser tests consume
+-- its stored definition through the same catalog and queue as Sample & Testing.
+INSERT INTO report_definition
+  (id, name, category, definition_json, report_type, is_active, is_public, created_by, created_date, lastupdated)
+VALUES ('SAMPLE_SUMMARY', 'Sample summary', 'Data export', $config$
+{
+  "id": "SAMPLE_SUMMARY", "version": 1, "label": "Sample summary",
+  "source": "SAMPLE_TESTING", "dateAnchor": "collectionDate",
+  "layouts": ["SPREADSHEET", "RESULT_LIST"],
+  "attributes": ["specimenId", "accessionNumber", "resultValue"],
+  "catalogs": ["tests"], "filters": ["labSectionIds", "testIds", "resultStatuses"],
+  "defaultColumns": {
+    "SPREADSHEET": ["specimenId", "accessionNumber"],
+    "RESULT_LIST": ["accessionNumber", "resultValue"]
+  }
+}
+$config$, 'CSV_SOURCE', true, true, '1', now(), now())
+ON CONFLICT (id) DO NOTHING;
 COMMIT;

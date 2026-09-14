@@ -22,6 +22,7 @@ import org.openelisglobal.patient.valueholder.Patient;
 import org.openelisglobal.reports.dataexport.dao.SampleTestingExportDAO;
 import org.openelisglobal.reports.dataexport.form.ExportRecord;
 import org.openelisglobal.reports.dataexport.form.ExportSnapshot;
+import org.openelisglobal.reports.dataexport.form.ReportSourceConfig;
 import org.openelisglobal.reports.dataexport.form.ReportingVariable;
 import org.openelisglobal.result.valueholder.Result;
 import org.openelisglobal.testresultcomponent.valueholder.TestResultComponent;
@@ -45,6 +46,19 @@ public class SampleTestingSource implements ReportingSource {
     @Override
     public String id() {
         return "SAMPLE_TESTING";
+    }
+
+    @Override
+    public void validateConfiguration(ReportSourceConfig configuration) {
+        if (!"collectionDate".equals(configuration.dateAnchor())
+                || !List.of("tests", "components", "observations").containsAll(configuration.catalogs())
+                || !List.of("labSectionIds", "testIds", "resultStatuses").containsAll(configuration.filters())) {
+            throw new IllegalArgumentException("reporting.definition.unsupportedMapping");
+        }
+        var available = catalog().stream().map(ReportingVariable::id).collect(Collectors.toSet());
+        if (!available.containsAll(configuration.attributes())) {
+            throw new IllegalArgumentException("reporting.definition.attributesInvalid");
+        }
     }
 
     @Override

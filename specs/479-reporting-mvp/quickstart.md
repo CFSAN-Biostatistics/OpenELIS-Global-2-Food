@@ -88,6 +88,40 @@ mapping and keep date/row meanings visible. An event report needs a meaningful
 tabular layout, not an invented test pivot. Include a reference-range or
 turnaround field against existing clinical rules, with missing-input cases.
 
+### Load an Additional Report Definition
+
+Place a JSON definition in `reporting-sources/` beneath the existing backend
+configuration directory (default
+`/var/lib/openelis-global/configuration/backend`). The standard initializer loads
+this domain after test/component/question configuration, at order 500. Its
+existing instance-directory and checksum behavior applies. Restart the application
+or use the existing administrator configuration reload operation:
+`POST /rest/configuration/domains/reload` with
+`{"domains":["reporting-sources"],"force":false}`. No new reporting settings screen
+is required.
+
+Use [sample-summary.json](../../src/test/resources/fixtures/reporting-sources/sample-summary.json)
+as a minimal example. The definition chooses a supported mapping, allowed common
+attributes, dynamic catalogs, filters, layouts and ordered defaults. A default
+such as `catalog:tests` expands that configured group in place using stable field
+identities. Exposing a catalog does not automatically select it: the sample
+summary exposes tests while initially selecting only specimen and accession.
+The built-in Sample & Testing definition explicitly defaults to the tests group.
+
+Successful loads persist the definition by its stable ID in the existing
+`report_definition` table with report type `CSV_SOURCE`. Repeating an identical
+definition is idempotent. Changes require a higher `version`; invalid mappings,
+unknown fields/catalogs/filters, defaults for the wrong layout and ID collisions
+with another report kind are rejected before replacing a working definition.
+Removing a configuration file does not delete its persisted definition, following
+the existing initializer's load/update behavior. Do not use file deletion as an
+unpublish operation.
+
+Existing submitted jobs retain their captured definition. A changed definition
+does not alter a completed file; a still-queued request that no longer matches
+fails through the existing changed-definition check. Verify a fresh submission
+after configuration changes.
+
 ## Browser Flow Inventory
 
 Use Playwright **`core-app`**, a real backend/database and actual downloaded

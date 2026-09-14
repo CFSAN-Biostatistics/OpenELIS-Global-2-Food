@@ -16,19 +16,27 @@ public record ReportSourceConfig(String id, int version, String label, String so
         Map<String, List<String>> defaultColumns) {
     public ReportSourceConfig {
         if (id == null || !id.matches("[A-Z][A-Z0-9_-]{0,49}") || version < 1 || label == null || label.isBlank()
-                || source == null || source.isBlank() || dateAnchor == null || dateAnchor.isBlank() || layouts == null
-                || layouts.isEmpty() || attributes == null || attributes.isEmpty() || catalogs == null
-                || filters == null || defaultColumns == null) {
+                || label.length() > 200 || source == null || source.isBlank() || dateAnchor == null
+                || dateAnchor.isBlank() || layouts == null || layouts.isEmpty() || attributes == null
+                || attributes.isEmpty() || catalogs == null || filters == null || defaultColumns == null) {
             throw new IllegalArgumentException("reporting.definition.invalid");
         }
         layouts.forEach(Layout::valueOf);
-        if (new HashSet<>(layouts).size() != layouts.size() || new HashSet<>(attributes).size() != attributes.size()) {
+        if (new HashSet<>(layouts).size() != layouts.size() || new HashSet<>(attributes).size() != attributes.size()
+                || new HashSet<>(catalogs).size() != catalogs.size()
+                || new HashSet<>(filters).size() != filters.size()) {
             throw new IllegalArgumentException("reporting.definition.duplicate");
         }
         for (Map.Entry<String, List<String>> defaults : defaultColumns.entrySet()) {
             if (!layouts.contains(defaults.getKey()) || defaults.getValue() == null || defaults.getValue().isEmpty()
-                    || !attributes.containsAll(defaults.getValue())) {
+                    || new HashSet<>(defaults.getValue()).size() != defaults.getValue().size()) {
                 throw new IllegalArgumentException("reporting.definition.defaultsInvalid");
+            }
+            for (String field : defaults.getValue()) {
+                if (field == null || !(attributes.contains(field)
+                        || field.startsWith("catalog:") && catalogs.contains(field.substring("catalog:".length())))) {
+                    throw new IllegalArgumentException("reporting.definition.defaultsInvalid");
+                }
             }
         }
         if (!defaultColumns.keySet().containsAll(layouts)) {

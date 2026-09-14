@@ -206,6 +206,60 @@ shared reuse. It does not complete broader field/configuration qualification,
 the remaining access-negative browser cases, the turnaround decision, M2,
 deployment or human UAT.
 
+## Acceptance-driven Iteration 7
+
+Outcome: add a report through deployment configuration, select its configured
+defaults and instance fields in the existing builder, and download its repeated
+results through the existing queue.
+
+Current evidence on 2026-09-13:
+
+- `reporting-sources/*.json` is registered with the existing configuration
+  initializer and persists versioned `CSV_SOURCE` records in `ReportDefinition`.
+  Loading is idempotent. Invalid mappings, fields, catalogs, filters, layout
+  defaults, conflicting report kinds and unversioned edits cannot replace a
+  working definition.
+- Spreadsheet defaults no longer append every test unconditionally. A definition
+  selects its ordered common fields and can explicitly expand `catalog:tests`
+  or another allowed group. Sample & Testing retains its previous effective
+  defaults through this explicit configuration; its definition version is now 2.
+- Two regression checks failed before the implementation. Six real-database
+  configuration cases then passed: actual file loading/checksum skips, same-source
+  CSV output in both layouts, dynamic defaults, versioned updates, invalid-update
+  preservation and report-kind collisions. The test context excludes startup
+  configuration, so these checks instantiate the real initializer with the
+  actual Spring-managed handlers rather than changing the shared test context.
+- All 53 focused reporting backend tests pass, as do Java 21 build/install,
+  both required formatters, 44-file reporting Spotless validation, browser lint,
+  project registration and edited local document links. Reporting instruction
+  coverage is 4,069/5,773 (70.5%); it remains below the feature goal.
+- The isolated application loaded `sample-summary.json` from its normal mounted
+  configuration directory. Startup took 359.5 seconds. The local configuration
+  parent initially belonged to root; assigning it to the existing Tomcat account
+  allowed the subsequent startup load to save its checksum. No shared server or
+  other application was changed.
+- All eight focused browser checks passed in 1.1 minutes against that packaged
+  backend. The additional report initially selects only Specimen ID and Accession
+  Number while exposing instance tests. The browser adds Viral Load and downloads
+  exactly two independent rows with value 450, then finds Sample summary in the
+  common queue. Screenshot and downloaded CSV were inspected.
+- Logs retain the known self-signed-certificate service-worker setup warning and
+  request-cancellation messages. Downloads passed exact byte/content checks; both
+  saved-report deletions associated with cancellation messages were independently
+  confirmed inactive in the database. No page exceptions were logged.
+
+Evidence: `/private/tmp/reporting-source-config-red.log`,
+`/private/tmp/reporting-source-config-integration-2.log`,
+`/private/tmp/reporting-source-config-all.log`,
+`/private/tmp/reporting-source-config-build-2.log` and
+`/private/tmp/reporting-source-config-browser.log`.
+
+This proves configuration-loaded fields/defaults and same-engine execution.
+T009 remains open for complete catalog qualification, including configured
+filter subsets in the builder/request path. T010/T011 remain open for the
+turnaround decision. Remaining M1 qualification, M2, deployment and human UAT
+are unchanged.
+
 ## M1 Acceptance Checkpoint
 
 The implementation is reviewable as a foundation, but M1 is not complete. The
@@ -215,6 +269,7 @@ following ledger is the gate for continued work:
 | ------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
 | Native Reports entry                                   | Menu migration plus browser navigation                                                                                                                                                         | Proven locally                                                     |
 | Instance-derived tests/components/questions            | Database checks add/rename a question and configure/export a second component arrangement without reporting-code changes                                                                       | Proven locally at source level; deployed configuration UAT remains |
+| Additional report configuration                        | Existing initializer loads a versioned definition; real browser uses its allowed fields/defaults, downloads both repeats and finds the report in the same queue                                | Proven locally for fields/defaults; filter subsets remain open     |
 | Spreadsheet download                                   | Browser compares downloaded bytes with two independent identical fixture readings                                                                                                              | Proven locally for current fixture                                 |
 | Detailed-list download                                 | Browser compares two distinct result identities and values                                                                                                                                     | Proven locally for current fixture                                 |
 | CSV contract and streaming                             | Nine focused writer checks include BOM, escaping, nulls, ordering, zero rows, repeats and 50,000 streamed records                                                                              | Proven at formatter level; database workload remains open          |
@@ -272,8 +327,8 @@ completion gate.
   transitions, ORM registration and a Liquibase migration with rollback.
 - Typed source-configuration parsing, an instance-aware catalog and a shared
   source interface now connect to Sample & Testing execution. Shared
-  saved-report editing is implemented; deployment configuration loading remains
-  pending.
+  saved-report editing is implemented. The existing configuration initializer
+  now loads additional validated source definitions from deployment files.
 - Existing `ReportDefinition` storage will hold source definitions and shared
   saved reports, using distinct CSV report types. Its current patient-report
   consumer selects `PATIENT` explicitly. Two initially drafted new definition
@@ -384,7 +439,7 @@ a reviewer returns a report.
 
 ## Remaining Delivery Work
 
-- Complete T002 and M1: prove current result/component/value and
+- Complete M1: qualify the remaining result/component/value and
   configured-field mappings, bounded access/admission behavior and the remaining
   native builder cases; verify real downloaded CSVs and M1 review evidence.
 - Complete M2 through the same engine: referral/non-conformance mappings and
