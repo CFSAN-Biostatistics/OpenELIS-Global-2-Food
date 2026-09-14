@@ -48,6 +48,10 @@ completes the other mock source definitions and operational qualification.
       `src/test/java/org/openelisglobal/reports/dataexport/` for source
       references, shared definitions, concurrent edits, immutable job requests,
       submission identity and migration/rollback.
+      Partial: database-free ORM startup passes. Dedicated PostgreSQL tests now
+      verify fresh initialization, full reporting rollback/reapply, and recovery
+      upgrade/rollback over 50,000 jobs while retaining all prior job fields and
+      shared-definition fields. Broader simultaneous-edit qualification remains.
 - [x] T005 [US2] Add focused service/API tests under
       `src/test/java/org/openelisglobal/reports/dataexport/` for valid
       configured requests, existing access, owner-scoped files, idempotency and
@@ -155,7 +159,8 @@ applications.
       live/abandoned leases, publication, cleanup, an open download at expiry,
       concurrent claims and claim/cancel races. Failed retry and expired re-run also pass in the real browser with actual
       CSVs. Local browser cancellation also passed. Public queued-fixture UAT
-      and broader failure/limit qualification remain open. Full-suite fixture
+      and broader failure qualification remain open. The 50,000-result workload
+      now verifies the active-job limit and single-worker behavior. Full-suite fixture
       isolation now passes CI. A real local
       process kill/restart preserves queued and completed work, fails abandoned
       jobs, removes partial files and permits a successful linked retry; see the
@@ -201,8 +206,10 @@ applications.
       `specs/479-reporting-mvp/quickstart.md`.
       Partial: actual process interruption/restart and accelerated local expiry
       passed, including retained queued/completed work, cleanup, frozen settings
-      and unaffected prior downloads. Multi-instance crash isolation and
-      migration/rollback qualification remain open; see execution.md.
+      and unaffected prior downloads. Fresh/populated database migration and
+      rollback now pass through the actual Liquibase changelogs, including a
+      50,000-job queue and retained shared definitions. Multi-instance crash
+      isolation remains open; see execution.md.
 - [ ] T029 Verify every functional requirement and success criterion against
       implementation evidence; update
       `specs/479-reporting-mvp/checklists/requirements.md` and `quickstart.md`

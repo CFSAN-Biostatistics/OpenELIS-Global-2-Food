@@ -90,10 +90,34 @@ September 14. The public app logged one Spring root initialization and 457.170
 seconds startup. Five public application workflows plus authentication and the
 pinned-mock capture passed. A separate accelerated local expiry check also
 verified unavailable expired downloads, removed files, retained history and an
-unaffected existing download. Multi-instance crash isolation and migration
-rollback remain open. The local large-volume qualification below now passes. See
+unaffected existing download. Multi-instance crash isolation remains open.
+Local large-volume and migration/rollback qualification now pass. See
 [the current execution record](../../specs/479-reporting-mvp/execution.md) for
 exact deployment identity, evidence and limits.
+
+## Database upgrade and rollback
+
+From the repository root:
+
+```sh
+mvn test -Dtest=ReportingMigrationRollbackTest,ReportingPersistenceTest
+```
+
+Two standalone PostgreSQL 14.4 containers initialize the full application
+changelog before executing reporting rollback/reapplication. The fresh case
+verifies migration registration, schema/indexes and idempotency. The populated
+case covers 1,000 existing definitions, 100 shared definitions and 50,000 jobs
+across all six states. Actual Liquibase recovery rollback retains every prior
+job field and all definition fields, including request text, lineage, history
+metadata and last editor. The five reported checks include three existing
+ORM/persistence tests.
+
+Recovery rollback removes its cleanup marker/index and reapplication starts
+those markers empty. Full reporting rollback also removes the job table and
+the report-definition last-editor column; it does not preserve dropped data.
+See [the acceptance record](../../specs/479-reporting-mvp/quickstart.md#database-upgrade-and-rollback-qualification-2026-09-14)
+for tested boundaries. This test never rolls back the running local application,
+the shared test context or Reporting UAT. It changes no deployed application code.
 
 ## 50,000-result workload
 

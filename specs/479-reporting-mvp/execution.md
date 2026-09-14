@@ -120,8 +120,42 @@ scheduler marked it EXPIRED and removed its CSV while preserving row count,
 file size, history and frozen settings. An unrelated ready download stayed
 byte-identical. This is accelerated fixture qualification, not a seven-day soak
 or an in-flight download race; the latter has service/database test coverage.
-Multi-instance crash isolation, migration rollback and public
+Multi-instance crash isolation and public
 cancellation qualification remain open. These checks do not close all of T021/T028.
+
+## Database Upgrade and Rollback — Qualified Locally, 2026-09-14
+
+Two dedicated PostgreSQL 14.4 databases execute the complete application
+changelog, then the actual versioned reporting changesets for rollback and
+reapplication. No live application or shared test database is rolled back.
+The five-check run includes two migration scenarios (27.038 seconds) and three
+existing ORM/persistence checks (0.784 seconds), with no failures or skips.
+The recovery update over 50,000 retained jobs took 61 ms in this local test;
+that measurement is not a public deployment-time estimate.
+
+- Fresh initialization creates all four reporting changesets and the expected
+  job constraints/indexes. Full reporting rollback removes its job table, menu
+  entry and added columns while preserving existing report payloads and other
+  menu entries. Reapplying twice produces one menu entry and one recorded
+  application of each changeset.
+- The populated scenario upgrades 1,000 existing report definitions, then adds
+  100 shared definitions and 50,000 jobs across all six states. The recovery
+  update, its rollback and reapplication preserve every M1 job field, including
+  frozen requests, owner/submission identities, retry lineage, timestamps and
+  row/file metadata. All shared-definition fields, including last editor and
+  version timestamp, remain unchanged. Submission uniqueness still rejects a
+  duplicate, and the cleanup index is valid after upgrade.
+- Recovery rollback removes only its cleanup marker/index; reapplication starts
+  those markers empty. Full reporting rollback explicitly drops the job table
+  and `updated_by` column. It is not a history-preserving application downgrade.
+  The qualified recovery rollback does retain job history. File-volume restore
+  is not exercised by these schema tests.
+
+The tests use the real root changelog to prove registration and the existing
+repository container/bootstrap pattern. They require no application changes or
+public redeployment. Reproduction and rollback boundaries are recorded in
+[quickstart.md](quickstart.md#database-upgrade-and-rollback-qualification-2026-09-14).
+Multi-instance crash isolation, audit and human acceptance remain separate gates.
 
 ## Local Workload Qualification — Passed, 2026-09-14
 
@@ -258,8 +292,7 @@ on [M1 #4292](https://github.com/DIGI-UW/OpenELIS-Global-2/pull/4292), based on 
   partial file and retained failed history. This is not a process-kill/restart test.
 
 Remaining work: connect Referrals and Non-Conformance through the common engine,
-qualify multi-instance crash isolation and migration rollback, audit events,
-the 50,000-record workload, public cancellation UAT and
+qualify multi-instance crash isolation, audit events, public cancellation UAT and
 human acceptance. M1/M2 and the full MVP remain open.
 
 Evidence is retained in the task's `reporting-m2-recovery` artifacts: public/local

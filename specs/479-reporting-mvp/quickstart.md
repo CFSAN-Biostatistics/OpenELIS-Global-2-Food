@@ -225,6 +225,53 @@ limits, no process exhaustion and successful ordinary reads. Report measurements
 with environment details; this workload does not establish a universal
 production service level.
 
+### Database upgrade and rollback qualification, 2026-09-14
+
+Run the focused real PostgreSQL migration scenarios and existing ORM/persistence
+checks from the repository root, with Java 21 and Docker available:
+
+```sh
+mvn test -Dtest=ReportingMigrationRollbackTest,ReportingPersistenceTest
+```
+
+Each migration test owns a new PostgreSQL 14.4 container initialized from
+`postgre-db-init` and the complete `liquibase/base-changelog.xml`. This proves
+registration through the actual application includes. It then uses
+`src/test/resources/liquibase/reporting-mvp-rollback.xml`, which includes the
+unchanged reporting files at their original paths, for bounded rollback.
+No running application database, shared test database or public UAT state is
+changed. The two migration scenarios and three ORM/persistence checks pass.
+
+The fresh-database scenario verifies table/index/constraint creation, complete
+reporting rollback, and idempotent reapplication. Existing report definitions and
+unrelated menu entries retain identical field fingerprints. The populated
+scenario first checks 1,000 existing definitions across the M1 upgrade, then
+adds 100 shared definitions and 50,000 jobs across queued, generating, ready,
+failed, expired and cancelled states. The M2 update, rollback and reapplication
+retain every old job field and every shared-definition field, including the
+last editor and version timestamp. Frozen JSON includes Unicode and quoted
+text. Row/file metadata, owner/request identity and retry lineage remain
+unchanged, and duplicate submission identity is still rejected by PostgreSQL.
+The new cleanup index is valid and its timestamp column has the intended type.
+
+Rollback has two distinct scopes:
+
+- Rolling back `479-004-reporting-output-cleanup` removes its cleanup timestamp
+  and index while retaining the queue and saved reports. Reapplication recreates
+  empty cleanup markers. This path is verified with populated data.
+- Rolling back all four reporting changesets removes the job table, reporting
+  menu entry, cleanup metadata and report-definition `updated_by` column.
+  Existing definition payloads remain in their original table. This is feature
+  uninstallation; restoring queue history afterward requires the retained
+  database backup. The fresh-database test proves schema removal/reapplication,
+  not preservation of data in the explicitly dropped table.
+
+These checks execute actual Liquibase update/rollback, not generated SQL or
+inspection of rollback tags alone. They qualify the schema path independently
+from the earlier output-volume/process-recovery tests. Multi-instance crash
+isolation and restoration from database/file-volume backups are not exercised
+by these schema tests.
+
 ### Recorded 50,000-result run, 2026-09-14
 
 T027 passes. Reproduce with the [local workload runner](../../projects/reporting-uat/README.md#50000-result-workload)
