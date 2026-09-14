@@ -64,8 +64,9 @@ checks passed, but its E2E checkpoint failed on global menu editing and two
 microbiology workflows. The repairs in this follow-up pass all three affected
 workflows locally against the compiled frontend, including desktop and phone
 layout assertions. Updated recordings, publication and CI for the repaired
-commit remain pending. The [code-QA record](code-qa.md) also identifies an
-unresolved Dashboard error observed during rapid navigation.
+commit remain pending. The [code-QA record](code-qa.md) documents the Dashboard
+error found during navigation and its locally validated cancellation/retry
+repair; public verification of that follow-up remains required.
 
 Before calling this checkpoint merge-ready:
 

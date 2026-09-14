@@ -6,7 +6,20 @@ import { LONG_TIMEOUT } from "../../../helpers/timeouts";
 const menuId = "menu_workplan_priority";
 
 async function openSettings(page: Page) {
-  await page.goto("/MasterListsPage/globalMenuManagement");
+  if (new URL(page.url()).pathname === "/Dashboard") {
+    await page.getByRole("link", { name: "Admin", exact: true }).click();
+    const navigation = page.getByRole("navigation", {
+      name: "Side navigation",
+    });
+    await navigation
+      .getByRole("button", { name: "Menu Configuration", exact: true })
+      .click();
+    await navigation
+      .getByRole("link", { name: "Global Menu Configuration", exact: true })
+      .click();
+  } else {
+    await page.goto("/MasterListsPage/globalMenuManagement");
+  }
   const item = page.getByTestId(`menu-settings-${menuId}`);
   await expect(item).toBeAttached({ timeout: LONG_TIMEOUT });
   // Walk the rendered configuration hierarchy so the same workflow works with
@@ -34,6 +47,13 @@ test("global menu changes persist and update the application navigation", async 
   page,
 }, testInfo) => {
   testInfo.setTimeout(90_000);
+  const runtimeErrors: string[] = [];
+  page.on("pageerror", (error) => runtimeErrors.push(error.message));
+  page.on("console", (message) => {
+    if (message.type() === "error" && message.text().includes("TypeError")) {
+      runtimeErrors.push(message.text());
+    }
+  });
   const fields = await openSettings(page);
   const active = fields.getByRole("switch", { name: "Active", exact: true });
   const icon = fields.getByRole("combobox", { name: "Icon", exact: true });
@@ -68,7 +88,7 @@ test("global menu changes persist and update the application navigation", async 
     await expect(style).toHaveValue(previous.style);
     await fields.scrollIntoViewIfNeeded();
     await page.screenshot({ path: testInfo.outputPath("menu-persisted.png") });
-    await page.goto("/Dashboard");
+    await page.getByTestId("admin-back-to-main-nav").click();
     await expect(
       page.getByRole("navigation", { name: "Side navigation" }),
     ).toBeVisible();
@@ -88,7 +108,7 @@ test("global menu changes persist and update the application navigation", async 
     await expect(active).toBeChecked({ checked: previous.active });
     await expect(icon).toHaveValue(previous.icon);
     await expect(style).toHaveValue(previous.style);
-    await page.goto("/Dashboard");
+    await page.getByTestId("admin-back-to-main-nav").click();
     await expect(
       page.getByRole("navigation", { name: "Side navigation" }),
     ).toBeVisible();
@@ -97,4 +117,8 @@ test("global menu changes persist and update the application navigation", async 
       previous.active ? 1 : 0,
     );
   }
+  await expect(page.getByText("In Progress", { exact: true })).toBeVisible();
+  await expect(page.locator(".cds--loading-overlay")).toHaveCount(0);
+  expect(runtimeErrors).toEqual([]);
+  await page.screenshot({ path: testInfo.outputPath("dashboard-return.png") });
 });

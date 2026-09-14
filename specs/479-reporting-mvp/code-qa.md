@@ -51,21 +51,44 @@ Validation for the follow-up source on the `9baa356345` baseline:
   `/private/tmp/reporting-ci-repair-final.log`. These local files do not replace
   shared evidence or CI for the eventual committed repair.
 
-### Open finding: Dashboard metrics failure during navigation
+### Dashboard metrics failure: repaired and validated locally
 
 The passing menu workflow also logged an aborted metrics request, followed by
 `Cannot read properties of undefined (reading 'ordersInProgress')` during rapid
 full-page navigation. `Utils.ts` calls the callback with `undefined` after a
 failed request; `Dashboard.tsx` passes that value to `setCounts` while mounted,
 then renders `counts.ordersInProgress`. The Dashboard fetch does not supply an
-abort signal. These files are unchanged by this follow-up.
+abort signal. This was reproduced by the new `Dashboard.test.jsx` before the
+repair: failed-response cases crashed and the cancellation assertion failed.
 
-This finding remains open and receives no clean-console acceptance credit. The
-shared test helper logs console exceptions without failing the workflow, so
-four passing tests do not resolve it. Before closing the navigation quality
-gate, verify settled navigation and fix/test the Dashboard failure path.
-Local self-signed service-worker registration errors are separately identified
-as preview-environment output; they do not explain the Dashboard exception.
+The metrics request now owns an abort controller and ignores responses from an
+aborted attempt. A failed load shows a Carbon error notification and Retry
+instead of replacing counts with `undefined` or displaying zeros as real data.
+Retry fetches again; leaving cancels the request. The obsolete shared mounted
+flag was removed, including its unrelated tile-effect cleanup. Three component
+tests pass for recovery, cancellation and a late response after retry.
+
+The menu workflow now exercises the actual Admin and Back to main menu links,
+retaining full reloads of the editor to verify persistence. It checks page errors
+and console TypeErrors explicitly, and waits for the actual Carbon loading
+overlay to disappear on return. This normal run passed two checks including
+authentication in 9.7 seconds. The final compiled recording run passed all three
+affected workflows plus authentication in 20.9 seconds. No runtime error was
+observed in those workflows. Self-signed service-worker registration errors
+remain confined to local authentication setup. Hard document-replacement
+diagnostics can still log a cancelled fetch; they no longer produce the
+undefined-counts crash.
+
+Visual inspection of the failure state used one controlled metrics-only 503;
+Retry then fetched real local backend counts. The final desktop and phone
+screenshots show the notification and Retry with Carbon spacing, and successful
+recovery. These screenshots were taken after the responsive shell settled.
+Backend/frontend builds, both formatters, targeted test lint and the three
+component tests passed. The backend build skipped tests; no backend code changed.
+Logs are `/private/tmp/reporting-dashboard-{red,green,browser-routed,build}.log`
+and `/private/tmp/reporting-navigation-final-recorded.log`; recordings are under
+`/private/tmp/reporting-navigation-final-recorded/`. Publication and remote CI
+for this follow-up remain required.
 
 Updated recordings, shared publication and remote CI for the repaired commit
 remain pending. No human acceptance or full-MVP completion is claimed.
