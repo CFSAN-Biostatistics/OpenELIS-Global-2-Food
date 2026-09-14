@@ -5,6 +5,74 @@ import type { Page } from "@playwright/test";
 // shared fixture loader. Its two equal readings have distinct result identities.
 const accession = "REPORTING-MVP-REPEAT";
 
+async function createReportUsers(page: Page, usernames: string[]) {
+  await page.goto("/");
+  const endpoint = "/api/OpenELIS-Global/rest/UnifiedSystemUser";
+  const response = await page.request.get(endpoint);
+  expect(response.status()).toBe(200);
+  const form = await response.json();
+  const reports = form.labUnitRoles.find(
+    (role: { roleName: string }) => role.roleName === "Reports",
+  );
+  expect(reports?.roleId).toBeTruthy();
+  const password = process.env.TEST_PASS;
+  expect(
+    password,
+    "TEST_PASS is required for the disposable report users",
+  ).toBeTruthy();
+  const csrf = await page.evaluate(() => localStorage.getItem("CSRF") || "");
+  for (const username of usernames) {
+    const created = await page.request.post(endpoint, {
+      headers: { "X-CSRF-Token": csrf },
+      data: {
+        userLoginName: username,
+        userPassword: password,
+        confirmPassword: password,
+        userFirstName: "Reporting",
+        // User management rejects duplicate first/last-name pairs.
+        userLastName: username,
+        expirationDate: form.expirationDate,
+        timeout: form.timeout,
+        accountActive: "Y",
+        accountDisabled: "N",
+        accountLocked: "N",
+        allowCopyUserRoles: "N",
+        selectedRoles: [],
+        selectedTestSectionLabUnits: { AllLabUnits: [reports.roleId] },
+      },
+    });
+    expect(created.status()).toBe(200);
+    expect(await created.json()).toEqual({
+      forward: "redirect:/UnifiedSystemUser",
+    });
+  }
+}
+
+async function signInAsReportUser(page: Page, username: string) {
+  // A clean browser state proves shared definitions come from the server,
+  // rather than the previous user's locally retained draft.
+  await page.evaluate(() => {
+    localStorage.clear();
+    sessionStorage.clear();
+  });
+  await page.context().clearCookies();
+  await page.goto("/login");
+  await page.locator("#loginName").fill(username);
+  await page.locator("#password").fill(process.env.TEST_PASS!);
+  await page.locator('[data-cy="loginButton"]').click();
+  await expect(page).toHaveURL(/\/$/);
+  await expect(
+    page.getByRole("navigation", { name: "Side navigation" }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Reports", exact: true }).click();
+  await page
+    .getByRole("link", { name: "Custom Data Export", exact: true })
+    .click();
+  await expect(
+    page.getByRole("heading", { name: "Custom Data Export", exact: true }),
+  ).toBeVisible();
+}
+
 function parseCsv(text: string): string[][] {
   const rows: string[][] = [];
   let row: string[] = [],
@@ -69,6 +137,7 @@ async function downloadReport(page: Page, count: number) {
   await test
     .info()
     .attach("download.csv", { body: bytes, contentType: "text/csv" });
+  await page.evaluate(() => window.scrollTo(0, 0));
   await page.screenshot({
     path: test.info().outputPath("report-ready.png"),
     fullPage: true,
@@ -284,4 +353,81 @@ test("a shared report reopens with fresh dates and supports confirmed update, co
         .getByRole("button", { name: "Back to report builder", exact: true })
         .click();
   }
+});
+
+test("ordinary report users share a definition and independently download its repeated results", async ({
+  page,
+}, testInfo) => {
+  testInfo.setTimeout(90_000); // Two real sign-ins, persisted jobs and downloads.
+  const run = Date.now();
+  // The instance's configured username alphabet excludes digits.
+  const suffix = String(run).replace(/\d/g, (digit) =>
+    String.fromCharCode(97 + Number(digit)),
+  );
+  const firstUser = `reporting${suffix}a`;
+  const secondUser = `reporting${suffix}b`;
+  const reportName = `Shared reporting ${run}`;
+  await createReportUsers(page, [firstUser, secondUser]);
+
+  await signInAsReportUser(page, firstUser);
+  await page.getByLabel("Date from", { exact: true }).fill("2026-05-05");
+  await page.getByLabel("Date to", { exact: true }).fill("2026-05-05");
+  await page.locator('label[for="reporting-field-patientName"]').click();
+  await page
+    .getByRole("button", { name: "Move Specimen ID up", exact: true })
+    .click();
+  await page.getByRole("button", { name: "Save report", exact: true }).click();
+  await page.getByLabel("Report name", { exact: true }).fill(reportName);
+  await page
+    .getByRole("button", { name: "Save shared report", exact: true })
+    .click();
+  await expect(
+    page.getByText(`Saved as ${reportName}.`, { exact: true }),
+  ).toBeVisible();
+  const original = await downloadReport(page, 2);
+  expect(original.headers.slice(0, 2)).toEqual([
+    "Specimen ID",
+    "Accession Number",
+  ]);
+  expect(
+    original.records.map(
+      (row) => row[original.headers.indexOf("Patient Name")],
+    ),
+  ).toEqual(["Synthetic Reporting Fixture", "Synthetic Reporting Fixture"]);
+  expect(
+    original.records.map((row) => row[original.headers.indexOf("Viral Load")]),
+  ).toEqual(["450", "450"]);
+
+  await signInAsReportUser(page, secondUser);
+  await page
+    .getByRole("button", { name: "Shared reports", exact: true })
+    .click();
+  const search = page.getByRole("searchbox", {
+    name: "Search shared reports",
+    exact: true,
+  });
+  await search.fill(reportName);
+  const card = page.getByRole("article", { name: reportName, exact: true });
+  await expect(card).toBeVisible();
+  await card.getByRole("button", { name: "Open", exact: true }).click();
+  await expect(page.getByLabel("Date from", { exact: true })).toHaveValue("");
+  await expect(page.getByLabel("Date to", { exact: true })).toHaveValue("");
+  await expect(
+    page.getByText("Choose fresh dates before running this saved report.", {
+      exact: true,
+    }),
+  ).toBeVisible();
+  await page.getByLabel("Date from", { exact: true }).fill("2026-05-05");
+  await page.getByLabel("Date to", { exact: true }).fill("2026-05-05");
+  const reused = await downloadReport(page, 2);
+  expect(reused).toEqual(original);
+
+  await page
+    .getByRole("button", { name: "Shared reports", exact: true })
+    .click();
+  await search.fill(reportName);
+  await expect(card).toBeVisible();
+  await card.getByRole("button", { name: /Delete shared report/ }).click();
+  await page.getByRole("button", { name: /Delete$/, exact: false }).click();
+  await expect(card).toBeHidden();
 });

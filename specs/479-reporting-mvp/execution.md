@@ -167,25 +167,64 @@ last included test. The current first-record attribute behavior is not accepted
 as correct. T010 and T011 remain open. No new browser or deployment validation
 has been performed for this source correction.
 
+## Acceptance-driven Iteration 6
+
+Outcome: two ordinary report users independently generate the same report from
+an instance-shared definition without extra setup in the reporting workflow.
+
+Current evidence on 2026-09-13:
+
+- The focused browser fixture creates two temporary accounts through the
+  existing user-management API. Both have only the existing Reports laboratory
+  role, assigned to All Lab Units, and no global roles. Setup uses the current
+  instance's role catalog and naming rules; no reporting permissions were added.
+- The first user signs in through the login page, enters Reports → Custom Data
+  Export, selects patient information, reorders columns, saves a shared report
+  and downloads a CSV containing both independent readings of 450.
+- The browser's cookies and local/session storage are cleared before the second
+  user signs in. That user finds the saved report, reopens it with blank dates,
+  supplies a fresh period and downloads exactly the same headers and rows.
+  The shared definition is deleted through its visible confirmation afterward.
+- The new scenario plus authentication passed in 27 seconds. The complete
+  focused file then passed all seven checks in 44.5 seconds against the packaged
+  `eaf54b1e20` backend and existing production frontend bundle. Evidence:
+  `/private/tmp/reporting-shared-users-browser.log` and
+  `/private/tmp/reporting-shared-users-full-browser.log`.
+- Download bytes, CSV attachments and the completed-report screenshot were
+  inspected. Reporting scenarios had no page errors or failed application
+  responses. Authentication setup logged the existing self-signed-certificate
+  service-worker warning; reporting scenarios explicitly block service workers.
+- The final two-user run passed again in 28.5 seconds after normalizing the
+  screenshot scroll position. The corrected image was inspected. Project
+  registration, lint, both required formatters, build/install and ten edited
+  local document links pass. No backend tests were rerun for this test/document
+  checkpoint; the unchanged backend retains its 45-test result from Iteration 5.
+  Final browser output: `/private/tmp/reporting-shared-users-final-browser.log`.
+
+This closes the ordinary-user flow gap in T005 and proves local second-user
+shared reuse. It does not complete broader field/configuration qualification,
+the remaining access-negative browser cases, the turnaround decision, M2,
+deployment or human UAT.
+
 ## M1 Acceptance Checkpoint
 
 The implementation is reviewable as a foundation, but M1 is not complete. The
 following ledger is the gate for continued work:
 
-| Capability                                             | Current evidence                                                                                                                                                            | State                                                              |
-| ------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
-| Native Reports entry                                   | Menu migration plus browser navigation                                                                                                                                      | Proven locally                                                     |
-| Instance-derived tests/components/questions            | Database checks add/rename a question and configure/export a second component arrangement without reporting-code changes                                                    | Proven locally at source level; deployed configuration UAT remains |
-| Spreadsheet download                                   | Browser compares downloaded bytes with two independent identical fixture readings                                                                                           | Proven locally for current fixture                                 |
-| Detailed-list download                                 | Browser compares two distinct result identities and values                                                                                                                  | Proven locally for current fixture                                 |
-| CSV contract and streaming                             | Nine focused writer checks include BOM, escaping, nulls, ordering, zero rows, repeats and 50,000 streamed records                                                           | Proven at formatter level; database workload remains open          |
-| Date validation and retained draft                     | Component and browser checks cover the inclusive limit, invalid ranges, queue visit and reload                                                                              | Proven locally                                                     |
-| Immutable jobs and owner submission identity           | Persistence/service checks plus simultaneous database transactions cover idempotency, conflicts, configured limits, ownership and current scope                             | Proven locally; deployed ordinary-user UAT remains                 |
-| Shared saved reports                                   | Service, component and real-browser create/reopen/update/copy/delete checks; dates are omitted and stale edits return 409                                                   | Proven locally; second-user deployed UAT remains open              |
-| Wider Sample & Testing fields and additional questions | Database checks cover linked common/patient fields, received time/count, five turnaround measures, corrected results and configured literal/dictionary/key/multiple answers | Proven at mapping level; browser comparison remains open           |
-| Queue lifecycle and recovery                           | Submit, generate, poll and download work                                                                                                                                    | Open; retry, cancel, recovery, expiry and audit remain M2          |
-| Referral and Non-Conformance definitions               | Not implemented                                                                                                                                                             | Open in M2                                                         |
-| Catalyst deployment                                    | Server inspected only                                                                                                                                                       | Open                                                               |
+| Capability                                             | Current evidence                                                                                                                                                                               | State                                                              |
+| ------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| Native Reports entry                                   | Menu migration plus browser navigation                                                                                                                                                         | Proven locally                                                     |
+| Instance-derived tests/components/questions            | Database checks add/rename a question and configure/export a second component arrangement without reporting-code changes                                                                       | Proven locally at source level; deployed configuration UAT remains |
+| Spreadsheet download                                   | Browser compares downloaded bytes with two independent identical fixture readings                                                                                                              | Proven locally for current fixture                                 |
+| Detailed-list download                                 | Browser compares two distinct result identities and values                                                                                                                                     | Proven locally for current fixture                                 |
+| CSV contract and streaming                             | Nine focused writer checks include BOM, escaping, nulls, ordering, zero rows, repeats and 50,000 streamed records                                                                              | Proven at formatter level; database workload remains open          |
+| Date validation and retained draft                     | Component and browser checks cover the inclusive limit, invalid ranges, queue visit and reload                                                                                                 | Proven locally                                                     |
+| Immutable jobs and owner submission identity           | Persistence/service checks plus simultaneous database transactions cover idempotency, conflicts, configured limits, ownership and current scope; two ordinary users complete real browser jobs | Proven locally; deployed ordinary-user UAT remains                 |
+| Shared saved reports                                   | Service, component and real-browser create/reopen/update/copy/delete checks; second report user reopens with fresh dates and downloads identical output                                        | Proven locally; second-user deployed UAT remains open              |
+| Wider Sample & Testing fields and additional questions | Database checks cover linked common/patient fields, received time/count, five turnaround measures, corrected results and configured literal/dictionary/key/multiple answers                    | Proven at mapping level; browser comparison remains open           |
+| Queue lifecycle and recovery                           | Submit, generate, poll and download work                                                                                                                                                       | Open; retry, cancel, recovery, expiry and audit remain M2          |
+| Referral and Non-Conformance definitions               | Not implemented                                                                                                                                                                                | Open in M2                                                         |
+| Catalyst deployment                                    | Server inspected only                                                                                                                                                                          | Open                                                               |
 
 Do not expand to M2 or describe M1 as complete until the M1-open rows required
 by T002, T004-T006 and T008-T017 have passed. A draft M1 PR is the
@@ -242,27 +281,27 @@ completion gate.
 
 ## Validation Recorded So Far
 
-| Check                         | Observed result                                                                                                                                                                                               |
-| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Specification checks          | Eight Markdown files, 36 local/source links, JSON example and requirement/task consistency passed                                                                                                             |
-| Baseline backend              | Java 21 build/install passed with both test-skip flags; first cache installation attempt needed normal filesystem permission                                                                                  |
-| CSV writer and dates          | 12 focused JUnit tests passed; the repeat workload writes 50,000 rows incrementally                                                                                                                           |
-| ORM and lifecycle             | Three tests passed; factory startup is under five seconds and needs no database                                                                                                                               |
-| Source configuration          | Four tests passed, including an extra definition over the same supported source                                                                                                                               |
-| PostgreSQL job persistence    | Three tests passed against a disposable database using the repository test setup; migration `479-001-reporting-export-jobs` ran successfully                                                                  |
-| Stored source relationships   | Two tests passed: configured component identity survives rename and repeated values; collection dates distinguish specimens under one accession                                                               |
-| Combined reporting validation | All 45 focused Java tests passed on 2026-09-13, including source, answer scope, access, concurrent admission, saved-definition and database checks                                                            |
-| Frontend component/build      | Eight focused component checks and the production frontend build passed on 2026-09-13                                                                                                                         |
-| Focused browser acceptance    | Six Playwright checks passed in 26.2 seconds against the packaged app on 2026-09-13: sign-in, both CSV layouts, repeated values, zero-row output, date validation, queue/draft restoration and shared reports |
-| Formatting                    | Corrected absolute-path selector checks 42 reporting Java files; earlier relative-path invocations selected zero files and were not valid formatting evidence                                                 |
+| Check                         | Observed result                                                                                                                                                                                                             |
+| ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Specification checks          | Eight Markdown files, 36 local/source links, JSON example and requirement/task consistency passed                                                                                                                           |
+| Baseline backend              | Java 21 build/install passed with both test-skip flags; first cache installation attempt needed normal filesystem permission                                                                                                |
+| CSV writer and dates          | 12 focused JUnit tests passed; the repeat workload writes 50,000 rows incrementally                                                                                                                                         |
+| ORM and lifecycle             | Three tests passed; factory startup is under five seconds and needs no database                                                                                                                                             |
+| Source configuration          | Four tests passed, including an extra definition over the same supported source                                                                                                                                             |
+| PostgreSQL job persistence    | Three tests passed against a disposable database using the repository test setup; migration `479-001-reporting-export-jobs` ran successfully                                                                                |
+| Stored source relationships   | Two tests passed: configured component identity survives rename and repeated values; collection dates distinguish specimens under one accession                                                                             |
+| Combined reporting validation | All 45 focused Java tests passed on 2026-09-13, including source, answer scope, access, concurrent admission, saved-definition and database checks                                                                          |
+| Frontend component/build      | Eight focused component checks and the production frontend build passed on 2026-09-13                                                                                                                                       |
+| Focused browser acceptance    | Seven Playwright checks passed in 44.5 seconds against the packaged app on 2026-09-13: sign-in, both layouts, repeats, zero rows, date/draft handling, shared operations and independent reuse by two ordinary report users |
+| Formatting                    | Corrected absolute-path selector checks 42 reporting Java files; earlier relative-path invocations selected zero files and were not valid formatting evidence                                                               |
 
 The numeric streaming test is a formatter test, not the complete source/database
 workload qualification. Database checks prove immutable requests, per-owner
 submission uniqueness, concurrent admission and lifecycle persistence. Worker
 concurrency, migration rollback and production-volume qualification remain
 pending. Shared-definition edits and browser flows have their separate evidence
-above. T005 remains open until an ordinary report user completes the full flow
-with current access checked through the application.
+above. Iteration 6 completes the ordinary-report-user application flow required
+by T005; remaining access-negative browser cases are part of T016 qualification.
 
 CI on `b31449b3f5` passed frontend static checks, its image build and the shared
 E2E build, but backend CI stopped at six Java formatting violations. The local

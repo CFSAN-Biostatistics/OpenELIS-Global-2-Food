@@ -95,6 +95,15 @@ files. Do not stub export APIs, authorize by changing frontend state or use the
 mock as the system under test. Test-only failure controls may target the
 worker/storage boundary on the disposable stack.
 
+The shared-reuse browser scenario provisions two temporary accounts through the
+existing user-management API using `TEST_PASS`. They receive only the Reports
+laboratory role across All Lab Units, with no global roles. Generated usernames
+use letters and each account has a unique full name to satisfy the instance's
+existing naming rules. Browser storage is cleared between sign-ins. The test
+removes its shared definition; temporary accounts remain in the disposable test
+database. This fixture setup is separate from the stable human-UAT accounts in
+[uat.md](uat.md).
+
 | Flow                               | Actions and evidence                                                                                                                                             | Planned file                                                                      |
 | ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
 | Native export                      | Reports → Custom Data Export; select source/columns, order, filter, review, submit and download in place; compare both layouts and zero-row CSV to fixtures      | `frontend/playwright/tests/foundational/core/custom-data-export.spec.ts`          |

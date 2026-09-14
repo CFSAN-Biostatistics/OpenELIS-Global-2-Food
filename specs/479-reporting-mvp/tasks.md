@@ -40,11 +40,13 @@ completes the other mock source definitions and operational qualification.
       `src/test/java/org/openelisglobal/reports/dataexport/` for source
       references, shared definitions, concurrent edits, immutable job requests,
       submission identity and migration/rollback.
-- [ ] T005 [US2] Add focused service/API tests under
+- [x] T005 [US2] Add focused service/API tests under
       `src/test/java/org/openelisglobal/reports/dataexport/` for valid
       configured requests, existing access, owner-scoped files, idempotency and
       concurrent active-job limits; include a normal report user completing the
       flow without additional setup.
+      Service/database checks and the two-user native browser flow pass; see
+      Iteration 6 in `execution.md`. Access-negative browser cases remain in T016.
 - [ ] T006 [P] [US2] Add component tests in
       `frontend/src/components/reports/CustomDataExport/` for
       configuration-driven fields/filters, defaults, search/order, layout
