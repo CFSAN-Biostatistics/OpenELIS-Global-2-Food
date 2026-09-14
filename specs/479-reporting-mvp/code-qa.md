@@ -5,6 +5,71 @@ ten-PR delivery stack. It is not independent reviewer approval, human UAT or a
 claim that the final assembled deployment has passed. See the
 [delivery evidence gates](review-stopping-point.md#required-delivery-evidence).
 
+## Current checkpoint: 2026-09-14 navigation review repairs
+
+The public `9baa356345489bf16d197c4ea6db48a615f894f9` deployment passed seven
+checks including authentication. Six inspected local recordings for that revision
+and the public results are linked from the
+[review stopping point](review-stopping-point.md#review-ready-versus-merge-ready).
+Earlier validation entries below remain evidence for their stated revisions.
+
+The navigation PR's failed E2E run
+[34898686396](https://github.com/DIGI-UW/OpenELIS-Global-2/actions/runs/34898686396)
+was investigated through its logs, screenshots, traces and local reproduction:
+
+- **Global menu editing:** the old Cypress test selected 197 controls using a
+  global toggle selector, while the editor now has independent menu controls.
+  `global-menu-config.spec.ts` replaces that obsolete spec with a real UI
+  persistence workflow. It edits an instance-editable database child, saves,
+  reloads, checks activation and icon persistence, and verifies the resulting
+  navigation. A `finally` block restores and rechecks the original settings.
+  Configuration-controlled entries remain protected. Existing shared Cypress
+  helpers are retained for their remaining callers; no new Cypress test is added.
+- **Final-report amendment:** the button locator also matched the Carbon
+  tooltip named "No open amendment." The existing locator now requires the
+  exact action name. Reason validation, original and amended report history,
+  reidentification and relocking assertions remain intact.
+- **Isolate details:** runtime measurement reproduced a zero-width details
+  column beside a 400px action column. `MicrobiologyCaseView.css` now allows
+  those columns to wrap according to available width. The workbench header also
+  stacks below its existing breakpoint to prevent whole-page phone overflow.
+  Existing flex-wrapping action styles are reused. The original visibility
+  assertion remains, with added desktop/phone text, action and page-overflow
+  checks. Both compiled screenshots were inspected at 1280px and 390px.
+
+Validation for the follow-up source on the `9baa356345` baseline:
+
+- Backend and frontend formatters and production builds passed; backend build
+  used both test-skipping flags and is not counted as a backend test run. No
+  backend production code changed in this repair.
+- All three specifications are registered in `core-app`. The focused run on
+  the compiled HTTPS preview passed four tests including authentication in
+  22.9 seconds, with no skipped tests. The native local synthetic scenario
+  service provisioned the microbiology cases; API responses were not mocked.
+- Logs and screenshots are retained under
+  `/private/tmp/reporting-ci-repair-final/` and
+  `/private/tmp/reporting-ci-repair-final.log`. These local files do not replace
+  shared evidence or CI for the eventual committed repair.
+
+### Open finding: Dashboard metrics failure during navigation
+
+The passing menu workflow also logged an aborted metrics request, followed by
+`Cannot read properties of undefined (reading 'ordersInProgress')` during rapid
+full-page navigation. `Utils.ts` calls the callback with `undefined` after a
+failed request; `Dashboard.tsx` passes that value to `setCounts` while mounted,
+then renders `counts.ordersInProgress`. The Dashboard fetch does not supply an
+abort signal. These files are unchanged by this follow-up.
+
+This finding remains open and receives no clean-console acceptance credit. The
+shared test helper logs console exceptions without failing the workflow, so
+four passing tests do not resolve it. Before closing the navigation quality
+gate, verify settled navigation and fix/test the Dashboard failure path.
+Local self-signed service-worker registration errors are separately identified
+as preview-environment output; they do not explain the Dashboard exception.
+
+Updated recordings, shared publication and remote CI for the repaired commit
+remain pending. No human acceptance or full-MVP completion is claimed.
+
 ## Finding: simultaneous shared-report edits returned a server error
 
 `ReportingSavedConfigService.update` checked the supplied version before writing.

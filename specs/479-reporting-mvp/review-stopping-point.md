@@ -22,8 +22,10 @@ until that follow-up is finished.
 
 ## Packaging contract
 
-Use the official `gh stack` workflow. Each pull request contains one clean
-snapshot commit and targets the preceding branch. Preserve the existing M1/M2
+Use the official `gh stack` workflow. Each pull request starts with one clean
+snapshot commit and targets the preceding branch. Subsequent review repairs use
+ordinary commits on the relevant PR; do not rewrite submitted history merely to
+restore a single-commit count. Preserve the existing M1/M2
 branches as the development and deployment evidence; do not rewrite their
 history to manufacture the review stack. Start the new stack from refreshed
 `develop` and preserve intervening upstream changes.
@@ -49,13 +51,21 @@ independently complete user workflows.
 
 ## Review-ready versus merge-ready
 
-The current public application is `d48cd790c49294ddb4a36c9333d3acc744ebb3c4`.
-Its public workflow evidence remains valid for that application. The subsequent
-recovery-test revision `a4f7160b1dcce0245eed97b1f3f26c16cb44203e` has passing
-backend, frontend and translation CI. Public cancellation also passed after its
-observation window was corrected; the final test and retained output are included
-in the new stack. These are prior integration evidence, not a claim that the
-newly packaged commits have already passed CI.
+As verified on 2026-09-14, the public application is
+`9baa356345489bf16d197c4ea6db48a615f894f9`, the assembled ten-PR stack.
+[Recorded workflow evidence](https://reporting.catalyst.openelis-global.org/reporting-evidence/20260914-stack-9baa/)
+contains six inspected recordings from the local compiled stack.
+[Public deployment checks](https://reporting.catalyst.openelis-global.org/reporting-evidence/20260914-public-9baa/)
+passed seven checks including authentication, with actual CSV comparisons.
+These are automated results; human acceptance remains pending.
+
+The first nine PRs passed their checks. The navigation PR's backend and frontend
+checks passed, but its E2E checkpoint failed on global menu editing and two
+microbiology workflows. The repairs in this follow-up pass all three affected
+workflows locally against the compiled frontend, including desktop and phone
+layout assertions. Updated recordings, publication and CI for the repaired
+commit remain pending. The [code-QA record](code-qa.md) also identifies an
+unresolved Dashboard error observed during rapid navigation.
 
 Before calling this checkpoint merge-ready:
 
