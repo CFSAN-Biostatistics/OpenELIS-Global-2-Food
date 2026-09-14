@@ -82,6 +82,15 @@ job. With the single-application overlay, both interrupted jobs failed visibly,
 the queued job completed, old downloads were unchanged and retry succeeded. A
 second controlled probe observed one generating job and two queued jobs. Tomcat
 logged one Spring root initialization and 212.652 seconds total startup. Four
-native-route browser workflows passed, plus authentication. These results do not
-establish multi-instance crash isolation, retention, large-volume qualification
-or public deployment; see the current execution record.
+native-route browser workflows passed, plus authentication. These local results
+alone do not establish public deployment or the remaining operational criteria.
+
+Runtime configuration `7780ee2cd9` was subsequently deployed to Reporting UAT on
+September 14. The public app logged one Spring root initialization and 457.170
+seconds startup. Five public application workflows plus authentication and the
+pinned-mock capture passed. A separate accelerated local expiry check also
+verified unavailable expired downloads, removed files, retained history and an
+unaffected existing download. Multi-instance crash isolation, migration rollback
+and large-volume qualification remain open. See
+[the current execution record](../../specs/479-reporting-mvp/execution.md) for
+exact deployment identity, evidence and limits.

@@ -10,10 +10,19 @@ Public availability, automated qualification and human acceptance are separate.
 - Application: [Reporting UAT](https://reporting.catalyst.openelis-global.org/CustomDataExport).
   Frontend `0d65ccaac4ba46ac7fa76262368170a13fe7306d`; backend
   `d56922c11ed071e992b6e7288be1198efb009717`.
-- Deployment `20260914T110442Z-0d65ccaac4ba`; review tooling
+- Deployment `20260914T120001Z-runtime-7780ee2cd987`; runtime configuration
+  `7780ee2cd98766d871f730f1cff361489e931e8c`; review tooling
   `7356f1d32cfbdea346f200b5f3b2bf05a48610b9`. The public
   [target identity](https://reporting.catalyst.openelis-global.org/__review/target.json)
   records both revisions, successful public browser checks and pending human acceptance.
+- The runtime follow-up passes five public application workflows: spreadsheet
+  repeats, failed retry, expired re-run, Reports navigation with Back/Forward/reload,
+  and desktop/narrow column interaction and accessibility. Seven reported checks
+  include authentication and the separate pinned-mock capture. Direct matched
+  1280×900/390×844 comparisons preserve the collapsed catalog, Add/Added controls,
+  ordered selection, filters, review hierarchy and mobile queue. Native OpenELIS
+  chrome, configured catalog data, the agreed layout selector and visible pending
+  functionality remain distinct from the mock's fictional preview controls.
 - Connected: Sample & Testing in both layouts, instance-aware columns, every
   repeated result, per-test turnaround, shared report definitions, queue return,
   linked failed-job retry, queued cancellation and expired-report re-run.
@@ -49,14 +58,15 @@ Public availability, automated qualification and human acceptance are separate.
   checked artifact hashes, served HTML/assets and backend session health before
   publishing the ready identity.
 
-The backend replacement took about 15 minutes to become ready. Logs show the
-existing Intel image running on an ARM host and two application-context
-initializations. A bounded readiness supervisor was extended without restarting
-application/database containers. That startup path remains an operational gap;
-frontend-only publication avoids it. Previous versioned artifacts and the
-pre-recovery database backup remain available.
+The preceding backend replacement took about 15 minutes to become ready. It ran
+the existing Intel image on an ARM host and initialized the application twice.
+The runtime correction below removes the duplicate application; the current
+public startup took 457.170 seconds. The platform mismatch remains, so backend
+replacements still have a substantial startup cost. Frontend-only publication
+avoids that restart. Previous versioned artifacts, original runtime configuration
+and the pre-recovery database backup remain available.
 
-## Runtime Qualification — Single-Application Candidate, 2026-09-14
+## Runtime Qualification — Qualified and Published, 2026-09-14
 
 A local process-interruption run killed the app with two real jobs generating,
 one queued job and two existing partial files. The database/output volumes were
@@ -69,7 +79,7 @@ naturally; the test did not modify their timestamps.
 The run exposed a deployment discrepancy: Tomcat loaded the same WAR at the
 explicit `/api/OpenELIS-Global/` path and the automatically discovered
 `/OpenELIS-Global` path. A read-stall probe observed two export workers in one
-container, contrary to the plan's one-worker limit. The 42 reporting class files
+container, contrary to the plan's one-worker limit. All 4,216 application class files
 in the local WAR match the public `d56922c11e` artifact exactly; this is a runtime
 configuration issue.
 
@@ -82,17 +92,36 @@ browser workflows passed through the native API route: spreadsheet CSV, failed
 retry, expired re-run and Reports navigation with Back/Forward/reload. The five
 reported checks include authentication. The public host's narrow configuration
 probe confirmed the same two discovery flags and prefix-removing API route; no
-active reporting jobs were present. The public update is being prepared.
+active reporting jobs were present before the update.
+
+Runtime configuration `7780ee2cd9` is now public. nginx configuration validation
+passed before the app/proxy replacement. The database container, report volume,
+frontend `0d65ccaac4` and backend `d56922c11e` were retained. Tomcat logged exactly
+one Spring root initialization and 457.170 seconds startup; the implicit second
+application path returns 404. Native session/login and all five public workflows
+above pass. The target identity records the runtime revision separately from
+application artifacts. The unchanged five-story/14-step checklist and signed-in
+review panel remain available; no human answers were submitted.
 
 The original full-configuration read was rejected by automatic approval review.
 A narrower probe succeeded and returned only routing flags, mapping counts and
 active-job count. Server configuration contents remain on the deployment host.
 
-Recovery fixture correction `e6b34a4d2a` has now passed its full backend CI run
-`34834207814`, in addition to frontend and the actual E2E checkpoint. The newer
-source-preparation revisions still have fresh CI in flight. Multi-instance crash
-isolation, retention, migration rollback, large-volume and public cancellation
-qualification remain open; this local run does not close all of T021/T028.
+Recovery fixture correction `e6b34a4d2a` passed its full backend CI run
+`34834207814`, in addition to frontend and the actual E2E checkpoint. Source
+preparation `0d65ccaac4` now also passes backend `34836215711`, frontend
+`34836215623` and the actual E2E checkpoint `34837613118`. The runtime-tools
+commit `7780ee2cd9` has fresh CI in flight.
+
+A separate local retention check created and downloaded a new synthetic report,
+verified its configured seven-day expiry, then shortened only that job's expiry
+to 15 seconds. At the observed clock boundary, new downloads returned 410; the
+scheduler marked it EXPIRED and removed its CSV while preserving row count,
+file size, history and frozen settings. An unrelated ready download stayed
+byte-identical. This is accelerated fixture qualification, not a seven-day soak
+or an in-flight download race; the latter has service/database test coverage.
+Multi-instance crash isolation, migration rollback, large-volume and public
+cancellation qualification remain open. These checks do not close all of T021/T028.
 
 ## Source Preparation — Frontend Published, 2026-09-14
 
@@ -130,7 +159,8 @@ date interpretations are covered without choosing the unresolved product default
   with CSV output, hidden-filter removal with CSV output, and Reports navigation
   with Back/Forward/reload. The reported four checks include login. The frontend
   update retained the backend/database containers and verified served artifact
-  hashes. Fresh CI for `0d65ccaac4` remains queued/running; no full-MVP or human
+  hashes. Backend, frontend and actual E2E CI for `0d65ccaac4` have since passed;
+  no full-MVP or human
   acceptance is claimed.
 
 Three product questions are pending. No answer is inferred from elapsed time:
@@ -169,7 +199,7 @@ on [M1 #4292](https://github.com/DIGI-UW/OpenELIS-Global-2/pull/4292), based on 
   failures; the same 14-test sequence passes after correction. All 67 reporting
   tests also pass after that role fixture (74 tests total). Full-suite CI at `e6b34a4d2a`
   now passes, confirming the corrected fixture. Frontend and E2E CI passed at `d56922c11e`.
-  Fresh CI for the source-preparation checkpoint remains in flight.
+  The source-preparation checkpoint also passes backend, frontend and actual E2E CI.
 - 26 component tests, frontend/hook lint, formatting, production frontend build
   and Java 21 packaging passed for the loading fix. Delayed-catalog and genuinely
   removed-field tests cover the corrected behavior. Its local expired-re-run
@@ -185,9 +215,9 @@ on [M1 #4292](https://github.com/DIGI-UW/OpenELIS-Global-2/pull/4292), based on 
 - A real local scheduler recovered a seeded abandoned GENERATING job, removed its
   partial file and retained failed history. This is not a process-kill/restart test.
 
-Remaining work: verify the fixture correction in full-suite CI, connect Referrals and
-Non-Conformance through the common engine, qualify restart/retention and migration
-rollback, audit events, the 50,000-record workload, public cancellation UAT and
+Remaining work: connect Referrals and Non-Conformance through the common engine,
+qualify multi-instance crash isolation and migration rollback, audit events,
+the 50,000-record workload, public cancellation UAT and
 human acceptance. M1/M2 and the full MVP remain open.
 
 Evidence is retained in the task's `reporting-m2-recovery` artifacts: public/local

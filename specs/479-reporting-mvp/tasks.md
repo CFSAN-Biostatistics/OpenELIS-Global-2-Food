@@ -5,9 +5,11 @@
 [acceptance plan](quickstart.md), [UAT contract](uat.md).
 **Status**: Sample & Testing and queue recovery are publicly testable at frontend
 `0d65ccaac4` / backend `d56922c11e`. Seven public recovery-stage workflows passed;
-three affected workflows passed after the source-selection update. The live UAT
+three affected workflows passed after the source-selection update. Runtime
+configuration `7780ee2cd9` removes duplicate application startup; five public
+workflows and matched mock captures pass after that update. The live UAT
 checklist has five stories and 14 steps. See [execution.md](execution.md) for the
-current receipt, the full-suite recovery fixture issue and remaining qualification.
+current receipt, the corrected full-suite recovery fixture and remaining qualification.
 T032, T033 and T035–T038 repeat for each usable stage. T034 remains partial until
 all workflow fixtures are available. Public availability does not close M1 or M2.
 
@@ -149,9 +151,9 @@ applications.
       Seven new real-database checks pass for retry identity, cancellation,
       live/abandoned leases, publication, cleanup, an open download at expiry,
       concurrent claims and claim/cancel races. Failed retry and expired re-run also pass in the real browser with actual
-      CSVs. Local browser cancellation also passed. Full-suite fixture isolation,
-      public queued-fixture UAT and broader failure/limit/retention qualification
-      remain open. Full-suite fixture isolation now passes CI. A real local
+      CSVs. Local browser cancellation also passed. Public queued-fixture UAT
+      and broader failure/limit qualification remain open. Full-suite fixture
+      isolation now passes CI. A real local
       process kill/restart preserves queued and completed work, fails abandoned
       jobs, removes partial files and permits a successful linked retry; see the
       runtime qualification record.
@@ -186,6 +188,10 @@ applications.
       databases, persistent output, restart, retention and cleanup; document
       actual deployment settings/procedures and implementation evidence in
       `specs/479-reporting-mvp/quickstart.md`.
+      Partial: actual process interruption/restart and accelerated local expiry
+      passed, including retained queued/completed work, cleanup, frozen settings
+      and unaffected prior downloads. Multi-instance crash isolation and
+      migration/rollback qualification remain open; see execution.md.
 - [ ] T029 Verify every functional requirement and success criterion against
       implementation evidence; update
       `specs/479-reporting-mvp/checklists/requirements.md` and `quickstart.md`
@@ -219,7 +225,8 @@ separate completion criterion. Repeat these delivery tasks for each stage.
       a non-conformance event, two report users and prepared queue states. Do
       not depend on browser-only test helpers.
       Current stage has persistent synthetic repeat/turnaround fixtures and two
-      existing report users. Referral, non-conformance and recovery fixtures
+      existing report users, plus failed and expired recovery examples. Referral,
+      non-conformance and a reproducible public queued-cancellation fixture
       remain open; do not claim their planned identifiers are seeded.
 - [x] T035 Run the focused Playwright acceptance files against the deployed
       target, compare actual downloaded CSVs with the fixture oracle, and verify
