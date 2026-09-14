@@ -51,12 +51,10 @@ public class ReportingJobServiceTest {
                 List.of("labSectionIds"), Map.of("SPREADSHEET", List.of("accessionNumber")));
         ExportFilter filter = new ExportFilter("2026-08-01", "2026-08-31", List.of("7"), List.of(),
                 List.of("FINALIZED"));
-        snapshot = new ExportSnapshot(definition, "SPREADSHEET",
-                List.of(new ReportingVariable("accessionNumber", "Accession Number", "text", "sample", false,
-                        List.of("SPREADSHEET"))),
-                filter, "UTC", List.of("30"));
-        submission = new ExportSubmission(1, "SAMPLE_TESTING", "SPREADSHEET", "request-1",
-                List.of("accessionNumber"), filter);
+        snapshot = new ExportSnapshot(definition, "SPREADSHEET", List.of(new ReportingVariable("accessionNumber",
+                "Accession Number", "text", "sample", false, List.of("SPREADSHEET"))), filter, "UTC", List.of("30"));
+        submission = new ExportSubmission(1, "SAMPLE_TESTING", "SPREADSHEET", "request-1", List.of("accessionNumber"),
+                filter);
         when(catalog.freeze(submission, "42")).thenReturn(snapshot);
         when(settings.maxActive()).thenReturn(5);
     }
@@ -86,8 +84,8 @@ public class ReportingJobServiceTest {
         assertEquals(original.id(), repeated.id());
 
         ExportSubmission changed = new ExportSubmission(1, "SAMPLE_TESTING", "SPREADSHEET", "request-1",
-                List.of("accessionNumber"), new ExportFilter("2026-08-02", "2026-08-31", List.of("7"), List.of(),
-                        List.of("FINALIZED")));
+                List.of("accessionNumber"),
+                new ExportFilter("2026-08-02", "2026-08-31", List.of("7"), List.of(), List.of("FINALIZED")));
         ReportingException conflict = assertThrows(ReportingException.class, () -> service.submit("42", changed));
         assertEquals(409, conflict.status());
         verify(jobs).persistJob(persisted.get());
@@ -141,8 +139,8 @@ public class ReportingJobServiceTest {
 
     private ExportJob storedReadyJob() throws Exception {
         String json = new ObjectMapper().writeValueAsString(snapshot);
-        ExportJob job = new ExportJob("42", "request-1", "SAMPLE_TESTING", "SPREADSHEET", json, "digest",
-                Instant.now(), null);
+        ExportJob job = new ExportJob("42", "request-1", "SAMPLE_TESTING", "SPREADSHEET", json, "digest", Instant.now(),
+                null);
         job.setId("job-1");
         job.transitionTo(ExportJobState.GENERATING);
         job.transitionTo(ExportJobState.READY);

@@ -1,9 +1,9 @@
 # Implementation and Acceptance Quickstart
 
-This is the implementation test plan. The feature is not present on the
-inspected baseline; commands referring to new tests become runnable after the
-corresponding tasks are implemented. The mock's fictional download is design
-evidence only.
+This is the implementation test plan. Sample & Testing, shared saved reports
+and the basic queue are implemented on the M1 branch. See [execution.md](execution.md)
+for verified results and remaining gates. The mock's fictional download is
+design evidence only.
 
 ## Start Implementation
 
@@ -124,7 +124,7 @@ npm run pw:test -- playwright/tests/foundational/core/custom-data-export.spec.ts
 npm run pw:test -- playwright/tests/foundational/core/custom-data-export-recovery.spec.ts --project=core-app
 ```
 
-Use `npm run test:unit -- <implemented-test-path>` for focused Vitest tests and
+Use `npm test -- <implemented-test-path>` for focused Vitest tests and
 the repository Maven mechanism for actual JUnit 4 classes. Validate ORM startup
 without a database, and migrations/rollback against empty and populated
 disposable databases. Follow current applicable build, formatting, coverage and
@@ -157,7 +157,19 @@ workload evidence. Record tested revision, fixture version, environment, exact
 commands and results, CSV comparisons, browser evidence, workload measurements,
 actual output configuration and recovery/cleanup procedures. Keep document
 validation, code tests, CI, deployment and user acceptance separate. This
-package claims document checks only; all implementation tasks remain unchecked.
+package records local implementation evidence in `execution.md`; incomplete
+conditions remain unchecked in `tasks.md`.
+
+The focused reporting formatter command is:
+
+```bash
+mvn -o '-DspotlessFiles=.*reports/dataexport/.*\.java' spotless:check
+```
+
+Check that the output reports the number of selected Java files (42 at this
+checkpoint). `spotlessFiles` matches absolute paths as regular expressions;
+repository-relative file lists previously selected zero files and did not
+validate formatting. Full CI formatting remains a separate gate.
 
 ## Deployed UAT Gate
 

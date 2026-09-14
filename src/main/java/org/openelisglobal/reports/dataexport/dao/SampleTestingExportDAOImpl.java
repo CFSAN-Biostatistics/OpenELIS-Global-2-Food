@@ -78,17 +78,16 @@ public class SampleTestingExportDAOImpl extends BaseDAOImpl<Result, String> impl
 
     @Override
     public List<ObservationHistoryType> observationTypes() {
-        return entityManager.createQuery(
-                "from ObservationHistoryType t where t.description is not null and t.description <> '' "
-                        + "order by t.description, t.id",
-                ObservationHistoryType.class).getResultList();
+        return entityManager
+                .createQuery("from ObservationHistoryType t where t.description is not null and t.description <> '' "
+                        + "order by t.description, t.id", ObservationHistoryType.class)
+                .getResultList();
     }
 
     @Override
     public List<ObservationHistory> observations(String sampleId, String patientId) {
         String hql = "from ObservationHistory o where o.sampleId = :sample "
-                + (patientId == null ? "" : "or o.patientId = :patient ")
-                + "order by o.observationHistoryTypeId, o.id";
+                + (patientId == null ? "" : "or o.patientId = :patient ") + "order by o.observationHistoryTypeId, o.id";
         var query = entityManager.createQuery(hql, ObservationHistory.class).setParameter("sample", sampleId);
         if (patientId != null)
             query.setParameter("patient", patientId);

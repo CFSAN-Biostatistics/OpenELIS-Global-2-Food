@@ -48,8 +48,8 @@ public class ReportingAccess {
             return;
         var mapping = roles.getUserLabUnitRoles(owner);
         Set<String> allowed = mapping == null || mapping.getLabUnitRoleMap() == null ? Set.of()
-                : mapping.getLabUnitRoleMap().stream()
-                        .filter(m -> m != null && m.getLabUnit() != null && m.getRoles() != null && !m.getRoles().isEmpty())
+                : mapping.getLabUnitRoleMap().stream().filter(
+                        m -> m != null && m.getLabUnit() != null && m.getRoles() != null && !m.getRoles().isEmpty())
                         .map(m -> m.getLabUnit()).collect(Collectors.toSet());
         if (!allowed.contains(UnifiedSystemUserController.ALL_LAB_UNITS) && !allowed.containsAll(requested)) {
             throw new ReportingException(403, "reporting.access.scopeChanged");

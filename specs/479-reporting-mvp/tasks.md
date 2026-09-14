@@ -3,7 +3,7 @@
 **Inputs**: [spec.md](spec.md), [plan.md](plan.md),
 [data-model.md](data-model.md), [contract](contracts/export-api.md),
 [acceptance plan](quickstart.md), [UAT contract](uat.md).
-**Status**: M1 implementation in progress. T001, T003, T007 and T011 are
+**Status**: M1 implementation in progress. T001–T003, T007 and T011 are
 complete; other tasks remain open until their full acceptance conditions pass. See
 [execution.md](execution.md) for current evidence and the subsequently authorized
 Catalyst deployment tasks.
@@ -25,7 +25,7 @@ completes the other mock source definitions and operational qualification.
       worktree; refresh `develop`, confirm the spec PR exists, and read
       `specs/479-reporting-mvp/` plus current configuration/reporting
       conventions.
-- [ ] T002 [US1] Build independent fixture oracles and failing source/catalog
+- [x] T002 [US1] Build independent fixture oracles and failing source/catalog
       tests under `src/test/java/org/openelisglobal/reports/dataexport/` with
       fixtures in `src/test/resources/`: specimen dates, patient/common
       attributes, corrections, components, dictionary/multi-valued/text values,

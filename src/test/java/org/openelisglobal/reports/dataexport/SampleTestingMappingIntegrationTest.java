@@ -2,6 +2,7 @@ package org.openelisglobal.reports.dataexport;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertTrue;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -17,6 +18,8 @@ import org.openelisglobal.analysis.service.AnalysisService;
 import org.openelisglobal.analysis.valueholder.Analysis;
 import org.openelisglobal.common.services.IStatusService;
 import org.openelisglobal.common.services.StatusService.AnalysisStatus;
+import org.openelisglobal.dictionary.valueholder.Dictionary;
+import org.openelisglobal.internationalization.MessageUtil;
 import org.openelisglobal.observationhistory.service.ObservationHistoryService;
 import org.openelisglobal.observationhistory.valueholder.ObservationHistory;
 import org.openelisglobal.observationhistorytype.service.ObservationHistoryTypeService;
@@ -79,15 +82,29 @@ public class SampleTestingMappingIntegrationTest extends BaseWebContextSensitive
     }
 
     private Result reading(Analysis analysis, TestResult option, String value) {
+        return reading(analysis, option, value, "N", 0);
+    }
+
+    private Result reading(Analysis analysis, TestResult option, String value, String type, int grouping) {
         Result result = new Result();
         result.setAnalysis(analysis);
         result.setTestResult(option);
-        result.setResultType("N");
+        result.setResultType(type);
         result.setValue(value);
+        result.setGrouping(grouping);
         result.setIsReportable("Y");
         result.setSysUserId(TEST_SYS_USER_ID);
         results.insert(result);
         return result;
+    }
+
+    private void observation(String typeId, String value, ObservationHistory.ValueType valueType) {
+        ObservationHistory observation = new ObservationHistory();
+        observation.setObservationHistoryTypeId(typeId);
+        observation.setSampleId("1");
+        observation.setValue(value);
+        observation.setValueType(valueType);
+        observations.insert(observation);
     }
 
     @Test
@@ -192,6 +209,38 @@ public class SampleTestingMappingIntegrationTest extends BaseWebContextSensitive
     }
 
     @Test
+    public void secondConfiguredTestArrangementExportsWithoutReportingCodeChanges() throws Exception {
+        List<TestResultComponent> configured = components.saveSampleResults("2",
+                List.of(component("PRIMARY", "Color", 0), component("CLARITY", "Clarity", 1)), null, null,
+                TEST_SYS_USER_ID);
+        TestResultComponent color = configured.stream().filter(c -> "PRIMARY".equals(c.getCode())).findFirst()
+                .orElseThrow();
+        TestResult option = options.getAllMatching("componentId", color.getId()).get(0);
+        Analysis analysis = analyses.get("2");
+        analysis.setStatusId(statuses.getStatusID(AnalysisStatus.Finalized));
+        analyses.update(analysis);
+        SampleItem specimen = analysis.getSampleItem();
+        specimen.setCollectionDate(Timestamp.valueOf("2026-08-21 09:00:00"));
+        specimens.update(specimen);
+        reading(analysis, option, "2.75");
+        entityManager.flush();
+
+        String fieldId = "component:" + color.getId();
+        var field = source.catalog().stream().filter(v -> v.id().equals(fieldId)).findFirst().orElseThrow();
+        assertEquals("Urine Test — Color", field.label());
+        ExportFilter filter = new ExportFilter("2026-08-21", "2026-08-21", List.of(analysis.getTestSection().getId()),
+                List.of("2"), List.of("FINALIZED"));
+        ReportSourceConfig definition = new ReportSourceConfig("SAMPLE_TESTING", 1, "Sample & Testing",
+                "SAMPLE_TESTING", "collectionDate", List.of("SPREADSHEET"), List.of("accessionNumber"),
+                List.of("components"), List.of("testIds"), Map.of("SPREADSHEET", List.of("accessionNumber")));
+        StringWriter csv = new StringWriter();
+
+        assertEquals(1, source.write(csv, new ExportSnapshot(definition, "SPREADSHEET", List.of(field), filter,
+                java.time.ZoneId.systemDefault().getId(), List.of(analysis.getStatusId()))));
+        assertEquals("Urine Test — Color\r\n2.75\r\n", csv.toString().substring(1));
+    }
+
+    @Test
     public void turnaroundAndCorrectionUsePersistedWorkflowState() throws Exception {
         Analysis analysis = analyses.get("1");
         analysis.setStatusId(statuses.getStatusID(AnalysisStatus.Finalized));
@@ -212,8 +261,8 @@ public class SampleTestingMappingIntegrationTest extends BaseWebContextSensitive
                         "receivedToValidatedMinutes", "orderToCollectionMinutes", "collectionToReceivedMinutes",
                         "resultedToValidatedMinutes").contains(v.id()))
                 .toList();
-        ExportFilter filter = new ExportFilter("2026-08-20", "2026-08-20",
-                List.of(analysis.getTestSection().getId()), List.of("1"), List.of("FINALIZED"));
+        ExportFilter filter = new ExportFilter("2026-08-20", "2026-08-20", List.of(analysis.getTestSection().getId()),
+                List.of("1"), List.of("FINALIZED"));
         ReportSourceConfig definition = new ReportSourceConfig("SAMPLE_TESTING", 1, "Sample & Testing",
                 "SAMPLE_TESTING", "collectionDate", List.of("RESULT_LIST"), fields.stream().map(v -> v.id()).toList(),
                 List.of(), List.of("testIds"), Map.of("RESULT_LIST", List.of("receivedTime")));
@@ -228,17 +277,47 @@ public class SampleTestingMappingIntegrationTest extends BaseWebContextSensitive
     }
 
     @Test
+    public void commonSampleAndPatientAttributesComeFromTheLinkedClinicalRecords() throws Exception {
+        Analysis analysis = analyses.get("1");
+        analysis.setStatusId(statuses.getStatusID(AnalysisStatus.Finalized));
+        analyses.update(analysis);
+        reading(analysis, options.get("1"), "85.0");
+        entityManager.flush();
+        List<String> fieldIds = List.of("accessionNumber", "specimenId", "collectionDate", "collectionTime",
+                "receivedDate", "receivedTime", "orderDate", "sampleType", "sampleStatus", "priority", "numberOfTests",
+                "patientName", "dateOfBirth", "sex", "nationalId", "phoneNumber", "address");
+        var catalog = source.catalog();
+        var fields = fieldIds.stream()
+                .map(id -> catalog.stream().filter(field -> field.id().equals(id)).findFirst().orElseThrow()).toList();
+        ExportFilter filter = new ExportFilter("2023-11-15", "2023-11-15", List.of(analysis.getTestSection().getId()),
+                List.of("1"), List.of("FINALIZED"));
+        ReportSourceConfig definition = new ReportSourceConfig("SAMPLE_TESTING", 1, "Sample & Testing",
+                "SAMPLE_TESTING", "collectionDate", List.of("RESULT_LIST"), fieldIds, List.of(), List.of("testIds"),
+                Map.of("RESULT_LIST", fieldIds));
+        StringWriter csv = new StringWriter();
+
+        assertEquals(1, source.write(csv, new ExportSnapshot(definition, "RESULT_LIST", fields, filter,
+                java.time.ZoneId.systemDefault().getId(), List.of(analysis.getStatusId()))));
+        assertEquals(
+                "Accession Number,Specimen ID,Collection Date,Collection Time,Received Date,Received Time,Order Date,Sample Type,Sample Status,Priority,Number of Tests Ordered,Patient Name,Date of Birth,Sex,National ID,Phone Number,Address\r\n"
+                        + "12345,1,2023-11-15,10:00,2023-11-15,11:00,2024-06-03,Blood Sample,SampleEntered,STAT,1,Ada Q Public,1980-02-03,F,WA-1001,555-0100,\"42 Lab Road, Seattle, WA, USA\"\r\n",
+                csv.toString().substring(1));
+    }
+
+    @Test
     public void configuredObservationAppearsByStableIdentityAndUsesItsCurrentLabel() throws Exception {
         ObservationHistoryType type = new ObservationHistoryType();
         type.setTypeName("programCohort");
         type.setDescription("Program Cohort");
         observationTypes.insert(type);
-        ObservationHistory observation = new ObservationHistory();
-        observation.setObservationHistoryTypeId(type.getId());
-        observation.setSampleId("1");
-        observation.setValue("Cohort A");
-        observation.setValueType(ObservationHistory.ValueType.LITERAL);
-        observations.insert(observation);
+        List<Dictionary> dictionary = entityManager
+                .createQuery("from Dictionary d where d.dictEntry is not null order by d.id", Dictionary.class)
+                .setMaxResults(1).getResultList();
+        assertEquals(1, dictionary.size());
+        observation(type.getId(), "Cohort A", ObservationHistory.ValueType.LITERAL);
+        observation(type.getId(), "Cohort B", ObservationHistory.ValueType.LITERAL);
+        observation(type.getId(), dictionary.get(0).getId(), ObservationHistory.ValueType.DICTIONARY);
+        observation(type.getId(), "patient.NationalID", ObservationHistory.ValueType.KEY);
         Analysis analysis = analyses.get("1");
         analysis.setStatusId(statuses.getStatusID(AnalysisStatus.Finalized));
         analyses.update(analysis);
@@ -249,26 +328,64 @@ public class SampleTestingMappingIntegrationTest extends BaseWebContextSensitive
         entityManager.flush();
 
         String fieldId = "observation:" + type.getId();
-        var field = source.catalog().stream().filter(v -> v.id().equals(fieldId)).findFirst()
-                .orElseThrow();
+        var field = source.catalog().stream().filter(v -> v.id().equals(fieldId)).findFirst().orElseThrow();
         assertEquals("Program Cohort", field.label());
-        ExportFilter filter = new ExportFilter("2026-08-20", "2026-08-20",
-                List.of(analysis.getTestSection().getId()), List.of("1"), List.of("FINALIZED"));
+        ExportFilter filter = new ExportFilter("2026-08-20", "2026-08-20", List.of(analysis.getTestSection().getId()),
+                List.of("1"), List.of("FINALIZED"));
         ReportSourceConfig definition = new ReportSourceConfig("SAMPLE_TESTING", 1, "Sample & Testing",
                 "SAMPLE_TESTING", "collectionDate", List.of("RESULT_LIST"), List.of("accessionNumber"),
                 List.of("observations"), List.of("testIds"), Map.of("RESULT_LIST", List.of("accessionNumber")));
         StringWriter csv = new StringWriter();
         source.write(csv, new ExportSnapshot(definition, "RESULT_LIST", List.of(field), filter,
                 java.time.ZoneId.systemDefault().getId(), List.of(analysis.getStatusId())));
-        assertEquals("Program Cohort\r\nCohort A\r\n", csv.toString().substring(1));
+        assertEquals("Program Cohort\r\nCohort A; Cohort B; " + dictionary.get(0).getDictEntry() + "; "
+                + MessageUtil.getMessage("patient.NationalID") + "\r\n", csv.toString().substring(1));
 
         type.setDescription("Program Enrollment Cohort");
         observationTypes.update(type);
         entityManager.flush();
         entityManager.clear();
-        var renamed = source.catalog().stream().filter(v -> v.id().equals(fieldId)).findFirst()
-                .orElseThrow();
+        var renamed = source.catalog().stream().filter(v -> v.id().equals(fieldId)).findFirst().orElseThrow();
         assertEquals(field.id(), renamed.id());
         assertEquals("Program Enrollment Cohort", renamed.label());
+    }
+
+    @Test
+    public void resultValuesUseDictionaryQualifiersGroupedMultiselectAndVerbatimText() throws Exception {
+        List<Dictionary> dictionary = entityManager
+                .createQuery("from Dictionary d where d.dictEntry is not null order by d.id", Dictionary.class)
+                .setMaxResults(2).getResultList();
+        assertEquals(2, dictionary.size());
+        Analysis analysis = analyses.get("1");
+        analysis.setStatusId(statuses.getStatusID(AnalysisStatus.Finalized));
+        analyses.update(analysis);
+        SampleItem specimen = analysis.getSampleItem();
+        specimen.setCollectionDate(Timestamp.valueOf("2026-08-20 10:00:00"));
+        specimens.update(specimen);
+        TestResult option = options.get("1");
+        Result coded = reading(analysis, option, dictionary.get(0).getId(), "D", 0);
+        Result qualifier = reading(analysis, null, "Confirmed", "A", 0);
+        qualifier.setParentResult(coded);
+        results.update(qualifier);
+        reading(analysis, option, dictionary.get(0).getId(), "M", 7);
+        reading(analysis, option, dictionary.get(1).getId(), "M", 7);
+        reading(analysis, option, "operator free text", "A", 0);
+        entityManager.flush();
+
+        var field = source.catalog().stream().filter(v -> v.id().equals("resultValue")).findFirst().orElseThrow();
+        ExportFilter filter = new ExportFilter("2026-08-20", "2026-08-20", List.of(analysis.getTestSection().getId()),
+                List.of("1"), List.of("FINALIZED"));
+        ReportSourceConfig definition = new ReportSourceConfig("SAMPLE_TESTING", 1, "Sample & Testing",
+                "SAMPLE_TESTING", "collectionDate", List.of("RESULT_LIST"), List.of("resultValue"), List.of(),
+                List.of("testIds"), Map.of("RESULT_LIST", List.of("resultValue")));
+        StringWriter csv = new StringWriter();
+
+        assertEquals(3, source.write(csv, new ExportSnapshot(definition, "RESULT_LIST", List.of(field), filter,
+                java.time.ZoneId.systemDefault().getId(), List.of(analysis.getStatusId()))));
+        String exported = csv.toString();
+        assertTrue(exported.contains("\r\n" + dictionary.get(0).getDictEntry() + " (Confirmed)\r\n"));
+        assertTrue(exported.contains(
+                "\r\n" + dictionary.get(0).getDictEntry() + "; " + dictionary.get(1).getDictEntry() + "\r\n"));
+        assertTrue(exported.contains("\r\noperator free text\r\n"));
     }
 }

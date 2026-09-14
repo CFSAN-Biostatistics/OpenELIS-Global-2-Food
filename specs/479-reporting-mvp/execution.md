@@ -13,7 +13,7 @@ fixture records. Unit tests alone do not complete it.
 
 Current evidence on 2026-09-13:
 
-- Five source integration tests pass, including the actual source writing
+- Three source integration tests pass, including the actual source writing
   both layouts from two identical readings with distinct identities.
 - Three Carbon component tests pass: selecting/reordering columns, retaining
   the draft and request identity after rejected submission, and retaining each
@@ -104,43 +104,57 @@ instance state.
 
 Current evidence on 2026-09-13:
 
-- Five database-backed source checks pass. They cover independent repeated
+- Eight database-backed source checks pass. They cover linked common/patient
+  fields, independent repeated
   results in both layouts, specimen-bound dates, configured-component identity
   through a rename, corrected finalized results, the five turnaround intervals,
-  received time and the ordered-test count.
+  received time, the ordered-test count, dictionary qualifiers, grouped
+  multiselect values and verbatim free text.
 - The source catalog now discovers described observation-history types from the
   instance. A database-backed check creates a new question without changing
-  reporting code, exports its literal answer, renames it and proves that the
-  stable field identity is retained while the current label is shown.
+  reporting code, exports literal, dictionary and localized-key answers, joins
+  multiple answers, renames it and proves that the stable field identity is
+  retained while the current label is shown. A separate check configures and
+  exports a second test/component arrangement through the same source.
 - Three access checks cover ordinary report access, missing/inactive users and
   requested laboratory scope. Five job checks cover immutable accepted
   requests, idempotent submission, changed-request conflicts, configured active
   job limits, owner-only download and revoked-scope download denial.
+- A four-case database check uses two simultaneous transactions at an active-job
+  limit of one. The owner-row lock serializes them, yielding one accepted job and
+  one 429 response; the submission uniqueness and immutable-request checks also
+  remain green.
 
-This is a verified backend increment. Dictionary/key question values, multiple
-answers, a second configured test/component arrangement, true concurrent job
-admission and browser comparison of the new columns remain required before M1
-is complete.
+This is a verified backend increment. Browser comparison of the new columns and
+ordinary-user access-negative cases remain required before M1 is complete.
+
+Source review also identified two unproven combinations for the next increment:
+the spreadsheet writer retains the first specimen record's attributes even
+when later results have different turnaround times, and the question query
+includes all observations matching the patient, including those attached to
+other samples. The current single-result/single-sample field oracles do not
+validate these combinations. Add explicit multi-result/multi-sample oracles and
+resolve their output semantics before closing T010 or field acceptance.
 
 ## M1 Acceptance Checkpoint
 
 The implementation is reviewable as a foundation, but M1 is not complete. The
 following ledger is the gate for continued work:
 
-| Capability                                             | Current evidence                                                                                                  | State                                                                 |
-| ------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
-| Native Reports entry                                   | Menu migration plus browser navigation                                                                            | Proven locally                                                        |
-| Instance-derived tests/components/questions            | Catalog reads active configured records; a database check adds and renames a question without reporting-code changes | Partially proven; second test/component configuration still required  |
-| Spreadsheet download                                   | Browser compares downloaded bytes with two independent identical fixture readings                                 | Proven locally for current fixture                                    |
-| Detailed-list download                                 | Browser compares two distinct result identities and values                                                        | Proven locally for current fixture                                    |
-| CSV contract and streaming                             | Nine focused writer checks include BOM, escaping, nulls, ordering, zero rows, repeats and 50,000 streamed records | Proven at formatter level; database workload remains open             |
-| Date validation and retained draft                     | Component and browser checks cover the inclusive limit, invalid ranges, queue visit and reload                    | Proven locally                                                        |
-| Immutable jobs and owner submission identity           | Persistence plus service checks cover idempotency, changed-request conflicts, active limits, ownership and current scope | Partially proven; true concurrent API admission remains open          |
-| Shared saved reports                                   | Service, component and real-browser create/reopen/update/copy/delete checks; dates are omitted and stale edits return 409 | Proven locally; second-user deployed UAT remains open                 |
-| Wider Sample & Testing fields and additional questions | Database checks cover received time/count, five turnaround measures, corrected results and one configured literal question | Partially proven; other value types/configuration and browser comparison remain open |
-| Queue lifecycle and recovery                           | Submit, generate, poll and download work                                                                          | Open; retry, cancel, recovery, expiry and audit remain M2             |
-| Referral and Non-Conformance definitions               | Not implemented                                                                                                   | Open in M2                                                            |
-| Catalyst deployment                                    | Server inspected only                                                                                             | Open                                                                  |
+| Capability                                             | Current evidence                                                                                                                                                            | State                                                              |
+| ------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| Native Reports entry                                   | Menu migration plus browser navigation                                                                                                                                      | Proven locally                                                     |
+| Instance-derived tests/components/questions            | Database checks add/rename a question and configure/export a second component arrangement without reporting-code changes                                                    | Proven locally at source level; deployed configuration UAT remains |
+| Spreadsheet download                                   | Browser compares downloaded bytes with two independent identical fixture readings                                                                                           | Proven locally for current fixture                                 |
+| Detailed-list download                                 | Browser compares two distinct result identities and values                                                                                                                  | Proven locally for current fixture                                 |
+| CSV contract and streaming                             | Nine focused writer checks include BOM, escaping, nulls, ordering, zero rows, repeats and 50,000 streamed records                                                           | Proven at formatter level; database workload remains open          |
+| Date validation and retained draft                     | Component and browser checks cover the inclusive limit, invalid ranges, queue visit and reload                                                                              | Proven locally                                                     |
+| Immutable jobs and owner submission identity           | Persistence/service checks plus simultaneous database transactions cover idempotency, conflicts, configured limits, ownership and current scope                             | Proven locally; deployed ordinary-user UAT remains                 |
+| Shared saved reports                                   | Service, component and real-browser create/reopen/update/copy/delete checks; dates are omitted and stale edits return 409                                                   | Proven locally; second-user deployed UAT remains open              |
+| Wider Sample & Testing fields and additional questions | Database checks cover linked common/patient fields, received time/count, five turnaround measures, corrected results and configured literal/dictionary/key/multiple answers | Proven at mapping level; browser comparison remains open           |
+| Queue lifecycle and recovery                           | Submit, generate, poll and download work                                                                                                                                    | Open; retry, cancel, recovery, expiry and audit remain M2          |
+| Referral and Non-Conformance definitions               | Not implemented                                                                                                                                                             | Open in M2                                                         |
+| Catalyst deployment                                    | Server inspected only                                                                                                                                                       | Open                                                               |
 
 Do not expand to M2 or describe M1 as complete until the M1-open rows required
 by T002, T004-T006, T008-T010 and T012-T017 have passed. A draft M1 PR is the
@@ -197,28 +211,44 @@ completion gate.
 
 ## Validation Recorded So Far
 
-| Check                         | Observed result                                                                                                                                                                                            |
-| ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Specification checks          | Eight Markdown files, 36 local/source links, JSON example and requirement/task consistency passed                                                                                                          |
-| Baseline backend              | Java 21 build/install passed with both test-skip flags; first cache installation attempt needed normal filesystem permission                                                                               |
-| CSV writer and dates          | 12 focused JUnit tests passed; the repeat workload writes 50,000 rows incrementally                                                                                                                        |
-| ORM and lifecycle             | Three tests passed; factory startup is under five seconds and needs no database                                                                                                                            |
-| Source configuration          | Four tests passed, including an extra definition over the same supported source                                                                                                                            |
-| PostgreSQL job persistence    | Three tests passed against a disposable database using the repository test setup; migration `479-001-reporting-export-jobs` ran successfully                                                               |
-| Stored source relationships   | Two tests passed: configured component identity survives rename and repeated values; collection dates distinguish specimens under one accession                                                            |
-| Combined reporting validation | All 39 focused Java tests passed on 2026-09-13, including source, access, admission, saved-definition and database checks; JaCoCo report generated                                                         |
-| Frontend component/build      | Eight focused component checks and the production frontend build passed on 2026-09-13                                                                                                                       |
+| Check                         | Observed result                                                                                                                                                                                               |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Specification checks          | Eight Markdown files, 36 local/source links, JSON example and requirement/task consistency passed                                                                                                             |
+| Baseline backend              | Java 21 build/install passed with both test-skip flags; first cache installation attempt needed normal filesystem permission                                                                                  |
+| CSV writer and dates          | 12 focused JUnit tests passed; the repeat workload writes 50,000 rows incrementally                                                                                                                           |
+| ORM and lifecycle             | Three tests passed; factory startup is under five seconds and needs no database                                                                                                                               |
+| Source configuration          | Four tests passed, including an extra definition over the same supported source                                                                                                                               |
+| PostgreSQL job persistence    | Three tests passed against a disposable database using the repository test setup; migration `479-001-reporting-export-jobs` ran successfully                                                                  |
+| Stored source relationships   | Two tests passed: configured component identity survives rename and repeated values; collection dates distinguish specimens under one accession                                                               |
+| Combined reporting validation | All 43 focused Java tests passed on 2026-09-13, including source, access, concurrent admission, saved-definition and database checks; JaCoCo report generated                                                 |
+| Frontend component/build      | Eight focused component checks and the production frontend build passed on 2026-09-13                                                                                                                         |
 | Focused browser acceptance    | Six Playwright checks passed in 26.2 seconds against the packaged app on 2026-09-13: sign-in, both CSV layouts, repeated values, zero-row output, date validation, queue/draft restoration and shared reports |
-| Formatting                    | Feature-scoped Java formatting passed; frontend dependencies installed from the lockfile                                                                                                                   |
+| Formatting                    | Corrected absolute-path selector checks 42 reporting Java files; earlier relative-path invocations selected zero files and were not valid formatting evidence                                                 |
 
 The numeric streaming test is a formatter test, not the complete source/database
 workload qualification. Database checks prove immutable requests, per-owner
-submission uniqueness and lifecycle persistence; they do not yet prove worker
-concurrency, shared-definition edits or browser workflows. Migration rollback
-and production-volume qualification remain pending.
+submission uniqueness, concurrent admission and lifecycle persistence. Worker
+concurrency, migration rollback and production-volume qualification remain
+pending. Shared-definition edits and browser flows have their separate evidence
+above. T005 remains open until an ordinary report user completes the full flow
+with current access checked through the application.
 
-The focused JaCoCo report currently measures 3,277 of 5,434 instructions in the
-new reporting packages, or 60.3%. This is below the feature coverage goal.
+CI on `b31449b3f5` passed frontend static checks, its image build and the shared
+E2E build, but backend CI stopped at six Java formatting violations. The local
+formatter had accepted a relative-path filter that selected zero files. The
+corrected filter reproduced all six failures, applied their formatting and
+verified all 42 reporting Java files. Do not label this replacement checkpoint
+CI-complete until its new backend run passes.
+
+The replacement checkpoint's 43-case backend run and build/install pass. Test
+output is retained at `/private/tmp/reporting-checkpoint-43-tests.log`; build
+output is at `/private/tmp/reporting-checkpoint-build.log`. The concurrent test
+now commits its cleanup separately and asserts that no active fixture job is
+left behind. No browser rerun or deployment was performed for this test and
+formatting checkpoint.
+
+The focused JaCoCo report currently measures 3,557 of 5,434 instructions in the
+new reporting packages, or 65.5%. This is below the feature coverage goal.
 Controller, worker and remaining source/recovery tests remain part of T004,
 T005, T012 and M2; the draft checkpoint must not be presented as
 coverage-complete.

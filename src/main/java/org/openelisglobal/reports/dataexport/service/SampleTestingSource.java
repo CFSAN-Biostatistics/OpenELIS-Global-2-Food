@@ -89,8 +89,8 @@ public class SampleTestingSource implements ReportingSource {
         dao.components().stream().filter(c -> names.containsKey(c.getTestId()))
                 .forEach(c -> fields.add(new ReportingVariable("component:" + c.getId(),
                         names.get(c.getTestId()) + " — " + c.getLabel(), c.getResultType(), "components", true, BOTH)));
-        dao.observationTypes().forEach(t -> fields.add(
-                new ReportingVariable("observation:" + t.getId(), t.getDescription(), "text", "observations", false, BOTH)));
+        dao.observationTypes().forEach(t -> fields.add(new ReportingVariable("observation:" + t.getId(),
+                t.getDescription(), "text", "observations", false, BOTH)));
         return fields;
     }
 
@@ -125,8 +125,8 @@ public class SampleTestingSource implements ReportingSource {
                             specimenId = specimen.getId();
                             Patient patient = dao.patient(specimen.getSample().getId());
                             patientFields = patientFields(patient, zone);
-                            observationFields = observationFields(
-                                    dao.observations(specimen.getSample().getId(), patient == null ? null : patient.getId()));
+                            observationFields = observationFields(dao.observations(specimen.getSample().getId(),
+                                    patient == null ? null : patient.getId()));
                         }
                         if (!Objects.equals(sampleId, specimen.getSample().getId())) {
                             sampleId = specimen.getSample().getId();
@@ -205,8 +205,8 @@ public class SampleTestingSource implements ReportingSource {
         a.put("component", component == null ? null : component.getLabel());
         a.put("loincCode", test.getLoinc());
         a.put("resultUnit", test.getUnitOfMeasure() == null ? null : test.getUnitOfMeasure().getUnitOfMeasureName());
-        a.put("resultStatus",
-                analysis.isCorrectedSincePatientReport() ? "Corrected" : statuses.getStatusNameFromId(analysis.getStatusId()));
+        a.put("resultStatus", analysis.isCorrectedSincePatientReport() ? "Corrected"
+                : statuses.getStatusNameFromId(analysis.getStatusId()));
         a.put("dateResulted", timestamp(analysis.getCompletedDate(), zone));
         a.put("validationDate", timestamp(analysis.getReleasedDate(), zone));
         a.put("labSection", analysis.getTestSection() == null ? null : analysis.getTestSection().getTestSectionName());
@@ -281,8 +281,8 @@ public class SampleTestingSource implements ReportingSource {
                 value = dao.dictionary(value);
             else if (ObservationHistory.ValueType.KEY.getCode().equals(observation.getValueType()))
                 value = MessageUtil.getMessage(value);
-            grouped.computeIfAbsent("observation:" + observation.getObservationHistoryTypeId(), key -> new ArrayList<>())
-                    .add(value == null ? "" : value);
+            grouped.computeIfAbsent("observation:" + observation.getObservationHistoryTypeId(),
+                    key -> new ArrayList<>()).add(value == null ? "" : value);
         }
         Map<String, String> fields = new LinkedHashMap<>();
         grouped.forEach((key, values) -> fields.put(key, String.join("; ", values)));
