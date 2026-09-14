@@ -1,126 +1,105 @@
 # Reporting MVP Implementation and Deployment
 
-The user authorized implementing the complete agreed MVP and deploying an
-OpenELIS instance on the Catalyst server. Both milestones remain in scope.
-The Sample & Testing stage is publicly deployed and testable as of 2026-09-14.
-The full MVP remains in progress. The current deployment receipt below
-supersedes earlier point-in-time deployment observations in this history.
+The user authorized implementing the complete agreed MVP and deploying each
+usable stage to Reporting UAT. Both milestones remain in scope. The canonical
+mock defines the interface; MVP scope determines which functions are connected.
+Public availability, automated qualification and human acceptance are separate.
 
-## Current Public Stage — Canonical Frontend, 2026-09-14
+## Current Public Stage — Queue Recovery, 2026-09-14
 
 - Application: [Reporting UAT](https://reporting.catalyst.openelis-global.org/CustomDataExport).
-  Frontend `1f2093054e574fec8344443b75530cc7a687e58a`; retained backend
-  `ebc6983898c833ed40fe43003192c4079e4bab73`.
-- Deployment `20260914T084139Z-1f2093054e57`; review tooling
+  Frontend `e5d9e85ef79690db3cf0399af7ad6aebf0b95548`; backend
+  `d56922c11ed071e992b6e7288be1198efb009717`.
+- Deployment `20260914T102409Z-e5d9e85ef796`; review tooling
   `7356f1d32cfbdea346f200b5f3b2bf05a48610b9`. The public
   [target identity](https://reporting.catalyst.openelis-global.org/__review/target.json)
-  records both application revisions, frontend-only scope and pending human acceptance.
-- Ten distinct public reporting workflows passed across focused browser runs:
-  both actual CSV layouts, repeated identities, 30/90-minute turnaround,
-  configured sources, empty output, filter switching, native Reports navigation,
-  shared report management, independent downloads by two existing report users,
-  and responsive/keyboard/accessibility behavior. The navigation check also passed
-  with native keyboard entry in both date controls, then Back/Forward and reload.
-  Authentication setup checks are excluded from this ten-workflow count.
-- The two-user test initially stopped in setup because a fresh page had no origin
-  for clearing storage. Establishing the origin with the static manifest fixed
-  setup; the final public rerun passed without the earlier dashboard teardown
-  console errors. CSV and shared-definition expectations were preserved.
+  records both revisions, successful public browser checks and pending human acceptance.
+- Connected: Sample & Testing in both layouts, instance-aware columns, every
+  repeated result, per-test turnaround, shared report definitions, queue return,
+  linked failed-job retry, queued cancellation and expired-report re-run.
+  Referrals and Non-Conformance remain visible as not yet connected.
+- Seven public reporting workflows passed on backend/frontend `d56922c11e`:
+  spreadsheet repeats, detailed result identity/period, 30/90-minute per-test
+  turnaround, shared report management, Reports navigation, failed retry and
+  expired re-run. Both recovery flows check actual CSV contents, retained
+  settings, reload and browser navigation. Login setup is excluded from the count.
+- The direct walkthrough found false unavailable-field/filter warnings while a
+  restored report's catalog loaded. Frontend `e5d9e85ef7` fixes that transient
+  state, shows Carbon loading feedback and prevents progressing without a catalog.
+  It preserves warnings and correction for genuinely removed fields. The two
+  affected public workflows (expired re-run and Reports/native-date navigation)
+  passed again after publication, with no unexpected browser-console errors.
+- In-app public retry and expired re-run were exercised directly. Native keyboard
+  entry preserved both May 5 dates, review survived reload, and the resulting
+  report downloaded successfully. Its stored CSV was independently checked:
+  Accession Number/Viral Load, two REPORTING-MVP-REPEAT rows with 450 each;
+  SHA-256 `499ab005f03b3c02d0da1af52097f3f64b6f00599f839beadac3e577fe741e32`.
+  Earlier in-app fill attempts were inconclusive; native keyboard entry resolved
+  that automation limitation. These agent checks do not constitute human acceptance.
 - The live [Grist checklist](https://grist.openelis-global.org/uat/reporting.json)
-  now has five stories and 12 required steps, with zero authoring problems.
-  Revision `0d4c0ae0f5fdff079ff70da4e0c31f33b04991d82eeb15bc6e502079c2439525`.
-  Existing stable keys are preserved; RPT-005 adds narrow-layout and navigation
-  review. Every story links to the pinned canonical mock. The live overlay loaded
-  the new instructions, five-story picker and deployment revision.
-- Publication verified all frontend artifact hashes, served HTML/assets and
-  backend session health. Only the web container changed. Backend/database
-  container identities and persistent data were retained; no reseeding occurred.
-  An initial readiness check raced web startup and rolled back successfully;
-  bounded readiness retries then qualified the published release.
-- Local qualification: 21 component tests, frontend/hook lint, frontend production
-  build, Java 21 packaging and Spotless passed. Backend tests were not rerun for
-  this frontend-only change. Prior backend evidence remains below. Frontend CI
-  and end-to-end CI passed at this revision; backend CI was still running at
-  the latest recorded snapshot and must be reported separately.
+  contains five stories and 14 required steps. Revision
+  `81ea1671067557c9faee6ac530eb7fbe714a215d35682ccf9d01434460be71f6`.
+  RPT-S04 now includes reusable failed/expired examples. Existing keys and sibling
+  stories were preserved. The live overlay displays the recovery story, all three
+  instructions and the current deployment. No reviewer answers were submitted.
+- The application recovery release retained a database backup and applied the
+  additive cleanup-column/index migration to existing data. Only the new
+  synthetic failed/expired jobs were added. The subsequent loading fix replaced
+  only the web container; backend/database identities were retained. Deployment
+  checked artifact hashes, served HTML/assets and backend session health before
+  publishing the ready identity.
 
-Human acceptance remains pending. The in-app agent's date-control interaction
-remained inconclusive; both ordinary Playwright filling and native keyboard entry
-passed with both dates retained. This is not a confirmed product date defect or
-a completed human walkthrough. Referrals, Non-Conformance, queue recovery and
-remaining M1 qualification (including backend coverage) remain open.
+The backend replacement took about 15 minutes to become ready. Logs show the
+existing Intel image running on an ARM host and two application-context
+initializations. A bounded readiness supervisor was extended without restarting
+application/database containers. That startup path remains an operational gap;
+frontend-only publication avoids it. Previous versioned artifacts and the
+pre-recovery database backup remain available.
 
-The task's `reporting-frontend-repair` artifacts retain public data/experience,
-two-user and keyboard logs, matched mock/application screenshots, target identity,
-deployment receipt and the published checklist. Subsequent test/document-only
-commits do not change the application bytes deployed at `1f2093054e`.
+## M2 Recovery Qualification
 
-## M2 Recovery Increment — Locally Qualified, Publication Pending
+Draft [PR #4295](https://github.com/DIGI-UW/OpenELIS-Global-2/pull/4295) is stacked
+on [M1 #4292](https://github.com/DIGI-UW/OpenELIS-Global-2/pull/4292), based on M1
+`948cdf3b0a`. Neither PR has been merged. M1 CI passed at that revision.
 
-The second milestone uses its own worktree and branch,
-`feat/479-ogc-479-reporting-mvp-m2-queue-recovery`, based on M1 `948cdf3b0a`.
-Remaining M1 qualification is still open. Referrals and Non-Conformance remain
-part of this milestone; beginning recovery does not remove those source mappings.
+- 67 focused reporting backend tests passed, including seven recovery database
+  tests. Focused line coverage was 960/1151 (83.4%), not whole-application coverage.
+  The tests cover idempotent retry/cancel, claim races, leases, stale publication,
+  expiry and cleanup while an already-open download retains complete bytes.
+- Full backend CI at `d56922c11e` subsequently ran 6261 tests and failed only the
+  seven new recovery tests at `reporting.access.denied` during initial submission.
+  They depended on the baseline admin's database roles, which other suite fixtures
+  replace. The corrected tests create their own real user and explicit role grant.
+  Running UserRoleServiceTest before the recovery tests reproduced all seven
+  failures; the same 14-test sequence passes after correction. All 67 reporting
+  tests also pass after that role fixture (74 tests total). Full-suite CI still
+  needs to verify the corrected revision. Frontend and E2E CI passed at `d56922c11e`.
+  The frontend follow-up's fresh CI remains in flight.
+- 26 component tests, frontend/hook lint, formatting, production frontend build
+  and Java 21 packaging passed for the loading fix. Delayed-catalog and genuinely
+  removed-field tests cover the corrected behavior. Its local expired-re-run
+  browser check also passed. Backend tests were not repeated for frontend changes.
+- Six local reporting browser workflows and matched 1280×900/390×844 mock captures
+  qualified the recovery candidate before publication. Retry/Re-run use the mock's
+  primary actions. Older deep links add a detail card above the paginated queue.
+- A real local browser confirmed queued cancellation through the native Carbon
+  dialog; the cancelled job stayed cancelled while two other jobs completed.
+  A temporary read stall on the isolated synthetic database made the queued state
+  reproducible. A repeatable public queued fixture and narrow confirmation check
+  remain open; RPT-303 is therefore not yet in the live checklist.
+- A real local scheduler recovered a seeded abandoned GENERATING job, removed its
+  partial file and retained failed history. This is not a process-kill/restart test.
 
-The affected canonical surface is ReportQueue: Retry for failed work, Cancel for
-queued work and Re-run for expired output. Native Carbon cancellation confirmation
-implements the agreed functional requirement. Re-run restores the frozen ordered
-fields and non-date filters and asks for fresh dates. Retry stays in the queue
-and leaves the current builder draft intact. Job deletion remains visibly pending.
+Remaining work: verify the fixture correction in full-suite CI, connect Referrals and
+Non-Conformance through the common engine, qualify restart/retention and migration
+rollback, audit events, the 50,000-record workload, public cancellation UAT and
+human acceptance. M1/M2 and the full MVP remain open.
 
-Backend implementation adds linked idempotent retry, queued-only cancellation,
-lease renewal during background generation, abandoned-worker recovery, expiry
-and bounded cleanup. File staging/publication and download-open use the same
-database row lock as lifecycle transitions. The migration adds a cleanup timestamp
-so completed cleanup batches do not repeatedly process the oldest history rows.
-History and frozen requests are retained. This remains under qualification.
-
-Verified local evidence on 2026-09-14:
-
-- All 67 reporting backend tests passed, including seven new recovery
-  integration tests. The reporting package line coverage is 960/1151 (83.4%)
-  in the focused run, above the plan target; it is not whole-application coverage. Concurrent workers cannot
-  claim the same job; a claim/cancel race cannot report false cancellation.
-  An already-open download retains its complete bytes after expiry/cleanup;
-  new downloads are refused. Tests use the real services and disposable database.
-- The first integration run exposed missing HTTP session setup for the existing
-  lab-section lookup. The fixture now supplies the normal admin request context.
-  A redundant test-property annotation created a second Spring context over
-  fixture-mutated data; removing it restored the standard shared test context.
-  Neither correction weakened reporting access or product assertions.
-- 24 component tests passed, including cancellation confirmation with retained
-  error state, retry navigation and expired draft restoration. A missing error
-  formatter reference was caught and fixed. Carbon's accessible danger-button
-  label and asynchronous queue rendering are handled by scoped semantic checks.
-- Frontend build and Java 21 packaging/install passed. The initial install was
-  denied access to the local Maven cache; rerunning with filesystem access passed.
-- The local app loads a separate WAR snapshot under `/private/tmp/reporting-m2-runtime`,
-  preserving its database/report volumes. Archive entries match the qualified
-  build; differing ZIP timestamps produce different outer hashes. The cleanup
-  migration applied successfully to this populated local database.
-
-- Six real reporting browser workflows passed: four existing checks for repeats,
-  per-test turnaround, shared definitions and responsive column interactions,
-  plus failed-job retry and expired re-run. Recovery downloads contain the exact
-  ordered Accession Number/Viral Load header and both independent 450 results.
-  Retry preserves the complete frozen request and parent link through reload and
-  Back/Forward. Expired re-run retains its test filter, asks for fresh dates and
-  survives review reload. Login/setup checks are excluded from this count.
-- Matched 1280×900 and 390×844 mock captures were reviewed directly. Retry and
-  Re-run now use the mock's primary action styling. Older deep-linked jobs use
-  a report detail card above the paginated table; the table and mobile action
-  placement remain the supplied design. Cancellation confirmation is covered by
-  component tests; its real-browser walkthrough remains open.
-- The new synthetic recovery fixture reload preserves both original requests and
-  states. The local browser initially lost login because the preview proxy did
-  not rewrite the session-cookie path; correcting that local proxy made the
-  workflows pass without product authentication changes.
-- Frontend/hook lint, formatting and build passed. M1 PR #4292 now has no failing
-  or pending checks at `948cdf3b0a`; M2 has not yet been published to CI.
-
-Public UAT remains the verified frontend/backend pair above until publication.
-No M2 completion or human acceptance is claimed. Remaining qualification includes
-real-browser cancellation, runtime restart/retention, rollback, the large workload
-and the Referral/Non-Conformance sources.
+Evidence is retained in the task's `reporting-m2-recovery` artifacts: public/local
+logs and captures, pinned mock captures, deployment receipts, exact synthetic CSV,
+runtime/cancellation receipts and the published checklist. The preceding public
+stage was frontend `1f2093054e` with backend `ebc6983898`; its ten workflow checks
+and five-story/12-step checklist remain historical evidence, not the current receipt.
 
 ## Frontend Repair — Qualified and Published
 

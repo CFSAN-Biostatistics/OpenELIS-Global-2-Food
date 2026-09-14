@@ -2,8 +2,8 @@
 
 **Branch**: `spec/479-ogc-479-reporting-mvp`  
 **Date**: 2026-09-13  
-**Status**: Canonical frontend and Sample & Testing are publicly deployed.
-M2 recovery implementation and remaining M1 qualification are in progress;
+**Status**: Canonical frontend, Sample & Testing and queue recovery are publicly deployed.
+Full-suite recovery qualification, remaining M1 checks and the other source mappings are in progress;
 the complete MVP remains pending.
 
 **Specification**: [spec.md](spec.md)  
@@ -66,6 +66,27 @@ implementation test results.
 
 No constitution exception, new framework or shared agent-context change is
 needed.
+
+## Frontend State and Interaction Standards
+
+The supplied mock remains the interface authority. Its implementation must also
+behave like a native application:
+
+- React Router owns the view, builder step, report type/layout, saved-report link,
+  queue page and selected job in the query string. Preserve unrelated query
+  parameters; reload and browser Back/Forward restore the intended screen.
+- Session drafts retain unsaved columns, filters and dates through navigation.
+  Loading a shared report or re-running expired output deliberately asks for fresh
+  dates. Late server responses cannot replace a newer draft.
+- The shared query library owns catalog, saved-report and job data. Mutations
+  update or invalidate the affected records. Loading, empty and failure states
+  remain distinct; an unanswered catalog request is not evidence of removed fields.
+- Use Carbon controls, React Intl, visible focus, keyboard operation, meaningful
+  labels and responsive layouts. Prevent duplicate submission while a request is
+  pending and retain user choices when it fails.
+- Validate the rendered workflow against the pinned mock at matched desktop and
+  narrow widths, then exercise navigation, recovery and actual CSV downloads.
+  A passing component test or a ready badge alone does not establish the experience.
 
 Implementation inspection found existing `ReportDefinition` storage with JSON,
 report type, shared visibility and optimistic versioning. Reuse it for

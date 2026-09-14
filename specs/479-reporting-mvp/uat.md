@@ -18,6 +18,13 @@ and Review & Submit. A new export starts with no selected fields. Existing share
 reports retain their saved selections. The remaining steps below retain the full
 planned acceptance contract; pending functionality is not represented as working.
 
+The public recovery stage adds RPT-302 (failed retry) and RPT-304 (expired re-run),
+bringing the live checklist to five stories and 14 required steps. Both prepared
+examples remain reusable after a run. RPT-303 is still planned: cancellation is
+connected and passed a local browser walkthrough, but its repeatable public queued
+fixture and narrow confirmation check are not yet available. No human acceptance
+is implied by the agent's walkthrough or automated checks.
+
 ## Target and Evidence
 
 - UAT host: `reporting.catalyst.openelis-global.org`

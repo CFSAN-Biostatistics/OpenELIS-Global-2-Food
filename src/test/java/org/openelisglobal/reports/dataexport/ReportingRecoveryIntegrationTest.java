@@ -15,6 +15,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.openelisglobal.BaseWebContextSensitiveTest;
+import org.openelisglobal.common.constants.Constants;
 import org.openelisglobal.reports.dataexport.form.ExportFilter;
 import org.openelisglobal.reports.dataexport.form.ExportJobView;
 import org.openelisglobal.reports.dataexport.form.ExportSubmission;
@@ -23,13 +24,19 @@ import org.openelisglobal.reports.dataexport.service.ReportingFiles;
 import org.openelisglobal.reports.dataexport.service.ReportingJobService;
 import org.openelisglobal.reports.dataexport.service.ReportingSettings;
 import org.openelisglobal.reports.dataexport.valueholder.ExportJob;
+import org.openelisglobal.role.valueholder.Role;
+import org.openelisglobal.systemuser.valueholder.SystemUser;
+import org.openelisglobal.userrole.valueholder.UserRole;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.context.transaction.TestTransaction;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 @Transactional
 public class ReportingRecoveryIntegrationTest extends BaseWebContextSensitiveTest {
-    private static final String OWNER = "1";
+    private String owner;
+    private String createdRoleId;
     private static final Instant START = Instant.parse("2026-09-14T12:00:00Z");
     @Autowired
     private ReportingJobService jobs;
@@ -49,6 +56,34 @@ public class ReportingRecoveryIntegrationTest extends BaseWebContextSensitiveTes
     @Before
     public void fixture() throws Exception {
         executeDataSetWithStateManagement("testdata/reporting-sample-testing.xml");
+        // Other integration fixtures replace the baseline users and role names.
+        // Give this lifecycle fixture its own real user and explicit role grant.
+        new TransactionTemplate(transactions).executeWithoutResult(status -> {
+            var roles = entityManager.createQuery("from Role where name = :name", Role.class)
+                    .setParameter("name", Constants.ROLE_GLOBAL_ADMIN).getResultList();
+            Role role;
+            if (roles.isEmpty()) {
+                role = new Role();
+                role.setName(Constants.ROLE_GLOBAL_ADMIN);
+                role.setActive(true);
+                entityManager.persist(role);
+                createdRoleId = role.getId();
+            } else {
+                role = roles.get(0);
+            }
+            var user = new SystemUser();
+            user.setLoginName("rpt-" + UUID.randomUUID().toString().substring(0, 12));
+            user.setFirstName("Reporting");
+            user.setLastName("Recovery");
+            user.setIsActive("Y");
+            user.setIsEmployee("Y");
+            entityManager.persist(user);
+            owner = user.getId();
+            var grant = new UserRole();
+            grant.setSystemUserId(owner);
+            grant.setRoleId(role.getId());
+            entityManager.persist(grant);
+        });
         originalRequest = org.springframework.web.context.request.RequestContextHolder.getRequestAttributes();
         var request = new org.springframework.mock.web.MockHttpServletRequest();
         var security = org.springframework.security.core.context.SecurityContextHolder.createEmptyContext();
@@ -73,6 +108,15 @@ public class ReportingRecoveryIntegrationTest extends BaseWebContextSensitiveTes
     @After
     public void restore() throws Exception {
         org.springframework.web.context.request.RequestContextHolder.setRequestAttributes(originalRequest);
+        if (owner != null && !TestTransaction.isActive()) {
+            new TransactionTemplate(transactions).executeWithoutResult(status -> {
+                entityManager.createQuery("delete from UserRole where compoundId.systemUserId = :owner")
+                        .setParameter("owner", owner).executeUpdate();
+                entityManager.remove(entityManager.find(SystemUser.class, owner));
+                if (createdRoleId != null)
+                    entityManager.remove(entityManager.find(Role.class, createdRoleId));
+            });
+        }
         if (directory == null)
             return;
         ReflectionTestUtils.setField(settings, "directory", originalDirectory);
@@ -88,7 +132,7 @@ public class ReportingRecoveryIntegrationTest extends BaseWebContextSensitiveTes
     }
 
     private ExportJobView submit() {
-        return jobs.submit(OWNER,
+        return jobs.submit(owner,
                 new ExportSubmission(1, "SAMPLE_TESTING", "SPREADSHEET", UUID.randomUUID().toString(),
                         List.of("accessionNumber", "test:1"),
                         new ExportFilter("2023-11-15", "2023-11-15", List.of(), List.of(), List.of("FINALIZED"))));
@@ -99,27 +143,27 @@ public class ReportingRecoveryIntegrationTest extends BaseWebContextSensitiveTes
         var parent = submit();
         String worker = UUID.randomUUID().toString();
         assertEquals(parent.id(), jobs.claim(worker).id());
-        jobs.failed(OWNER, parent.id(), worker, "reporting.job.generationFailed");
-        var child = jobs.retry(OWNER, parent.id(), "retry-once");
+        jobs.failed(owner, parent.id(), worker, "reporting.job.generationFailed");
+        var child = jobs.retry(owner, parent.id(), "retry-once");
         assertNotEquals(parent.id(), child.id());
         assertEquals(parent.id(), child.parentId());
         assertEquals(parent.request(), child.request());
         assertEquals("QUEUED", child.state());
-        assertEquals(child.id(), jobs.retry(OWNER, parent.id(), "retry-once").id());
-        assertEquals("FAILED", jobs.detail(OWNER, parent.id()).state());
+        assertEquals(child.id(), jobs.retry(owner, parent.id(), "retry-once").id());
+        assertEquals("FAILED", jobs.detail(owner, parent.id()).state());
         assertEquals(409,
-                assertThrows(ReportingException.class, () -> jobs.retry(OWNER, child.id(), "retry-once")).status());
+                assertThrows(ReportingException.class, () -> jobs.retry(owner, child.id(), "retry-once")).status());
     }
 
     @Test
     public void cancellationIsIdempotentButCannotCancelClaimedWork() {
         var cancelled = submit();
-        assertEquals("CANCELLED", jobs.cancel(OWNER, cancelled.id()).state());
-        assertEquals("CANCELLED", jobs.cancel(OWNER, cancelled.id()).state());
+        assertEquals("CANCELLED", jobs.cancel(owner, cancelled.id()).state());
+        assertEquals("CANCELLED", jobs.cancel(owner, cancelled.id()).state());
         var running = submit();
         assertEquals(running.id(), jobs.claim(UUID.randomUUID().toString()).id());
-        assertEquals(409, assertThrows(ReportingException.class, () -> jobs.cancel(OWNER, running.id())).status());
-        assertEquals("GENERATING", jobs.detail(OWNER, running.id()).state());
+        assertEquals(409, assertThrows(ReportingException.class, () -> jobs.cancel(owner, running.id())).status());
+        assertEquals("GENERATING", jobs.detail(owner, running.id()).state());
         assertEquals(404, assertThrows(ReportingException.class, () -> jobs.cancel("99999", running.id())).status());
     }
 
@@ -136,10 +180,10 @@ public class ReportingRecoveryIntegrationTest extends BaseWebContextSensitiveTes
         assertTrue(jobs.renewLease(active.id(), liveWorker));
         at(START.plusSeconds(301));
         jobs.recover();
-        assertEquals("FAILED", jobs.detail(OWNER, abandoned.id()).state());
-        assertEquals("reporting.job.interrupted", jobs.detail(OWNER, abandoned.id()).failureCode());
-        assertEquals("GENERATING", jobs.detail(OWNER, active.id()).state());
-        assertEquals("QUEUED", jobs.detail(OWNER, queued.id()).state());
+        assertEquals("FAILED", jobs.detail(owner, abandoned.id()).state());
+        assertEquals("reporting.job.interrupted", jobs.detail(owner, abandoned.id()).failureCode());
+        assertEquals("GENERATING", jobs.detail(owner, active.id()).state());
+        assertEquals("QUEUED", jobs.detail(owner, queued.id()).state());
         assertFalse(jobs.renewLease(abandoned.id(), lostWorker));
         assertFalse(jobs.renewLease(active.id(), lostWorker));
     }
@@ -159,13 +203,13 @@ public class ReportingRecoveryIntegrationTest extends BaseWebContextSensitiveTes
         Path live = files.stage(active.id(), liveWorker);
         Files.writeString(live, "still writing");
         assertEquals(409,
-                assertThrows(ReportingException.class, () -> jobs.publish(OWNER, abandoned.id(), lostWorker, 1))
+                assertThrows(ReportingException.class, () -> jobs.publish(owner, abandoned.id(), lostWorker, 1))
                         .status());
         jobs.cleanupOutput();
         assertFalse(Files.exists(stale));
         assertFalse(Files.exists(files.path(abandoned.id())));
         assertEquals("still writing", Files.readString(live));
-        assertEquals("GENERATING", jobs.detail(OWNER, active.id()).state());
+        assertEquals("GENERATING", jobs.detail(owner, active.id()).state());
     }
 
     @Test
@@ -175,19 +219,19 @@ public class ReportingRecoveryIntegrationTest extends BaseWebContextSensitiveTes
         jobs.claim(worker);
         String csv = "\uFEFFAccession Number,Blood Test\r\n12345,120\r\n";
         Files.writeString(files.stage(job.id(), worker), csv);
-        jobs.publish(OWNER, job.id(), worker, 1);
-        var ready = jobs.detail(OWNER, job.id());
+        jobs.publish(owner, job.id(), worker, 1);
+        var ready = jobs.detail(owner, job.id());
         assertEquals("READY", ready.state());
         assertEquals(Long.valueOf(1), ready.rowCount());
-        try (var download = jobs.download(OWNER, job.id()).input()) {
+        try (var download = jobs.download(owner, job.id()).input()) {
             at(Instant.parse(ready.expiresAt()));
             jobs.recover();
             jobs.cleanupOutput();
-            assertEquals("EXPIRED", jobs.detail(OWNER, job.id()).state());
-            assertEquals(410, assertThrows(ReportingException.class, () -> jobs.download(OWNER, job.id())).status());
+            assertEquals("EXPIRED", jobs.detail(owner, job.id()).state());
+            assertEquals(410, assertThrows(ReportingException.class, () -> jobs.download(owner, job.id())).status());
             assertFalse(Files.exists(files.path(job.id())));
             assertEquals(csv, new String(download.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8));
-            assertEquals(job.request(), jobs.detail(OWNER, job.id()).request());
+            assertEquals(job.request(), jobs.detail(owner, job.id()).request());
         }
     }
 
@@ -211,7 +255,7 @@ public class ReportingRecoveryIntegrationTest extends BaseWebContextSensitiveTes
                     claimed.add(value.id());
             }
             assertEquals(List.of(submitted.id()), claimed);
-            assertEquals("GENERATING", jobs.detail(OWNER, submitted.id()).state());
+            assertEquals("GENERATING", jobs.detail(owner, submitted.id()).state());
         } finally {
             executor.shutdownNow();
             assertTrue(executor.awaitTermination(10, java.util.concurrent.TimeUnit.SECONDS));
@@ -233,7 +277,7 @@ public class ReportingRecoveryIntegrationTest extends BaseWebContextSensitiveTes
             var cancel = executor.submit(() -> {
                 barrier.await(5, java.util.concurrent.TimeUnit.SECONDS);
                 try {
-                    return jobs.cancel(OWNER, submitted.id()).state();
+                    return jobs.cancel(owner, submitted.id()).state();
                 } catch (ReportingException error) {
                     assertEquals(409, error.status());
                     return "CLAIMED";
@@ -243,10 +287,10 @@ public class ReportingRecoveryIntegrationTest extends BaseWebContextSensitiveTes
             var cancelled = cancel.get(10, java.util.concurrent.TimeUnit.SECONDS);
             if ("CANCELLED".equals(cancelled)) {
                 assertEquals(null, claimed);
-                assertEquals("CANCELLED", jobs.detail(OWNER, submitted.id()).state());
+                assertEquals("CANCELLED", jobs.detail(owner, submitted.id()).state());
             } else {
                 assertEquals(submitted.id(), claimed.id());
-                assertEquals("GENERATING", jobs.detail(OWNER, submitted.id()).state());
+                assertEquals("GENERATING", jobs.detail(owner, submitted.id()).state());
             }
         } finally {
             executor.shutdownNow();

@@ -3,16 +3,13 @@
 **Inputs**: [spec.md](spec.md), [plan.md](plan.md),
 [data-model.md](data-model.md), [contract](contracts/export-api.md),
 [acceptance plan](quickstart.md), [UAT contract](uat.md).
-**Status**: M2 queue recovery is in progress from the verified M1 revision;
-remaining M1 qualification stays open. T001–T003, T005–T007, T009, T011 and T014 are
-complete; other tasks remain open until their full acceptance conditions pass. See
-[execution.md](execution.md) for current evidence and the subsequently authorized
-Catalyst deployment tasks. The Sample & Testing stage is publicly testable;
-T032, T033 and T035–T038 are complete for frontend `1f2093054e` with retained
-backend `ebc6983898`, and repeat for each later usable stage. The current public
-receipt includes ten reporting workflows and five UAT stories with 12 steps.
-T034 remains partial until the remaining workflow
-fixtures are available. Public availability does not close M1 or M2 qualification.
+**Status**: Sample & Testing and queue recovery are publicly testable at frontend
+`e5d9e85ef7` / backend `d56922c11e`. Seven public recovery-stage workflows passed;
+two affected workflows passed again after the frontend loading fix. The live UAT
+checklist has five stories and 14 steps. See [execution.md](execution.md) for the
+current receipt, the full-suite recovery fixture issue and remaining qualification.
+T032, T033 and T035–T038 repeat for each usable stage. T034 remains partial until
+all workflow fixtures are available. Public availability does not close M1 or M2.
 
 Use one engine and configured source definitions. Complete useful functionality
 first: instance-aware columns, both layouts, every repeated result and shared
@@ -147,14 +144,15 @@ applications.
       Seven new real-database checks pass for retry identity, cancellation,
       live/abandoned leases, publication, cleanup, an open download at expiry,
       concurrent claims and claim/cancel races. Failed retry and expired re-run also pass in the real browser with actual
-      CSVs. Browser cancellation and broader failure/limit/retention qualification
+      CSVs. Local browser cancellation also passed. Full-suite fixture isolation,
+      public queued-fixture UAT and broader failure/limit/retention qualification
       remain open.
 - [ ] T022 [US1] Add Referral and Non-Conformance source mappings/configured
       definitions using the same feature under
       `src/main/java/org/openelisglobal/reports/dataexport/` and the existing
       resource/configuration locations, making T020 pass; record exact date and
       event-link rules in `specs/479-reporting-mvp/data-model.md`.
-- [ ] T023 [US4] Implement failed-job retry and queued-only cancellation through
+- [x] T023 [US4] Implement failed-job retry and queued-only cancellation through
       the common service/controller paths under
       `src/main/java/org/openelisglobal/reports/dataexport/`, preserving
       immutable requests, source/version, layout, labels, current access and
@@ -163,7 +161,7 @@ applications.
       private-file cleanup under
       `src/main/java/org/openelisglobal/reports/dataexport/service/`, making
       T021 pass without interfering with another live application context.
-- [ ] T025 [US4] Implement shared recovery controls and source-appropriate
+- [x] T025 [US4] Implement shared recovery controls and source-appropriate
       labels in `frontend/src/components/reports/CustomDataExport/` and
       `frontend/src/languages/en.json`; retain choices, require fresh dates for
       expired reruns and avoid report-specific screens.
