@@ -356,11 +356,7 @@ function ReportingBuilder({ owner }) {
       ),
     [catalog.data],
   );
-  const selected =
-    draft.columns[columnKey] ??
-    (draft.reportType === "SAMPLE_TESTING"
-      ? []
-      : catalog.data?.defaultColumns || []);
+  const selected = draft.columns[columnKey] ?? catalog.data?.defaultColumns ?? [];
   const stale = catalog.data ? selected.filter((id) => !byId.has(id)) : [];
   const firstDay = calendarDay(draft.dateFrom);
   const lastDay = calendarDay(draft.dateTo);

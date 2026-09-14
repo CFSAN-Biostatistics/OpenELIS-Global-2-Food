@@ -36,10 +36,12 @@ No product-answer placeholder remains. The last topic's implementation
 interpretation is visible in the specification rather than represented as an
 explicit user selection of three independent workstreams.
 
-Implementation later exposed three additional product decisions: Referral
-period anchor, returned-result row semantics, and native rejection records
-without an event date. Those remain unanswered in `execution.md`; affected
-source activation is pending. The initial checkpoint does not resolve them.
+Implementation exposed three additional product questions. The pinned mock's
+sent-date rule and the user's repeat-preservation requirement resolve the two
+Referral questions; Referrals is connected and has passed public CSV checks.
+Only native rejection records without an event date remain unresolved. Their
+inclusion rule pauses Non-Conformance activation, not the other sources. See
+`execution.md` for the dated decision and validation evidence.
 
 The later turnaround clarification is also resolved: spreadsheet durations
 belong to each test/result, including repeats; collection-to-receipt stays
@@ -57,9 +59,9 @@ specimen-level. User Story 1 includes the corresponding acceptance scenario.
 - [x] Distinguishes shared report configuration from owner-scoped jobs/files.
 - [x] Defines retained drafts, immutable submissions, retry, cancellation,
       restart, expiry and bounded execution without a new external service.
-- [x] Uses two validation milestones: common capability/Sample & Testing, then
-      additional source mappings and recovery; one implementation PR per
-      milestone.
+- [x] Keeps two functional milestones for traceability: common capability/Sample
+      & Testing, then additional source mappings and recovery. The ten-PR stack
+      in `review-stopping-point.md` supersedes the old branch packaging.
 - [x] Maps all 23 functional requirements and ten success criteria to 38 tasks.
 - [x] Plans meaningful fixture, unit, ORM, integration and real core-app
       Playwright checks before accepting implementation.

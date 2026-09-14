@@ -25,6 +25,7 @@ const source = {
   layouts: ["SPREADSHEET", "RESULT_LIST"],
 };
 let configuredFilters;
+let configuredDefaults;
 let alternateCatalog;
 const field = (id, label, group = "sample") => ({ id, label, group });
 const catalog = (layout) => ({
@@ -35,10 +36,7 @@ const catalog = (layout) => ({
     field("test:2", "White Cell Count", "tests"),
     field("resultValue", "Result Value", "result"),
   ],
-  defaultColumns:
-    layout === "SPREADSHEET"
-      ? ["accessionNumber", "test:1"]
-      : ["accessionNumber", "resultValue"],
+  defaultColumns: configuredDefaults[layout],
   labSections: [{ id: "1", label: "Hematology" }],
   tests: [{ id: "1", label: "Hemoglobin" }],
   statuses: [{ id: "FINALIZED", label: "Finalized" }],
@@ -67,6 +65,7 @@ const json = (body, status = 200) => ({
 beforeEach(() => {
   consoleErrors = vi.spyOn(console, "error");
   configuredFilters = ["labSectionIds", "testIds", "resultStatuses"];
+  configuredDefaults = { SPREADSHEET: [], RESULT_LIST: [] };
   alternateCatalog = undefined;
   clearReportingDraft();
   requests = [];
@@ -407,6 +406,22 @@ test("the mock overview leads to collapsed groups and Add actions without select
     screen.getByRole("button", { name: "Drag Hemoglobin to reorder" }),
   ).toBeVisible();
 });
+
+test.each(["SPREADSHEET", "RESULT_LIST"])(
+  "%s honors configured defaults and retains a deliberately cleared selection after reload",
+  async (layout) => {
+    configuredDefaults[layout] = ["accessionNumber"];
+    const entry = `/reports/custom-data-export?view=builder&step=columns&type=SAMPLE_TESTING&layout=${layout}`;
+    const rendered = open(entry);
+    fireEvent.click(await screen.findByRole("button", { name: "Remove Accession Number" }));
+    expect(screen.getByRole("heading", { name: "Your CSV columns (0)" })).toBeVisible();
+    rendered.unmount();
+    open(entry);
+    await screen.findByRole("region", { name: "Available fields" });
+    expect(screen.getByRole("heading", { name: "Your CSV columns (0)" })).toBeVisible();
+    expect(screen.queryByRole("button", { name: "Remove Accession Number" })).toBeNull();
+  },
+);
 
 test.each([
   ["sentDate", "referral sent dates"],

@@ -1397,3 +1397,33 @@ Its local run passed against the already-seeded data with application
 Public preflight found no active jobs and no records on the fixture collection
 date. Public fixture installation and its own browser checks are next; this local
 record does not close T021 or claim public/human acceptance.
+
+
+## Configuration-default review repair — 2026-09-14
+
+The direction audit found the primary builder ignored `defaultColumns` for
+`SAMPLE_TESTING`, while other configured report types applied them. The bundled
+Sample & Testing definition still selected every configured test. This made the
+mock's deliberately empty starting selection a report-ID exception in the UI
+rather than an instance-configurable choice.
+
+The builder now applies catalog defaults uniformly. The bundled definition is
+version 4 with empty defaults for both layouts, preserving the accepted empty
+picker. Instance overrides can supply ordered defaults. An explicit empty draft
+still takes precedence, so removing every field and reloading does not restore
+unwanted defaults. Existing shared definitions and frozen jobs are unchanged.
+
+Two new component regressions failed on the old report-ID exception and pass
+with the repair; the complete component file passes 30 tests. The first backend
+run exposed two validation rules rejecting empty default lists; those rules now
+allow an explicit empty initial selection. Required layout keys, non-null lists,
+valid field identities, and nonempty export/shared-report submissions remain
+validated. The two database suites pass 15 tests, including an override of the
+primary report through the existing configuration handler and rejection of an
+export without selected columns. The configuration unit test's missing-key
+fixture was corrected to account for JSON whitespace. Compiled browser
+validation and publication remain required before calling the repair delivered.
+
+The requirements checklist and plan now reflect resolved Referral semantics and
+the existing ten-PR packaging contract. Historical entries above remain dated
+evidence, not the current completion checklist.
