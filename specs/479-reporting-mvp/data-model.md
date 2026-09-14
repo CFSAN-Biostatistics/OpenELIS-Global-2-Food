@@ -50,10 +50,14 @@ stored timestamps. A missing endpoint produces an empty value.
 
 Supported configured questions come from observation-history types with
 a nonblank description. Their field identity is `observation:<type id>` and
-their current description is the displayed label. Answers attached to the
-sample or its patient are included. Literal answers remain literal, dictionary
-answers use the current dictionary display value, localization-key answers use
-the current message value, and multiple answers of the same type are joined in
+their current description is the displayed label. The existing observation
+mapping requires a sample/order identity; its patient and specimen identities
+are optional. Include answers for the current order, limited to the current
+specimen when an answer names one. An order-level patient answer can accompany
+each specimen in that order; another order's answers are never included merely
+because the patient matches. Literal answers remain literal, dictionary answers
+use the current dictionary display value, localization-key answers use the
+current message value, and multiple answers of the same type are joined in
 stored order with `; `.
 
 Names do not establish identity. Renames retain identity; duplicate labels do

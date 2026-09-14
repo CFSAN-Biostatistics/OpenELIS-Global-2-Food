@@ -24,7 +24,7 @@ public interface SampleTestingExportDAO extends BaseDAO<Result, String> {
 
     List<ObservationHistoryType> observationTypes();
 
-    List<ObservationHistory> observations(String sampleId, String patientId);
+    List<ObservationHistory> observations(String sampleId, String specimenId);
 
     String dictionary(String id);
 

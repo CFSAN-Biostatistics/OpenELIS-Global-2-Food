@@ -125,8 +125,8 @@ public class SampleTestingSource implements ReportingSource {
                             specimenId = specimen.getId();
                             Patient patient = dao.patient(specimen.getSample().getId());
                             patientFields = patientFields(patient, zone);
-                            observationFields = observationFields(dao.observations(specimen.getSample().getId(),
-                                    patient == null ? null : patient.getId()));
+                            observationFields = observationFields(
+                                    dao.observations(specimen.getSample().getId(), specimenId));
                         }
                         if (!Objects.equals(sampleId, specimen.getSample().getId())) {
                             sampleId = specimen.getSample().getId();

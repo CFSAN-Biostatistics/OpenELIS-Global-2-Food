@@ -99,9 +99,16 @@ public class SampleTestingMappingIntegrationTest extends BaseWebContextSensitive
     }
 
     private void observation(String typeId, String value, ObservationHistory.ValueType valueType) {
+        observation(typeId, value, valueType, "1", null, null);
+    }
+
+    private void observation(String typeId, String value, ObservationHistory.ValueType valueType, String sampleId,
+            String specimenId, String patientId) {
         ObservationHistory observation = new ObservationHistory();
         observation.setObservationHistoryTypeId(typeId);
-        observation.setSampleId("1");
+        observation.setSampleId(sampleId);
+        observation.setSampleItemId(specimenId);
+        observation.setPatientId(patientId);
         observation.setValue(value);
         observation.setValueType(valueType);
         observations.insert(observation);
@@ -348,6 +355,86 @@ public class SampleTestingMappingIntegrationTest extends BaseWebContextSensitive
         var renamed = source.catalog().stream().filter(v -> v.id().equals(fieldId)).findFirst().orElseThrow();
         assertEquals(field.id(), renamed.id());
         assertEquals("Program Enrollment Cohort", renamed.label());
+    }
+
+    @Test
+    public void configuredAnswersStayWithTheirOrderAndSpecimenInBothLayouts() throws Exception {
+        ObservationHistoryType type = new ObservationHistoryType();
+        type.setTypeName("collectionContext");
+        type.setDescription("Collection Context");
+        observationTypes.insert(type);
+        observation(type.getId(), "Patient answer", ObservationHistory.ValueType.LITERAL, "1", null, "479001");
+        observation(type.getId(), "Order answer", ObservationHistory.ValueType.LITERAL, "1", null, null);
+        observation(type.getId(), "Linked order answer", ObservationHistory.ValueType.LITERAL, "1", null, "479001");
+        observation(type.getId(), "First specimen answer", ObservationHistory.ValueType.LITERAL, "1", "1", null);
+        observation(type.getId(), "Second specimen answer", ObservationHistory.ValueType.LITERAL, "1", "2", "479001");
+        observation(type.getId(), "Other order answer", ObservationHistory.ValueType.LITERAL, "2", null, "479001");
+
+        SampleItem first = specimens.get("1");
+        SampleItem second = specimens.get("2");
+        second.setSample(first.getSample());
+        second.setCollectionDate(first.getCollectionDate());
+        specimens.update(second);
+        String finalized = statuses.getStatusID(AnalysisStatus.Finalized);
+        for (String id : List.of("1", "2")) {
+            Analysis analysis = analyses.get(id);
+            analysis.setStatusId(finalized);
+            analyses.update(analysis);
+            reading(analysis, options.get(id), "85.0");
+        }
+        entityManager.flush();
+        entityManager.clear();
+
+        List<String> fieldIds = List.of("specimenId", "observation:" + type.getId());
+        var catalog = source.catalog();
+        var fields = fieldIds.stream()
+                .map(id -> catalog.stream().filter(field -> field.id().equals(id)).findFirst().orElseThrow()).toList();
+        ExportFilter filter = new ExportFilter("2023-11-15", "2023-11-15", List.of("1", "2"), List.of("1", "2"),
+                List.of("FINALIZED"));
+        ReportSourceConfig definition = new ReportSourceConfig("SAMPLE_TESTING", 1, "Sample & Testing",
+                "SAMPLE_TESTING", "collectionDate", List.of("SPREADSHEET", "RESULT_LIST"), fieldIds,
+                List.of("observations"), List.of("testIds"), Map.of("SPREADSHEET", fieldIds, "RESULT_LIST", fieldIds));
+        for (String layout : definition.layouts()) {
+            StringWriter csv = new StringWriter();
+            assertEquals(2, source.write(csv, new ExportSnapshot(definition, layout, fields, filter,
+                    java.time.ZoneId.systemDefault().getId(), List.of(finalized))));
+            assertEquals(
+                    "Specimen ID,Collection Context\r\n"
+                            + "1,Patient answer; Order answer; Linked order answer; First specimen answer\r\n"
+                            + "2,Patient answer; Order answer; Linked order answer; Second specimen answer\r\n",
+                    csv.toString().substring(1));
+        }
+    }
+
+    @Test
+    public void specimenAnswersExportWhenTheOrderHasNoLinkedPatient() throws Exception {
+        ObservationHistoryType type = new ObservationHistoryType();
+        type.setTypeName("specimenContext");
+        type.setDescription("Specimen Context");
+        observationTypes.insert(type);
+        observation(type.getId(), "Order answer", ObservationHistory.ValueType.LITERAL, "2", null, null);
+        observation(type.getId(), "Specimen answer", ObservationHistory.ValueType.LITERAL, "2", "2", null);
+        observation(type.getId(), "Other specimen answer", ObservationHistory.ValueType.LITERAL, "1", "1", null);
+        observation(type.getId(), "Unrelated patient answer", ObservationHistory.ValueType.LITERAL, "1", null,
+                "479001");
+        Analysis analysis = analyses.get("2");
+        analysis.setStatusId(statuses.getStatusID(AnalysisStatus.Finalized));
+        analyses.update(analysis);
+        reading(analysis, options.get("2"), "85.0");
+        entityManager.flush();
+        entityManager.clear();
+
+        String fieldId = "observation:" + type.getId();
+        var field = source.catalog().stream().filter(v -> v.id().equals(fieldId)).findFirst().orElseThrow();
+        ExportFilter filter = new ExportFilter("2023-11-16", "2023-11-16", List.of("2"), List.of("2"),
+                List.of("FINALIZED"));
+        ReportSourceConfig definition = new ReportSourceConfig("SAMPLE_TESTING", 1, "Sample & Testing",
+                "SAMPLE_TESTING", "collectionDate", List.of("RESULT_LIST"), List.of(fieldId), List.of("observations"),
+                List.of("testIds"), Map.of("RESULT_LIST", List.of(fieldId)));
+        StringWriter csv = new StringWriter();
+        assertEquals(1, source.write(csv, new ExportSnapshot(definition, "RESULT_LIST", List.of(field), filter,
+                java.time.ZoneId.systemDefault().getId(), List.of(analysis.getStatusId()))));
+        assertEquals("Specimen Context\r\nOrder answer; Specimen answer\r\n", csv.toString().substring(1));
     }
 
     @Test

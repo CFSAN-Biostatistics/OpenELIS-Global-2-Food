@@ -134,7 +134,38 @@ when later results have different turnaround times, and the question query
 includes all observations matching the patient, including those attached to
 other samples. The current single-result/single-sample field oracles do not
 validate these combinations. Add explicit multi-result/multi-sample oracles and
-resolve their output semantics before closing T010 or field acceptance.
+resolve their output semantics before closing T010 or field acceptance. The
+question-scope defect is resolved by Iteration 5 below; turnaround remains open.
+
+## Acceptance-driven Iteration 5
+
+Outcome: configured answers in each exported specimen row come from its own
+order and specimen, including when another order belongs to the same patient.
+
+Current evidence on 2026-09-13:
+
+- The first fixture attempt exposed an existing constraint: observation history
+  requires an order ID. Patient and specimen links are optional. The regression
+  fixture was corrected to use valid stored relationships, without changing the
+  application schema.
+- The regression then reproduced the defect in actual CSV: both specimen rows
+  contained the other specimen's answer and an answer from another order for the
+  same patient.
+- The source now selects the current order's answers and limits specimen-linked
+  answers to the current specimen. Two regression checks cover exact CSV content
+  in both layouts and an order with no linked patient.
+- All 45 focused reporting backend tests pass in 47 seconds. The output is
+  retained at `/private/tmp/reporting-answer-scope-green.log`; the reproduced
+  failing assertion is in `/private/tmp/reporting-answer-scope-red.log`.
+- The backend build/install and regenerated coverage report pass; build output
+  is in `/private/tmp/reporting-answer-scope-build.log`. Both required
+  formatters ran, with no frontend changes produced.
+
+The turnaround ambiguity is paused for the user's decision: separate per-test
+turnaround columns (recommended) or overall sample turnaround ending with the
+last included test. The current first-record attribute behavior is not accepted
+as correct. T010 and T011 remain open. No new browser or deployment validation
+has been performed for this source correction.
 
 ## M1 Acceptance Checkpoint
 
@@ -157,7 +188,7 @@ following ledger is the gate for continued work:
 | Catalyst deployment                                    | Server inspected only                                                                                                                                                       | Open                                                               |
 
 Do not expand to M2 or describe M1 as complete until the M1-open rows required
-by T002, T004-T006, T008-T010 and T012-T017 have passed. A draft M1 PR is the
+by T002, T004-T006 and T008-T017 have passed. A draft M1 PR is the
 review checkpoint; it does not change or narrow the accepted scope.
 
 The Catalyst manifest explicitly declares the cohort synthetic. No evidence of
@@ -220,7 +251,7 @@ completion gate.
 | Source configuration          | Four tests passed, including an extra definition over the same supported source                                                                                                                               |
 | PostgreSQL job persistence    | Three tests passed against a disposable database using the repository test setup; migration `479-001-reporting-export-jobs` ran successfully                                                                  |
 | Stored source relationships   | Two tests passed: configured component identity survives rename and repeated values; collection dates distinguish specimens under one accession                                                               |
-| Combined reporting validation | All 43 focused Java tests passed on 2026-09-13, including source, access, concurrent admission, saved-definition and database checks; JaCoCo report generated                                                 |
+| Combined reporting validation | All 45 focused Java tests passed on 2026-09-13, including source, answer scope, access, concurrent admission, saved-definition and database checks                                                            |
 | Frontend component/build      | Eight focused component checks and the production frontend build passed on 2026-09-13                                                                                                                         |
 | Focused browser acceptance    | Six Playwright checks passed in 26.2 seconds against the packaged app on 2026-09-13: sign-in, both CSV layouts, repeated values, zero-row output, date validation, queue/draft restoration and shared reports |
 | Formatting                    | Corrected absolute-path selector checks 42 reporting Java files; earlier relative-path invocations selected zero files and were not valid formatting evidence                                                 |
@@ -238,7 +269,10 @@ E2E build, but backend CI stopped at six Java formatting violations. The local
 formatter had accepted a relative-path filter that selected zero files. The
 corrected filter reproduced all six failures, applied their formatting and
 verified all 42 reporting Java files. Do not label this replacement checkpoint
-CI-complete until its new backend run passes.
+CI-complete until its new backend run passes. At the `c0cbd56280` checkpoint,
+frontend and downstream E2E CI subsequently passed; backend Build + Test was
+still running when inspected during Iteration 5 on 2026-09-13. The Iteration 5 source
+correction requires CI on its own pushed revision.
 
 The replacement checkpoint's 43-case backend run and build/install pass. Test
 output is retained at `/private/tmp/reporting-checkpoint-43-tests.log`; build
@@ -247,8 +281,8 @@ now commits its cleanup separately and asserts that no active fixture job is
 left behind. No browser rerun or deployment was performed for this test and
 formatting checkpoint.
 
-The focused JaCoCo report currently measures 3,557 of 5,434 instructions in the
-new reporting packages, or 65.5%. This is below the feature coverage goal.
+The regenerated focused JaCoCo report after Iteration 5 measures 3,540 of 5,417
+instructions in the new reporting packages, or 65.3%. This is below the feature coverage goal.
 Controller, worker and remaining source/recovery tests remain part of T004,
 T005, T012 and M2; the draft checkpoint must not be presented as
 coverage-complete.

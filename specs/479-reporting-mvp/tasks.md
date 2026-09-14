@@ -69,10 +69,13 @@ completes the other mock source definitions and operational qualification.
       `src/main/java/org/openelisglobal/reports/dataexport/dao/` and `service/`,
       making T002 pass; document proven field/date/component mappings in
       `specs/479-reporting-mvp/data-model.md`.
-- [x] T011 [US1] Implement common spreadsheet and detailed-list formatting under
+- [ ] T011 [US1] Implement common spreadsheet and detailed-list formatting under
       `src/main/java/org/openelisglobal/reports/dataexport/service/`, making
       T003 pass; preserve source identities, typed values, repeated results and
       captured labels without extending the legacy Routine CSV writer.
+      Reopened after source review found that result-dependent turnaround
+      attributes can be copied from the first specimen record; the user's
+      per-test versus overall-sample decision is pending.
 - [ ] T012 [US2] Implement submission, bounded worker/atomic claims, private
       file publication, existing-access checks and download under
       `src/main/java/org/openelisglobal/reports/dataexport/service/`; retain
