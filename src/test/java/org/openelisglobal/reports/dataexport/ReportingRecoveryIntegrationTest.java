@@ -41,6 +41,8 @@ public class ReportingRecoveryIntegrationTest extends BaseWebContextSensitiveTes
     @Autowired
     private ReportingJobService jobs;
     @Autowired
+    private org.openelisglobal.reports.dataexport.service.ReportingSavedConfigService savedConfigs;
+    @Autowired
     private ReportingSettings settings;
     @Autowired
     private ReportingFiles files;
@@ -110,6 +112,8 @@ public class ReportingRecoveryIntegrationTest extends BaseWebContextSensitiveTes
         org.springframework.web.context.request.RequestContextHolder.setRequestAttributes(originalRequest);
         if (owner != null && !TestTransaction.isActive()) {
             new TransactionTemplate(transactions).executeWithoutResult(status -> {
+                entityManager.createQuery("delete from ExportJob where ownerId = :owner").setParameter("owner", owner)
+                        .executeUpdate();
                 entityManager.createQuery("delete from UserRole where compoundId.systemUserId = :owner")
                         .setParameter("owner", owner).executeUpdate();
                 entityManager.remove(entityManager.find(SystemUser.class, owner));
@@ -136,6 +140,111 @@ public class ReportingRecoveryIntegrationTest extends BaseWebContextSensitiveTes
                 new ExportSubmission(1, "SAMPLE_TESTING", "SPREADSHEET", UUID.randomUUID().toString(),
                         List.of("accessionNumber", "test:1"),
                         new ExportFilter("2023-11-15", "2023-11-15", List.of(), List.of(), List.of("FINALIZED"))));
+    }
+
+    @Test
+    @Transactional(propagation = org.springframework.transaction.annotation.Propagation.NOT_SUPPORTED)
+    public void returnedSavedReportVersionsCanBeUsedAcrossCommittedRequests() {
+        Object savedClock = ReflectionTestUtils.getField(savedConfigs, "clock");
+        ReflectionTestUtils.setField(savedConfigs, "clock", Clock.fixed(START.plusNanos(123456789), ZoneOffset.UTC));
+        String[] id = new String[1];
+        var definition = new org.openelisglobal.reports.dataexport.form.SavedReportDefinition(1, "SAMPLE_TESTING",
+                "SPREADSHEET", List.of("accessionNumber"), null);
+        try {
+            var created = savedConfigs.create(owner, new org.openelisglobal.reports.dataexport.form.SavedReportMutation(
+                    "Version round trip", null, definition));
+            id[0] = created.id();
+            assertEquals(created.version(), savedConfigs.detail(owner, created.id()).version());
+            var updated = savedConfigs.update(owner, created.id(),
+                    new org.openelisglobal.reports.dataexport.form.SavedReportMutation("Updated version",
+                            created.version(), definition));
+            assertEquals(updated.version(), savedConfigs.detail(owner, created.id()).version());
+            assertTrue(!created.version().equals(updated.version()));
+            assertEquals(409,
+                    assertThrows(ReportingException.class,
+                            () -> savedConfigs.update(owner, created.id(),
+                                    new org.openelisglobal.reports.dataexport.form.SavedReportMutation("Stale",
+                                            created.version(), definition)))
+                            .status());
+            savedConfigs.remove(owner, created.id(), updated.version());
+        } finally {
+            ReflectionTestUtils.setField(savedConfigs, "clock", savedClock);
+            if (id[0] != null)
+                new TransactionTemplate(transactions).executeWithoutResult(status -> entityManager.remove(entityManager
+                        .find(org.openelisglobal.reportdefinition.valueholder.ReportDefinition.class, id[0])));
+        }
+    }
+
+    @Test
+    @Transactional(propagation = org.springframework.transaction.annotation.Propagation.NOT_SUPPORTED)
+    public void committedRetryCancellationAndRollbackHaveAccurateAuditEvents() {
+        try (var capture = new ReportingAuditCapture()) {
+            var parent = submit();
+            String worker = UUID.randomUUID().toString();
+            jobs.claim(worker);
+            jobs.failed(owner, parent.id(), worker, "reporting.job.generationFailed");
+            var child = jobs.retry(owner, parent.id(), "audit-retry");
+            jobs.retry(owner, parent.id(), "audit-retry");
+            jobs.cancel(owner, child.id());
+            jobs.cancel(owner, child.id());
+            assertEquals(List.of("SUBMITTED", "STARTED", "FAILED", "RETRIED", "CANCELLED"), capture.actions());
+            assertEquals("worker:" + worker, capture.events().get(1).path("actor").asText());
+            assertEquals(parent.id(), capture.events().get(3).path("parentId").asText());
+            assertEquals(child.id(), capture.events().get(4).path("targetId").asText());
+            assertEquals(owner, capture.events().get(4).path("actor").asText());
+
+            new TransactionTemplate(transactions).executeWithoutResult(status -> {
+                submit();
+                assertThrows(ReportingException.class, () -> jobs.detail("-1", parent.id()));
+                status.setRollbackOnly();
+            });
+            // The rolled-back submission leaves no successful event; the denial remains
+            // observable.
+            assertEquals(List.of("SUBMITTED", "STARTED", "FAILED", "RETRIED", "CANCELLED", "ACCESS_DENIED"),
+                    capture.actions());
+            for (var event : capture.events()) {
+                assertEquals(7, event.size());
+                assertFalse(event.has("request"));
+                assertFalse(event.has("resultValue"));
+                Instant.parse(event.path("timestamp").asText());
+            }
+        }
+    }
+
+    @Test
+    @Transactional(propagation = org.springframework.transaction.annotation.Propagation.NOT_SUPPORTED)
+    public void downloadedExpiredAndInterruptedWorkRetainsMetadataAudit() throws Exception {
+        try (var capture = new ReportingAuditCapture()) {
+            var job = submit();
+            String worker = UUID.randomUUID().toString();
+            jobs.claim(worker);
+            String csv = "\uFEFFAccession Number,Blood Test\r\n12345,120\r\n";
+            Files.writeString(files.stage(job.id(), worker), csv);
+            jobs.publish(owner, job.id(), worker, 1);
+            try (var input = jobs.download(owner, job.id()).input()) {
+                assertEquals(csv, new String(input.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8));
+            }
+            at(Instant.parse(jobs.detail(owner, job.id()).expiresAt()));
+            jobs.recover();
+            jobs.recover();
+            jobs.cleanupOutput();
+            assertEquals(List.of("SUBMITTED", "STARTED", "READY", "DOWNLOAD_OPENED", "EXPIRED"), capture.actions());
+            assertEquals(owner, capture.events().get(3).path("actor").asText());
+            assertEquals("system", capture.events().get(4).path("actor").asText());
+            assertFalse(Files.exists(files.path(job.id())));
+
+            var abandoned = submit();
+            jobs.claim(worker);
+            at(START.plus(8, java.time.temporal.ChronoUnit.DAYS));
+            jobs.recover();
+            assertEquals("INTERRUPTED", capture.actions().get(capture.actions().size() - 1));
+            assertEquals(abandoned.id(), capture.events().get(capture.events().size() - 1).path("targetId").asText());
+            for (var event : capture.events()) {
+                assertEquals(7, event.size());
+                assertFalse(event.has("request"));
+                assertFalse(event.has("resultValue"));
+            }
+        }
     }
 
     @Test

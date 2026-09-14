@@ -7,6 +7,40 @@ Public availability, automated qualification and human acceptance are separate.
 
 ## Current Public Stage — Queue Recovery, 2026-09-14
 
+### Navigation and audit increment — locally qualified, publication pending
+
+The next usable stage consolidates the sidebar renderer and its shared Carbon
+typography, removing 535 lines of conflicting old sidebar rules. The Reporting
+UAT profile supplies the mock's four sections, icons, direct workflow links and
+collapsed legacy groups through the existing database-plus-configuration menu
+loader. Database rows, unspecified settings and unlisted instance extensions
+remain intact; section/icon metadata is configured in JSON, not yet exposed in
+the database menu editor. Other instance profiles are unchanged.
+
+Reporting now uses `/reports/custom-data-export`; legacy bookmarks redirect with
+query, fragment and history preserved. Active menu selection uses path and query,
+native links retain modified-click behavior, and mobile view changes close the
+drawer. Sidebar and internal reporting navigation share parameter ownership so
+review context survives changing views. The existing report draft is retained.
+
+The increment adds committed reporting lifecycle and shared-definition events
+to the existing application logger. The public release will retain old logs and
+mount a persistent log directory. A real saved-definition request exposed a
+timestamp-precision conflict on immediate edits after creation; a failing
+database round-trip test reproduced it. Creation now uses database-supported
+microsecond precision, and create/read/update/stale-update/delete checks pass
+across committed requests.
+
+Validation includes 125 component checks, focused reporting/menu backend checks,
+Java 21 packaging, and desktop/phone reporting, navigation and admin checks.
+Actual repeated-result CSV download passed locally. Direct comparison with the
+pinned mock covers the catalog, selection, filters, review and queue. The settled
+admin layout has consistent typography and does not overlap the pinned sidebar;
+the browser check waits for that geometry before capture. Live deployment,
+public browser checks and retained log-mount evidence remain pending below until
+the release is observed. This does not close T021/T028, source activation,
+multi-instance isolation or human acceptance.
+
 - Application: [Reporting UAT](https://reporting.catalyst.openelis-global.org/CustomDataExport).
   Frontend `0d65ccaac4ba46ac7fa76262368170a13fe7306d`; backend
   `d56922c11ed071e992b6e7288be1198efb009717`.

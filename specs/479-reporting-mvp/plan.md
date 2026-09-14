@@ -187,6 +187,11 @@ artificial test pivot.
 
 ### Interface Authority and Frontend State
 
+Frontend quality is part of acceptance for each usable stage. Use maintainable
+React components and the application's shared routing, query and Carbon patterns.
+Judge the result by a smooth user journey: predictable navigation, retained work,
+responsive controls and understandable feedback throughout the workflow.
+
 The pinned interactive mock is authoritative for layout and interactions. MVP
 scope limits connected functionality; it does not reduce the supplied design.
 Use the direct comparison gate in [design-parity.md](design-parity.md) for every

@@ -47,6 +47,28 @@ public class Menu extends BaseObject<String> {
 
     private boolean hideInOldUI;
 
+    // Presentation metadata supplied by the mounted menu configuration, not ORM
+    // columns.
+    private String presentationStyle;
+
+    private String icon;
+
+    public String getPresentationStyle() {
+        return presentationStyle;
+    }
+
+    public void setPresentationStyle(String presentationStyle) {
+        this.presentationStyle = presentationStyle;
+    }
+
+    public String getIcon() {
+        return icon;
+    }
+
+    public void setIcon(String icon) {
+        this.icon = icon;
+    }
+
     public String getId() {
         return id;
     }

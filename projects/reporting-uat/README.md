@@ -3,6 +3,63 @@
 These tools apply to the isolated reporting deployment. They do not change the
 shared OpenELIS image or other deployments.
 
+## Instance navigation
+
+Mount `projects/reporting-uat/menu/menu_config.json` read-only at
+`/var/lib/openelis-global/menu/menu_config.json` in the reporting app. The
+loader applies this profile in memory at application startup. Existing database
+menu rows are retained; nested definitions reorganize their parent relationships
+for this instance. Other deployments keep their own menu configuration.
+
+The database remains the baseline. Configuration matches `elementId` and only
+overrides fields explicitly supplied; unlisted entries and unspecified database
+settings remain available. Existing `includes`/`excludes` filtering and route
+authorization remain in place. Nested `childMenus` can regroup existing entries
+without rewriting their database parents. Removing the mounted profile restores
+the database hierarchy after the menu cache is rebuilt (normally on restart).
+
+The shared renderer accepts `presentationStyle: "section"` for a labeled section
+and `icon` for a Carbon icon. Supported icon names are `home`, `order`,
+`results`, `validation`, `patient`, `reports`, `settings`, `workplan` and
+`more`; absent or unknown icons render no icon. Section labels use normal
+translated `displayKey` values. For example, an instance can place its existing
+Reports menu in a section:
+
+```json
+{
+  "menus": [
+    {
+      "elementId": "instance_reporting_section",
+      "displayKey": "reporting.menu.reportsSection",
+      "presentationStyle": "section",
+      "childMenus": [{ "elementId": "menu_reports", "icon": "reports" }]
+    }
+  ]
+}
+```
+
+These new presentation fields are configuration metadata in this increment; they
+are not database columns or new controls in the administrative menu editor. The
+frontend owns the reusable renderer and icon lookup, while the instance profile
+owns its sections, hierarchy and destinations.
+
+The profile follows the pinned openelis-work mock: Main Menu, Patient & Orders,
+Reports and Administration, with Carbon icons inheriting the active OpenELIS
+theme. Routine report destinations are direct entries. Other reports and More
+tools retain the older menus in collapsed groups. Patient Report Print Queue is
+visibly not yet connected because there is no implemented destination. The
+existing Results Entry feature flag selects one working results route.
+
+The sidebar derives its active entry from path and query parameters, preserves
+native modified clicks, opens the destination's parent groups on navigation, and
+closes the mobile drawer after changing views. Validate the mounted profile and
+retained report draft with the `core-app` test named
+`the reporting instance sidebar follows the mock`, setting
+`REPORTING_INSTANCE_NAV=true`. Compare its desktop/narrow captures directly
+against the pinned mock, alongside the actual CSV workflow. The menu
+configuration is a presentation choice, not a change to reporting scope or
+access rules.
+
 ## Single application and native API path
 
 The inspected image declares `/api/OpenELIS-Global/` explicitly in Tomcat while
@@ -90,10 +147,46 @@ September 14. The public app logged one Spring root initialization and 457.170
 seconds startup. Five public application workflows plus authentication and the
 pinned-mock capture passed. A separate accelerated local expiry check also
 verified unavailable expired downloads, removed files, retained history and an
-unaffected existing download. Multi-instance crash isolation remains open.
-Local large-volume and migration/rollback qualification now pass. See
+unaffected existing download. Multi-instance crash isolation remains open. Local
+large-volume and migration/rollback qualification now pass. See
 [the current execution record](../../specs/479-reporting-mvp/execution.md) for
 exact deployment identity, evidence and limits.
+
+## Reporting audit events
+
+Reporting emits `REPORTING_AUDIT` JSON records through OpenELIS's existing
+application logger and rolling-file appenders. Records contain action, actor,
+owner, target type/ID, parent job ID and UTC timestamp. They contain no report
+names, selected fields, filters, frozen requests or result values. Background
+events identify the worker or system separately from the report owner.
+
+Successful submissions, claims, outcomes, retries, cancellations and definition
+changes are logged after transaction commit. Idempotent requests do not add
+duplicate success events. Denials are logged immediately so the rejected
+transaction cannot erase them. `DOWNLOAD_OPENED` records an authorized file
+being opened; it does not claim that the client's transfer finished. The
+dedicated logger stays at INFO if ordinary diagnostic severity is reduced.
+
+Persist `/var/lib/openelis-global/logs` using the deployment's retained volume
+or host directory. Before replacing a container that currently stores logs in
+its writable layer, preserve its existing logs in that directory and retain the
+previous compose/target files. Reuse the same log mount on subsequent releases.
+The existing logger continues to manage rotation. Check metadata events in
+`openELIS.log` and its rotated archives, separately from queue rows. The legacy
+database audit table accepts numeric references; it is not widened or repurposed
+for reporting UUIDs by this change.
+
+Focused validation:
+
+```sh
+mvn test -Dtest=ReportingAuditTest,ReportingRecoveryIntegrationTest,ReportingJobServiceTest,ReportingAccessTest,ReportingSavedConfigServiceTest
+```
+
+This covers committed lifecycle events, rollback, idempotent retry/cancel,
+authorized file opening, expiry, interrupted work, role/scope denials and saved
+definition changes. The capture inspects actual logger output and restores the
+test logger afterward. Public availability and durable log-mount verification
+are recorded separately in the execution ledger.
 
 ## Database upgrade and rollback
 
@@ -113,11 +206,12 @@ metadata and last editor. The five reported checks include three existing
 ORM/persistence tests.
 
 Recovery rollback removes its cleanup marker/index and reapplication starts
-those markers empty. Full reporting rollback also removes the job table and
-the report-definition last-editor column; it does not preserve dropped data.
-See [the acceptance record](../../specs/479-reporting-mvp/quickstart.md#database-upgrade-and-rollback-qualification-2026-09-14)
+those markers empty. Full reporting rollback also removes the job table and the
+report-definition last-editor column; it does not preserve dropped data. See
+[the acceptance record](../../specs/479-reporting-mvp/quickstart.md#database-upgrade-and-rollback-qualification-2026-09-14)
 for tested boundaries. This test never rolls back the running local application,
-the shared test context or Reporting UAT. It changes no deployed application code.
+the shared test context or Reporting UAT. It changes no deployed application
+code.
 
 ## 50,000-result workload
 

@@ -66,6 +66,7 @@ public class ReportingJobService {
                 json(frozen), requestHash, now(), null);
         jobs.persistJob(job);
         jobs.flushJobs();
+        ReportingAudit.job(ReportingAudit.Action.SUBMITTED, owner, job);
         return view(job);
     }
 
@@ -108,8 +109,11 @@ public class ReportingJobService {
     public Download download(String owner, String id) throws java.io.IOException {
         // Open while holding the same row lock as expiry/cleanup. An already open
         // descriptor can finish after unlink; subsequent requests fail at expiry.
-        var job = authorizeDownload(owner, owned(owner, id, true));
-        return new Download(job, files.open(id));
+        var stored = owned(owner, id, true);
+        var job = authorizeDownload(owner, stored);
+        var input = files.open(id);
+        ReportingAudit.job(ReportingAudit.Action.DOWNLOAD_OPENED, owner, stored);
+        return new Download(job, input);
     }
 
     public ExportJobView cancel(String owner, String id) {
@@ -121,6 +125,7 @@ public class ReportingJobService {
             throw new ReportingException(409, "reporting.job.cannotCancel");
         job.transitionTo(ExportJobState.CANCELLED);
         job.setCompletedAt(now());
+        ReportingAudit.job(ReportingAudit.Action.CANCELLED, owner, job);
         return view(job);
     }
 
@@ -147,6 +152,7 @@ public class ReportingJobService {
                 parent.getRequestJson(), digest(json(Map.of("retryOf", id))), now(), id);
         jobs.persistJob(child);
         jobs.flushJobs();
+        ReportingAudit.job(ReportingAudit.Action.RETRIED, owner, child);
         return view(child);
     }
 
@@ -161,6 +167,7 @@ public class ReportingJobService {
         job.setWorkerId(worker);
         job.setLeaseUntil(now().plus(5, ChronoUnit.MINUTES));
         jobs.flushJobs();
+        ReportingAudit.job(ReportingAudit.Action.STARTED, "worker:" + worker, job);
         return view(job);
     }
 
@@ -183,6 +190,7 @@ public class ReportingJobService {
         job.setCompletedAt(now());
         job.setExpiresAt(job.getCompletedAt().plus(settings.retentionDays(), ChronoUnit.DAYS));
         job.setLeaseUntil(null);
+        ReportingAudit.job(ReportingAudit.Action.READY, "worker:" + worker, job);
     }
 
     private boolean hasLease(ExportJob job, String worker) {
@@ -218,9 +226,11 @@ public class ReportingJobService {
                 job.setFailureCode("reporting.job.interrupted");
                 job.setCompletedAt(now());
                 job.setLeaseUntil(null);
+                ReportingAudit.job(ReportingAudit.Action.INTERRUPTED, "system", job);
             } else if (job.getState() == ExportJobState.READY && job.getExpiresAt() != null
                     && !job.getExpiresAt().isAfter(now())) {
                 job.transitionTo(ExportJobState.EXPIRED);
+                ReportingAudit.job(ReportingAudit.Action.EXPIRED, "system", job);
             }
         }
     }
@@ -244,13 +254,16 @@ public class ReportingJobService {
             job.setFailureCode(code);
             job.setCompletedAt(now());
             job.setLeaseUntil(null);
+            ReportingAudit.job(ReportingAudit.Action.FAILED, "worker:" + worker, job);
         }
     }
 
     private ExportJob owned(String owner, String id, boolean lock) {
         ExportJob job = jobs.owned(owner, id, lock);
-        if (job == null)
+        if (job == null) {
+            ReportingAudit.denied(owner, id);
             throw new ReportingException(404, "reporting.job.notFound");
+        }
         return job;
     }
 

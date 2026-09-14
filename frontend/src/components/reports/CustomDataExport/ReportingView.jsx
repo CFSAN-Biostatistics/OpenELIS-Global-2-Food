@@ -263,7 +263,8 @@ export default function ReportingView(p) {
           <PageBreadCrumb
             breadcrumbs={[
               { label: "home.label", link: "/" },
-              { label: "reporting.title", link: "" },
+              { label: "banner.menu.reports", link: "" },
+              { label: panel === "queue" ? "reporting.queue" : "reporting.title", link: "" },
             ]}
           />
           <h1 className="page-title" ref={title} tabIndex={-1}>

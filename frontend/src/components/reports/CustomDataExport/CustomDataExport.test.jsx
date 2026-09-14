@@ -198,7 +198,7 @@ afterEach(() => {
   expect(unexpected).toEqual([]);
 });
 
-function open(entry = "/CustomDataExport") {
+function open(entry = "/reports/custom-data-export") {
   const history = createMemoryHistory({ initialEntries: [entry] });
   const rendered = render(
     <Router history={history}>
@@ -243,7 +243,7 @@ function recoverableJob(state) {
 test("queue cancellation requires confirmation and retains the dialog after a network failure", async () => {
   job = recoverableJob("QUEUED");
   failCancellation = true;
-  open("/CustomDataExport?view=queue");
+  open("/reports/custom-data-export?view=queue");
   fireEvent.click(
     await screen.findByRole("button", { name: "Cancel", exact: true }),
   );
@@ -267,7 +267,7 @@ test("queue cancellation requires confirmation and retains the dialog after a ne
 
 test("retry creates a linked queue job without opening or replacing the builder draft", async () => {
   job = recoverableJob("FAILED");
-  const { history } = open("/CustomDataExport?view=queue");
+  const { history } = open("/reports/custom-data-export?view=queue");
   fireEvent.click(
     await screen.findByRole("button", { name: "Retry", exact: true }),
   );
@@ -287,7 +287,7 @@ test("retry creates a linked queue job without opening or replacing the builder 
 
 test("expired rerun restores frozen ordered fields and filters but requires fresh dates", async () => {
   job = recoverableJob("EXPIRED");
-  open("/CustomDataExport?view=queue");
+  open("/reports/custom-data-export?view=queue");
   fireEvent.click(
     await screen.findByRole("button", { name: "Re-run", exact: true }),
   );
@@ -317,7 +317,7 @@ test("rerun waits for its catalog without reporting valid fields or filters as u
     resolveCatalog = resolve;
   });
   job = recoverableJob("EXPIRED");
-  open("/CustomDataExport?view=queue");
+  open("/reports/custom-data-export?view=queue");
   fireEvent.click(
     await screen.findByRole("button", { name: "Re-run", exact: true }),
   );
@@ -347,7 +347,7 @@ test("rerun waits for its catalog without reporting valid fields or filters as u
 test("rerun preserves a removed field and requires correction after its catalog loads", async () => {
   job = recoverableJob("EXPIRED");
   job.request.variables.push(field("test:removed", "Removed test", "tests"));
-  open("/CustomDataExport?view=queue");
+  open("/reports/custom-data-export?view=queue");
   fireEvent.click(
     await screen.findByRole("button", { name: "Re-run", exact: true }),
   );
@@ -493,7 +493,7 @@ test("the mock column picker keeps exact keyboard ordering and focus", async () 
   ).toEqual(["Accession Number", "Hemoglobin", "White Cell Count"]);
 });
 test("browser Back returns to the source chooser and Forward restores columns without losing external query parameters", async () => {
-  const { history } = open("/CustomDataExport?uat=review");
+  const { history } = open("/reports/custom-data-export?uat=review");
   fireEvent.click(
     await screen.findByRole("button", { name: "Start a new export" }),
   );
@@ -519,7 +519,7 @@ test("browser Back returns to the source chooser and Forward restores columns wi
 
 test("a review link without a draft returns to the required column selection", async () => {
   const { history } = open(
-    "/CustomDataExport?view=builder&type=SAMPLE_TESTING&layout=SPREADSHEET&step=review",
+    "/reports/custom-data-export?view=builder&type=SAMPLE_TESTING&layout=SPREADSHEET&step=review",
   );
   await waitFor(() =>
     expect(new URLSearchParams(history.location.search).get("step")).toBe(
@@ -817,7 +817,7 @@ test("a shared report saves choices without dates and reopening requires fresh d
 
 test("a saved-report deep link loads its server definition with fresh dates and survives reload", async () => {
   savedReports.push(savedFixture());
-  const first = open("/CustomDataExport?view=builder&saved=saved-1");
+  const first = open("/reports/custom-data-export?view=builder&saved=saved-1");
   expect(await screen.findByLabelText("Date from")).toHaveValue("");
   expect(new URLSearchParams(first.history.location.search).get("type")).toBe(
     "SAMPLE_TESTING",
@@ -835,7 +835,7 @@ test("a saved-report deep link loads its server definition with fresh dates and 
 });
 
 test("a missing saved link offers recovery without presenting another draft as that report", async () => {
-  open("/CustomDataExport?view=builder&saved=missing");
+  open("/reports/custom-data-export?view=builder&saved=missing");
   expect(
     await screen.findByText(messages["reporting.saved.loadError"]),
   ).toBeVisible();
@@ -1008,7 +1008,7 @@ test("an invalid queue page is normalized while a job link opens its frozen deta
     },
   };
   const { history } = open(
-    "/CustomDataExport?view=queue&page=-2&job=job-linked&uat=review",
+    "/reports/custom-data-export?view=queue&page=-2&job=job-linked&uat=review",
   );
   expect(
     await screen.findByRole("link", { name: "Download CSV" }),
@@ -1033,7 +1033,7 @@ test("an invalid queue page is normalized while a job link opens its frozen deta
 });
 
 test("an empty queue page offers a route back to the first page", async () => {
-  const { history } = open("/CustomDataExport?view=queue&page=3");
+  const { history } = open("/reports/custom-data-export?view=queue&page=3");
   fireEvent.click(
     await screen.findByRole("button", { name: "Return to the first page" }),
   );

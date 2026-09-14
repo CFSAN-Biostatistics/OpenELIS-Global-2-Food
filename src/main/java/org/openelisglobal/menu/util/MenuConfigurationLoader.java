@@ -95,8 +95,14 @@ public final class MenuConfigurationLoader {
             menus.add(menu);
             configuredMenus.add(menu);
             menusByElementId.put(elementId, menu);
-        } else if (hasConfiguredFields(definition)) {
+        } else if (parent != null || hasConfiguredFields(definition)) {
             menu = replaceWithConfiguredMenu(menu, menus, menusByElementId);
+        }
+
+        // Nested configuration owns the instance hierarchy. Work on a copy so
+        // reorganizing a menu never updates its database-backed parent.
+        if (parent != null) {
+            menu.setParent(parent);
         }
 
         applyConfiguredFields(menu, definition);
@@ -122,6 +128,8 @@ public final class MenuConfigurationLoader {
         replacement.setOpenInNewWindow(existingMenu.isOpenInNewWindow());
         replacement.setIsActive(existingMenu.getIsActive());
         replacement.setHideInOldUI(existingMenu.isHideInOldUI());
+        replacement.setPresentationStyle(existingMenu.getPresentationStyle());
+        replacement.setIcon(existingMenu.getIcon());
         if (existingMenu.getParent() != null) {
             replacement.setParent(existingMenu.getParent());
         }
@@ -137,10 +145,17 @@ public final class MenuConfigurationLoader {
     private static boolean hasConfiguredFields(JsonNode definition) {
         return definition.has("actionURL") || definition.has("displayKey") || definition.has("toolTipKey")
                 || definition.has("presentationOrder") || definition.has("openInNewWindow")
-                || definition.has("isActive") || definition.has("hideInOldUI");
+                || definition.has("isActive") || definition.has("hideInOldUI") || definition.has("presentationStyle")
+                || definition.has("icon");
     }
 
     private static void applyConfiguredFields(Menu menu, JsonNode definition) {
+        if (definition.has("presentationStyle")) {
+            menu.setPresentationStyle(text(definition, "presentationStyle"));
+        }
+        if (definition.has("icon")) {
+            menu.setIcon(text(definition, "icon"));
+        }
         if (definition.has("actionURL")) {
             menu.setActionURL(text(definition, "actionURL"));
         }

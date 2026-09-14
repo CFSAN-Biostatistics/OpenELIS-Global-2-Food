@@ -8,6 +8,7 @@ import org.openelisglobal.common.util.UserContextHolder;
 import org.openelisglobal.reports.dataexport.form.ExportSubmission;
 import org.openelisglobal.reports.dataexport.form.SavedReportMutation;
 import org.openelisglobal.reports.dataexport.service.ReportingAccess;
+import org.openelisglobal.reports.dataexport.service.ReportingAudit;
 import org.openelisglobal.reports.dataexport.service.ReportingCatalogService;
 import org.openelisglobal.reports.dataexport.service.ReportingException;
 import org.openelisglobal.reports.dataexport.service.ReportingJobService;
@@ -32,8 +33,10 @@ public class ReportingExportController extends BaseRestController {
 
     private String owner() {
         String id = user.getCurrentSysUserId();
-        if (id == null)
+        if (id == null) {
+            ReportingAudit.denied("anonymous", null);
             throw new ReportingException(401, "reporting.access.signIn");
+        }
         return id;
     }
 

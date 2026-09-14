@@ -832,3 +832,185 @@ test("capture the canonical mock at the application validation widths", async ({
   await page.getByRole("button", { name: /My Report Queue/ }).click();
   await captureWidths(page, testInfo, "mock-queue", false);
 });
+
+async function expectConsistentNavigationType(page: Page) {
+  const mismatches = await page
+    .locator(
+      ".application-side-nav .cds--side-nav__link, .application-side-nav .cds--side-nav__submenu",
+    )
+    .evaluateAll((items) =>
+      items.flatMap((item) => {
+        const style = getComputedStyle(item);
+        const label = item.querySelector(
+          ".cds--side-nav__link-text, .cds--side-nav__submenu-title",
+        );
+        const labelStyle = label ? getComputedStyle(label) : style;
+        const active =
+          item.getAttribute("aria-current") === "page" ||
+          item.classList.contains("cds--side-nav__link--current");
+        return style.fontSize === "14px" &&
+          style.fontFamily.includes("IBM Plex Sans") &&
+          Math.abs(parseFloat(style.lineHeight) - 18) < 0.01 &&
+          labelStyle.fontWeight === (active ? "600" : "400")
+          ? []
+          : [
+              {
+                label: item.textContent?.trim(),
+                font: style.font,
+                labelWeight: labelStyle.fontWeight,
+              },
+            ];
+      }),
+    );
+  expect(mismatches).toEqual([]);
+}
+
+test("the reporting instance sidebar follows the mock and preserves the draft across queue navigation", async ({
+  page,
+}, testInfo) => {
+  test.skip(
+    process.env.REPORTING_INSTANCE_NAV !== "true",
+    "Requires the Reporting UAT instance menu profile.",
+  );
+  testInfo.setTimeout(60_000);
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto("/CustomDataExport?uat=navigation");
+  await expect(page).toHaveURL(
+    /\/reports\/custom-data-export\?uat=navigation$/,
+  );
+  const nav = page.getByRole("navigation", { name: "Side navigation" });
+  await expect(nav.getByRole("heading")).toHaveText([
+    "Main Menu",
+    "Patient & Orders",
+    "Reports",
+    "Administration",
+  ]);
+  for (const [name, href] of [
+    ["Home", "/Dashboard"],
+    ["Order Test", "/SamplePatientEntry"],
+    ["Results Validation", "/ResultValidation?type=&test="],
+    ["Patient Management", "/PatientManagement"],
+    ["Admin", "/MasterListsPage"],
+  ])
+    await expect(nav.getByRole("link", { name, exact: true })).toHaveAttribute(
+      "href",
+      href,
+    );
+  await expect(
+    nav.getByRole("link", { name: "Results Entry", exact: true }),
+  ).toHaveCount(1);
+  await expect(
+    nav.getByRole("button", { name: "Other reports", exact: true }),
+  ).toHaveAttribute("aria-expanded", "false");
+  const more = nav.getByRole("button", { name: "More tools", exact: true });
+  await expect(more).toHaveAttribute("aria-expanded", "false");
+  await expect(
+    nav.getByText("Not yet connected", { exact: true }),
+  ).toBeVisible();
+  await page.screenshot({
+    path: testInfo.outputPath("app-sidebar-desktop.png"),
+    fullPage: true,
+  });
+  await more.click();
+  await expect(
+    nav.getByRole("link", { name: "Alerts", exact: true }),
+  ).toBeVisible();
+  await more.click();
+  await expectConsistentNavigationType(page);
+  await startReport(page);
+  await addField(page, "Accession Number");
+  const queue = nav.getByRole("link", { name: "My Report Queue", exact: true });
+  await nav
+    .getByRole("link", { name: "Custom Data Export", exact: true })
+    .press("Tab");
+  await expect(queue).toBeFocused();
+  await expect(queue).toHaveCSS("outline-width", "2px");
+  await expect(queue).toHaveCSS("outline-style", "solid");
+  await queue.press("Enter");
+  await expect(page).toHaveURL(/view=queue/);
+  await expect(
+    page.getByRole("heading", { name: "My Report Queue", exact: true }),
+  ).toBeVisible();
+  await expect(queue).toHaveAttribute("aria-current", "page");
+  await expect(nav.locator('[aria-current="page"]')).toHaveCount(1);
+  await page.goBack();
+  await expect(
+    page.getByRole("heading", { name: "Your CSV columns (1)", exact: true }),
+  ).toBeVisible();
+  await page.goForward();
+  await expect(queue).toHaveAttribute("aria-current", "page");
+  await page.reload();
+  await expect(queue).toHaveAttribute("aria-current", "page");
+  await nav
+    .getByRole("link", { name: "Custom Data Export", exact: true })
+    .click();
+  await page
+    .getByRole("button", { name: "Continue current export", exact: true })
+    .click();
+  await expect(
+    page.getByRole("heading", { name: "Your CSV columns (1)", exact: true }),
+  ).toBeVisible();
+  await expect(
+    page
+      .getByRole("region", { name: "CSV header preview" })
+      .getByRole("columnheader"),
+  ).toHaveText(["Accession Number"]);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.locator('[data-cy="menuButton"]').click();
+  await expect(queue).toBeVisible();
+  await page.screenshot({
+    path: testInfo.outputPath("app-sidebar-narrow.png"),
+    fullPage: true,
+  });
+  const accessibility = await new AxeBuilder({ page })
+    .include('nav[aria-label="Side navigation"]')
+    .withTags(["wcag2a", "wcag2aa"])
+    .analyze();
+  expect(accessibility.violations).toEqual([]);
+  await queue.click();
+  await expect(
+    page.getByRole("heading", { name: "My Report Queue", exact: true }),
+  ).toBeVisible();
+  await expect(page).toHaveURL(/uat=navigation/);
+  await expect(nav).toHaveClass(/cds--side-nav--hidden/);
+});
+
+test("administration uses the same navigation typography and readable sections", async ({
+  page,
+}, testInfo) => {
+  test.skip(
+    process.env.REPORTING_INSTANCE_NAV !== "true",
+    "Requires the Reporting UAT instance menu profile.",
+  );
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto("/MasterListsPage");
+  await expect(page.getByTestId("admin-dashboard")).toBeVisible();
+  await expectConsistentNavigationType(page);
+  await expect
+    .poll(async () => {
+      const nav = await page
+        .getByRole("navigation", { name: "Side navigation" })
+        .boundingBox();
+      const heading = await page
+        .getByTestId("admin-dashboard")
+        .getByRole("heading", { level: 2 })
+        .boundingBox();
+      return Boolean(nav && heading && heading.x >= nav.x + nav.width);
+    })
+    .toBe(true);
+  await page.screenshot({
+    path: testInfo.outputPath("app-sidebar-administration.png"),
+    animations: "disabled",
+    fullPage: true,
+  });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.locator('[data-cy="menuButton"]').click();
+  await expect(
+    page.getByRole("navigation", { name: "Side navigation" }),
+  ).toBeVisible();
+  await expectConsistentNavigationType(page);
+  await page.screenshot({
+    path: testInfo.outputPath("app-sidebar-administration-narrow.png"),
+    fullPage: true,
+  });
+});

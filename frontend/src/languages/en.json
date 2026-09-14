@@ -9691,5 +9691,14 @@
   "reporting.job.cannotCancel": "This export has already started or finished and cannot be cancelled.",
   "reporting.job.cannotRetry": "Only a failed export can be retried. Use the current job or start a new export.",
   "reporting.job.interrupted": "Processing was interrupted. Retry this export to generate a new file.",
-  "reporting.job.claimLost": "This export is no longer assigned to the current worker. Return to the queue for its status."
+  "reporting.job.claimLost": "This export is no longer assigned to the current worker. Return to the queue for its status.",
+  "sidenav.section.main": "Main Menu",
+  "sidenav.section.patientOrders": "Patient & Orders",
+  "sidenav.section.administration": "Administration",
+  "sidenav.workflow.orderTest": "Order Test",
+  "sidenav.workflow.resultsValidation": "Results Validation",
+  "sidenav.workflow.patientManagement": "Patient Management",
+  "sidenav.moreTools": "More tools",
+  "reporting.menu.otherReports": "Other reports",
+  "reporting.menu.patientPrintQueue": "Patient Report Print Queue"
 }
