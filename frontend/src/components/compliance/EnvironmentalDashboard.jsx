@@ -31,8 +31,13 @@ import { LineChart, SimpleBarChart } from "@carbon/charts-react";
 import "@carbon/charts/styles.css";
 import { FormattedMessage, useIntl } from "react-intl";
 import UserSessionDetailsContext from "../../UserSessionDetailsContext";
+import { NotificationContext } from "../layout/Layout";
+import { AlertDialog, NotificationKinds } from "../common/CustomNotification";
 import { getFromOpenElisServer } from "../utils/Utils";
 import { generateCompliancePdf } from "./utils/compliancePdfGenerator";
+
+// How long the report header waits for the lab's name before falling back.
+const LAB_NAME_TIMEOUT_MS = 10000;
 
 const KPI_KEYS = [
   { key: "totalOrders", i18n: "compliance.dashboard.kpi.totalOrders" },
@@ -60,6 +65,8 @@ function monthsAgoStr(n) {
 export default function EnvironmentalDashboard() {
   const intl = useIntl();
   const { userSessionDetails } = useContext(UserSessionDetailsContext);
+  const { notificationVisible, setNotificationVisible, addNotification } =
+    useContext(NotificationContext);
 
   const excHeaders = [
     {
@@ -283,11 +290,20 @@ export default function EnvironmentalDashboard() {
   const handleExport = async () => {
     setExportLoading(true);
     try {
-      const labName = await new Promise((resolve) =>
-        getFromOpenElisServer("/rest/site-information?name=siteName", (r) =>
-          resolve((r && r.value) || "OpenELIS Lab"),
-        ),
-      );
+      // The report header carries the lab's own name. `configuration-properties`
+      // is what the banner already reads it from, and every signed-in user may
+      // call it — unlike `/rest/SiteInformation`, which is ADMIN-only and would
+      // hand a non-admin a 403 instead of a name. The callback is not guaranteed
+      // to fire, so the wait is bounded: a header line must never be the reason
+      // an export never finishes.
+      const labName = await new Promise((resolve) => {
+        const settle = (value) => resolve(value || "OpenELIS Lab");
+        const timer = setTimeout(() => settle(null), LAB_NAME_TIMEOUT_MS);
+        getFromOpenElisServer("/rest/configuration-properties", (r) => {
+          clearTimeout(timer);
+          settle(r && r.BANNER_TEXT);
+        });
+      });
       const preparedBy = (
         (userSessionDetails && userSessionDetails.firstName
           ? userSessionDetails.firstName
@@ -321,6 +337,19 @@ export default function EnvironmentalDashboard() {
           comparisonRef,
         },
       );
+    } catch (error) {
+      // Without this the export fails as silence: the spinner clears, no file
+      // arrives, and the only trace is an unhandled rejection the user cannot
+      // see. Say the export failed, so a broken export is reported rather than
+      // mistaken for a dead button.
+      addNotification({
+        kind: NotificationKinds.error,
+        title: intl.formatMessage({ id: "notification.title" }),
+        message: intl.formatMessage({
+          id: "compliance.dashboard.export.failed",
+        }),
+      });
+      setNotificationVisible(true);
     } finally {
       setExportLoading(false);
     }
@@ -344,6 +373,7 @@ export default function EnvironmentalDashboard() {
 
   return (
     <div className="pageContent">
+      {notificationVisible && <AlertDialog />}
       <Grid>
         <Column lg={16} md={8} sm={4}>
           <h2 style={{ marginBottom: "1rem" }}>

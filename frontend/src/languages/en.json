@@ -9473,5 +9473,6 @@
   "microbiology.whonet.preview.loading": "Preparing the export preview.",
   "microbiology.whonet.preview.announced": "Preview ready with {count, plural, one {# eligible row} other {# eligible rows}}.",
   "microbiology.whonet.generated.title": "CSV generated",
-  "microbiology.whonet.generated.subtitle": "The validated export was downloaded and its audit summary was recorded."
+  "microbiology.whonet.generated.subtitle": "The validated export was downloaded and its audit summary was recorded.",
+  "compliance.dashboard.export.failed": "The report could not be exported. Please try again."
 }
