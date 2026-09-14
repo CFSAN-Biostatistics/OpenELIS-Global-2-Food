@@ -75,8 +75,8 @@ export default function ReportingView(p) {
   const labelFor = (id) =>
     types.data?.find((item) => item.id === id)?.label ||
     t(`reporting.design.type.${id}`);
-  const card = (title, children) => (
-    <section className="card">
+  const card = (title, children, testId) => (
+    <section className="card" aria-label={title} data-testid={testId}>
       <div className="card-header">
         <h2 className="card-title">{title}</h2>
       </div>
@@ -197,7 +197,18 @@ export default function ReportingView(p) {
         </Button>
       )}
       {["QUEUED", "FAILED", "EXPIRED"].includes(item.state) && (
-        <Button kind="tertiary" size="sm" disabled title={pending}>
+        <Button
+          kind={item.state === "QUEUED" ? "tertiary" : "primary"}
+          size="sm"
+          disabled={p.recovery.isLoading}
+          onClick={() =>
+            ({
+              QUEUED: p.requestCancel,
+              FAILED: p.retryJob,
+              EXPIRED: p.rerunJob,
+            })[item.state](item)
+          }
+        >
           {t(
             {
               QUEUED: "common.cancel",
@@ -374,6 +385,8 @@ export default function ReportingView(p) {
               <InlineLoading description={t("reporting.loading")} />
             )}
             {queue.error && notification("error", t("reporting.loadError"))}
+            {p.recovery.error &&
+              notification("error", p.errorText(p.recovery.error))}
             {expandedJob && p.linkedJob.isLoading && (
               <InlineLoading description={t("reporting.loading")} />
             )}
@@ -393,6 +406,7 @@ export default function ReportingView(p) {
                   {jobDetails(p.linkedJob.data)}
                   {jobActions(p.linkedJob.data)}
                 </>,
+                `reporting-job-${p.linkedJob.data.id}`,
               )}
             {queue.data?.jobs.length === 0 && (
               <div className="empty-state">
@@ -445,7 +459,7 @@ export default function ReportingView(p) {
                   <tbody>
                     {queue.data.jobs.map((item) => (
                       <React.Fragment key={item.id}>
-                        <tr>
+                        <tr data-testid={`reporting-job-${item.id}`}>
                           <td data-label={t("reporting.design.queue.jobName")}>
                             <strong>{item.request.definition.label}</strong>
                             <small>{item.id}</small>

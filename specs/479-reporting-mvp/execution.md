@@ -54,6 +54,74 @@ two-user and keyboard logs, matched mock/application screenshots, target identit
 deployment receipt and the published checklist. Subsequent test/document-only
 commits do not change the application bytes deployed at `1f2093054e`.
 
+## M2 Recovery Increment — Locally Qualified, Publication Pending
+
+The second milestone uses its own worktree and branch,
+`feat/479-ogc-479-reporting-mvp-m2-queue-recovery`, based on M1 `948cdf3b0a`.
+Remaining M1 qualification is still open. Referrals and Non-Conformance remain
+part of this milestone; beginning recovery does not remove those source mappings.
+
+The affected canonical surface is ReportQueue: Retry for failed work, Cancel for
+queued work and Re-run for expired output. Native Carbon cancellation confirmation
+implements the agreed functional requirement. Re-run restores the frozen ordered
+fields and non-date filters and asks for fresh dates. Retry stays in the queue
+and leaves the current builder draft intact. Job deletion remains visibly pending.
+
+Backend implementation adds linked idempotent retry, queued-only cancellation,
+lease renewal during background generation, abandoned-worker recovery, expiry
+and bounded cleanup. File staging/publication and download-open use the same
+database row lock as lifecycle transitions. The migration adds a cleanup timestamp
+so completed cleanup batches do not repeatedly process the oldest history rows.
+History and frozen requests are retained. This remains under qualification.
+
+Verified local evidence on 2026-09-14:
+
+- All 67 reporting backend tests passed, including seven new recovery
+  integration tests. The reporting package line coverage is 960/1151 (83.4%)
+  in the focused run, above the plan target; it is not whole-application coverage. Concurrent workers cannot
+  claim the same job; a claim/cancel race cannot report false cancellation.
+  An already-open download retains its complete bytes after expiry/cleanup;
+  new downloads are refused. Tests use the real services and disposable database.
+- The first integration run exposed missing HTTP session setup for the existing
+  lab-section lookup. The fixture now supplies the normal admin request context.
+  A redundant test-property annotation created a second Spring context over
+  fixture-mutated data; removing it restored the standard shared test context.
+  Neither correction weakened reporting access or product assertions.
+- 24 component tests passed, including cancellation confirmation with retained
+  error state, retry navigation and expired draft restoration. A missing error
+  formatter reference was caught and fixed. Carbon's accessible danger-button
+  label and asynchronous queue rendering are handled by scoped semantic checks.
+- Frontend build and Java 21 packaging/install passed. The initial install was
+  denied access to the local Maven cache; rerunning with filesystem access passed.
+- The local app loads a separate WAR snapshot under `/private/tmp/reporting-m2-runtime`,
+  preserving its database/report volumes. Archive entries match the qualified
+  build; differing ZIP timestamps produce different outer hashes. The cleanup
+  migration applied successfully to this populated local database.
+
+- Six real reporting browser workflows passed: four existing checks for repeats,
+  per-test turnaround, shared definitions and responsive column interactions,
+  plus failed-job retry and expired re-run. Recovery downloads contain the exact
+  ordered Accession Number/Viral Load header and both independent 450 results.
+  Retry preserves the complete frozen request and parent link through reload and
+  Back/Forward. Expired re-run retains its test filter, asks for fresh dates and
+  survives review reload. Login/setup checks are excluded from this count.
+- Matched 1280×900 and 390×844 mock captures were reviewed directly. Retry and
+  Re-run now use the mock's primary action styling. Older deep-linked jobs use
+  a report detail card above the paginated table; the table and mobile action
+  placement remain the supplied design. Cancellation confirmation is covered by
+  component tests; its real-browser walkthrough remains open.
+- The new synthetic recovery fixture reload preserves both original requests and
+  states. The local browser initially lost login because the preview proxy did
+  not rewrite the session-cookie path; correcting that local proxy made the
+  workflows pass without product authentication changes.
+- Frontend/hook lint, formatting and build passed. M1 PR #4292 now has no failing
+  or pending checks at `948cdf3b0a`; M2 has not yet been published to CI.
+
+Public UAT remains the verified frontend/backend pair above until publication.
+No M2 completion or human acceptance is claimed. Remaining qualification includes
+real-browser cancellation, runtime restart/retention, rollback, the large workload
+and the Referral/Non-Conformance sources.
+
 ## Frontend Repair — Qualified and Published
 
 The canonical mock is pinned at `5b2df7e34ff5ad1f983f24c0e9e0ba4db5e8697f`.

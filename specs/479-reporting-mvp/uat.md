@@ -31,6 +31,11 @@ planned acceptance contract; pending functionality is not represented as working
   Viral Load values of 450 with result-to-validation intervals of 30 and 90 minutes
 - Repeated configured test: `Viral Load`
 - Independent repeated values: two results whose displayed value is `450`
+- Recovery fixtures for admin: failed job `47900000-0000-4000-8000-000000000101`
+  and expired job `47900000-0000-4000-8000-000000000102`; loaded by
+  `reporting-recovery.sql`. Deep link with `?view=queue&job=<id>` after sign-in.
+  Their two-column CSV contains Accession Number and Viral Load, with both 450
+  readings. Public availability is recorded in the deployment receipt.
 - Planned referral fixture (not yet seeded): `REPORTING-MVP-REFERRAL`
 - Planned non-conformance fixture (not yet seeded): `REPORTING-MVP-NCE`
 

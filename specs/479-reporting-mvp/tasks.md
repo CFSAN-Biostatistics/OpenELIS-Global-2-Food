@@ -3,7 +3,8 @@
 **Inputs**: [spec.md](spec.md), [plan.md](plan.md),
 [data-model.md](data-model.md), [contract](contracts/export-api.md),
 [acceptance plan](quickstart.md), [UAT contract](uat.md).
-**Status**: M1 implementation in progress. T001–T003, T005–T007, T009, T011 and T014 are
+**Status**: M2 queue recovery is in progress from the verified M1 revision;
+remaining M1 qualification stays open. T001–T003, T005–T007, T009, T011 and T014 are
 complete; other tasks remain open until their full acceptance conditions pass. See
 [execution.md](execution.md) for current evidence and the subsequently authorized
 Catalyst deployment tasks. The Sample & Testing stage is publicly testable;
@@ -128,7 +129,7 @@ completes the other mock source definitions and operational qualification.
 US4, and qualify the full workflow. There are no separate report-type
 applications.
 
-- [ ] T019 Create `feat/479-ogc-479-reporting-mvp-m2-queue-recovery` in its own
+- [x] T019 Create `feat/479-ogc-479-reporting-mvp-m2-queue-recovery` in its own
       worktree from the M1 result; refresh branch/PR state and
       `specs/479-reporting-mvp/`.
 - [ ] T020 [US1] Add failing fixture tests under
@@ -143,6 +144,11 @@ applications.
       expiry/download races, partial-file cleanup and retained audit; add
       recovery browser tests under
       `frontend/playwright/tests/foundational/core/custom-data-export-recovery.spec.ts`.
+      Seven new real-database checks pass for retry identity, cancellation,
+      live/abandoned leases, publication, cleanup, an open download at expiry,
+      concurrent claims and claim/cancel races. Failed retry and expired re-run also pass in the real browser with actual
+      CSVs. Browser cancellation and broader failure/limit/retention qualification
+      remain open.
 - [ ] T022 [US1] Add Referral and Non-Conformance source mappings/configured
       definitions using the same feature under
       `src/main/java/org/openelisglobal/reports/dataexport/` and the existing

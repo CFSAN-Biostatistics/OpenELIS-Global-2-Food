@@ -2,8 +2,9 @@
 
 **Branch**: `spec/479-ogc-479-reporting-mvp`  
 **Date**: 2026-09-13  
-**Status**: M1 implementation and mock-parity remediation in progress. The
-Sample & Testing stage is publicly deployed; the complete MVP remains pending.
+**Status**: Canonical frontend and Sample & Testing are publicly deployed.
+M2 recovery implementation and remaining M1 qualification are in progress;
+the complete MVP remains pending.
 
 **Specification**: [spec.md](spec.md)  
 **Inspected code baseline**: `e57a53399c2134fe3ff58009119cc05906c61e5e`

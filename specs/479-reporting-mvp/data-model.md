@@ -154,6 +154,7 @@ belong in it.
 | Submission identity  | Owner plus client request identifier is unique; same key with changed request conflicts                     |
 | Lifecycle            | State, timestamps, safe failure code, completed output row count and file size                              |
 | Retry lineage        | New child job copies the failed parent's frozen request; current access is rechecked                        |
+| Output cleanup       | Nullable completion timestamp; terminal jobs are cleaned in bounded batches while retaining their history |
 | Worker claim         | Atomic persisted ownership that distinguishes abandoned work from another live worker                       |
 | Output               | Private server-owned reference and expiry deadline; no client-selected path                                 |
 

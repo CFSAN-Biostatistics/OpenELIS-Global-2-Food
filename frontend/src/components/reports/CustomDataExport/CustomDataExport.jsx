@@ -10,6 +10,7 @@ import {
   createSavedReport,
   deleteSavedReport,
   reportingPath,
+  recoverReport,
   submitReport,
   updateSavedReport,
 } from "./api";
@@ -119,6 +120,10 @@ function ReportingBuilder({ owner }) {
     jobId: expandedJob,
     search: savedSearch,
   } = route;
+  const currentPanel = useRef(panel);
+  useEffect(() => {
+    currentPanel.current = panel;
+  }, [panel]);
   // URL values drive the current screen immediately, including POP navigation.
   // Stored navigation metadata is used only by Continue and session recovery.
   const draft =
@@ -155,6 +160,8 @@ function ReportingBuilder({ owner }) {
   const [freshDatePrompt, setFreshDatePrompt] = useState(false);
   const [deleteCandidate, setDeleteCandidate] = useState(null);
   const [updateOpen, setUpdateOpen] = useState(false);
+  const [cancelCandidate, setCancelCandidate] = useState(null);
+  const retryIds = useRef(new Map());
   const submitted = useRef(null);
   const draftRevision = useRef(0);
   const queryClient = useQueryClient();
@@ -222,6 +229,47 @@ function ReportingBuilder({ owner }) {
       queryClient.invalidateQueries({ queryKey: ["reporting-queue", owner] });
     },
   });
+  const recovery = useMutation({
+    mutationFn: recoverReport,
+    onSuccess: (result) => {
+      queryClient.setQueryData(["reporting-job", owner, result.id], result);
+      queryClient.setQueriesData(
+        { queryKey: ["reporting-queue", owner] },
+        (page) =>
+          page
+            ? {
+                ...page,
+                jobs: page.jobs.map((item) =>
+                  item.id === result.id ? result : item,
+                ),
+              }
+            : page,
+      );
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["reporting-queue", owner] });
+      queryClient.invalidateQueries({ queryKey: ["reporting-job", owner] });
+    },
+  });
+  const retryJob = (item) => {
+    if (recovery.isLoading) return;
+    if (!retryIds.current.has(item.id))
+      retryIds.current.set(item.id, crypto.randomUUID());
+    recovery.mutate(
+      {
+        id: item.id,
+        action: "retry",
+        clientRequestId: retryIds.current.get(item.id),
+      },
+      {
+        onSuccess: (result) => {
+          retryIds.current.delete(item.id);
+          if (currentPanel.current === "queue")
+            navigate({ panel: "queue", page: 0, jobId: result.id });
+        },
+      },
+    );
+  };
   const supportsFilter = (name) =>
     catalog.data?.definition.filters?.includes(name);
   const filterNames = ["labSectionIds", "testIds", "resultStatuses"];
@@ -406,6 +454,18 @@ function ReportingBuilder({ owner }) {
       );
       setSaveOpen(true);
     }
+  };
+  const rerunJob = (item) => {
+    const request = item.request;
+    openSaved({
+      definition: {
+        reportType: request.definition.id,
+        layout: request.layout,
+        selectedVariables: request.variables.map((field) => field.id),
+        filters: request.filterSpec,
+      },
+    });
+    setDraft((value) => ({ ...value, savedReport: null }));
   };
   useEffect(() => {
     if (panel !== "builder" || restoringSaved || !types.data) return;
@@ -633,6 +693,13 @@ function ReportingBuilder({ owner }) {
           saveCurrent,
           setUpdateOpen,
           saveCopy,
+          recovery,
+          retryJob,
+          rerunJob,
+        }}
+        requestCancel={(item) => {
+          recovery.reset();
+          setCancelCandidate(item);
         }}
         linkedSavedError={restoringSaved ? linkedSaved.error : null}
         restoringSaved={restoringSaved}
@@ -643,6 +710,34 @@ function ReportingBuilder({ owner }) {
         createSavedBusy={createSaved.isLoading}
         updateSavedBusy={updateSaved.isLoading}
       />
+      {!!cancelCandidate && (
+        <Modal
+          danger
+          open
+          modalHeading={t("reporting.recovery.cancelTitle")}
+          primaryButtonText={t("reporting.recovery.cancelTitle")}
+          secondaryButtonText={t("reporting.recovery.keepQueued")}
+          primaryButtonDisabled={recovery.isLoading}
+          onRequestClose={() => !recovery.isLoading && setCancelCandidate(null)}
+          onRequestSubmit={() =>
+            recovery.mutate(
+              { id: cancelCandidate.id, action: "cancel" },
+              {
+                onSuccess: () => setCancelCandidate(null),
+              },
+            )
+          }
+        >
+          <p>{t("reporting.recovery.cancelHelp")}</p>
+          {recovery.error && (
+            <InlineNotification
+              kind="error"
+              title={errorText(recovery.error)}
+              hideCloseButton
+            />
+          )}
+        </Modal>
+      )}
       {saveOpen && (
         <Modal
           open={saveOpen}

@@ -52,6 +52,8 @@ let savedMutations;
 let failSavedUpdate;
 let deletedSaved;
 let consoleErrors;
+let recoveryRequests;
+let failCancellation;
 const json = (body, status = 200) => ({
   ok: status < 400,
   status,
@@ -71,6 +73,8 @@ beforeEach(() => {
   savedReports = [];
   savedMutations = [];
   deletedSaved = [];
+  recoveryRequests = [];
+  failCancellation = false;
   vi.stubGlobal(
     "fetch",
     vi.fn(async (url, options = {}) => {
@@ -133,6 +137,18 @@ beforeEach(() => {
         savedReports = savedReports.filter((saved) => saved.id !== id);
         return json({}, 204);
       }
+      if (url.endsWith("/cancel") && options.method === "POST") {
+        recoveryRequests.push({ action: "cancel" });
+        if (failCancellation)
+          return json({ code: "reporting.networkError" }, 503);
+        job = { ...job, state: "CANCELLED" };
+        return json(job);
+      }
+      if (url.endsWith("/retry") && options.method === "POST") {
+        recoveryRequests.push({ action: "retry", ...JSON.parse(options.body) });
+        job = { ...job, id: "retry-child", parentId: job.id, state: "QUEUED" };
+        return json(job, 202);
+      }
       if (options.method === "POST") {
         const body = JSON.parse(options.body);
         requests.push(body);
@@ -155,6 +171,7 @@ afterEach(() => {
   const expectedErrors = new Set([
     "reporting.jobs.limit",
     "reporting.saved.changed",
+    "reporting.networkError",
     "Request failed (404): /rest/reports/data-export/saved-configs/missing",
   ]);
   const unexpected = consoleErrors.mock.calls
@@ -183,6 +200,101 @@ function open(entry = "/CustomDataExport") {
   );
   return { ...rendered, history };
 }
+
+function recoverableJob(state) {
+  return {
+    id: "original-job",
+    state,
+    submittedAt: "2026-09-14T00:00:00Z",
+    rowCount: null,
+    request: {
+      definition: source,
+      layout: "SPREADSHEET",
+      variables: [
+        field("test:1", "Hemoglobin", "tests"),
+        field("accessionNumber", "Accession Number"),
+      ],
+      filterSpec: {
+        dateFrom: "2026-05-05",
+        dateTo: "2026-05-05",
+        labSectionIds: ["1"],
+        testIds: ["1"],
+        resultStatuses: ["FINALIZED"],
+      },
+    },
+  };
+}
+
+test("queue cancellation requires confirmation and retains the dialog after a network failure", async () => {
+  job = recoverableJob("QUEUED");
+  failCancellation = true;
+  open("/CustomDataExport?view=queue");
+  fireEvent.click(
+    await screen.findByRole("button", { name: "Cancel", exact: true }),
+  );
+  expect(recoveryRequests).toEqual([]);
+  fireEvent.click(
+    await screen.findByRole("button", { name: /Cancel export$/ }),
+  );
+  await waitFor(() =>
+    expect(
+      within(screen.getByRole("dialog")).getByText(
+        messages["reporting.networkError"],
+      ),
+    ).toBeVisible(),
+  );
+  expect(recoveryRequests).toEqual([{ action: "cancel" }]);
+  failCancellation = false;
+  fireEvent.click(screen.getByRole("button", { name: /Cancel export$/ }));
+  await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+  expect(await screen.findByText("Cancelled", { exact: true })).toBeVisible();
+});
+
+test("retry creates a linked queue job without opening or replacing the builder draft", async () => {
+  job = recoverableJob("FAILED");
+  const { history } = open("/CustomDataExport?view=queue");
+  fireEvent.click(
+    await screen.findByRole("button", { name: "Retry", exact: true }),
+  );
+  await waitFor(() => expect(recoveryRequests).toHaveLength(1));
+  expect(recoveryRequests[0]).toEqual({
+    action: "retry",
+    clientRequestId: expect.any(String),
+  });
+  await waitFor(() =>
+    expect(history.location.search).toContain("job=retry-child"),
+  );
+  expect(history.location.search).toContain("view=queue");
+  await waitFor(() =>
+    expect(screen.getByText("Queued", { exact: true })).toBeVisible(),
+  );
+});
+
+test("expired rerun restores frozen ordered fields and filters but requires fresh dates", async () => {
+  job = recoverableJob("EXPIRED");
+  open("/CustomDataExport?view=queue");
+  fireEvent.click(
+    await screen.findByRole("button", { name: "Re-run", exact: true }),
+  );
+  expect(await screen.findByLabelText("Date from")).toHaveValue("");
+  expect(screen.getByLabelText("Date to")).toHaveValue("");
+  expect(
+    screen.getByText(messages["reporting.saved.freshDates"]),
+  ).toBeVisible();
+  fireEvent.click(screen.getByRole("button", { name: "Back", exact: true }));
+  expect(
+    await screen.findByRole("heading", { name: "Your CSV columns (2)" }),
+  ).toBeVisible();
+  const columns = screen.getByRole("region", {
+    name: messages["reporting.selected"],
+  });
+  const removeButtons = within(columns).getAllByRole("button", {
+    name: /^Remove /,
+  });
+  expect(removeButtons[0]).toHaveAccessibleName("Remove Hemoglobin");
+  expect(removeButtons[1]).toHaveAccessibleName("Remove Accession Number");
+  expect(requests).toEqual([]);
+});
 
 test("the mock overview leads to collapsed groups and Add actions without selecting the whole test catalog", async () => {
   open();
@@ -575,7 +687,7 @@ test("a shared report saves choices without dates and reopening requires fresh d
   expect(screen.getByLabelText("Date from")).toHaveValue("");
   expect(screen.getByLabelText("Date to")).toHaveValue("");
   expect(
-    screen.getByText("Choose fresh dates before running this saved report."),
+    screen.getByText("Choose fresh dates before running this report."),
   ).toBeVisible();
   fireEvent.click(screen.getByRole("button", { name: "Back" }));
   expect(headers()).toEqual([

@@ -522,7 +522,7 @@ test("a shared report reopens with fresh dates and supports confirmed update, co
   await expect(page.getByLabel("Date from", { exact: true })).toHaveValue("");
   await expect(page.getByLabel("Date to", { exact: true })).toHaveValue("");
   await expect(
-    page.getByText("Choose fresh dates before running this saved report.", {
+    page.getByText("Choose fresh dates before running this report.", {
       exact: true,
     }),
   ).toBeVisible();

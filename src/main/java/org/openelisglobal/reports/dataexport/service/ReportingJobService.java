@@ -27,6 +27,13 @@ public class ReportingJobService {
     private final ReportingCatalogService catalog;
     private final ReportingAccess access;
     private final ReportingSettings settings;
+    private java.time.Clock clock = java.time.Clock.systemUTC();
+    @Autowired
+    private ReportingFiles files;
+
+    private Instant now() {
+        return clock.instant();
+    }
 
     @Autowired
     public ReportingJobService(ExportJobDAO jobs, ReportingCatalogService catalog, ReportingAccess access,
@@ -56,7 +63,7 @@ public class ReportingJobService {
         if (jobs.activeCount(owner) >= settings.maxActive())
             throw new ReportingException(429, "reporting.jobs.limit");
         ExportJob job = new ExportJob(owner, request.clientRequestId(), frozen.definition().id(), frozen.layout(),
-                json(frozen), requestHash, Instant.now(), null);
+                json(frozen), requestHash, now(), null);
         jobs.persistJob(job);
         jobs.flushJobs();
         return view(job);
@@ -81,14 +88,66 @@ public class ReportingJobService {
     @Transactional(readOnly = true)
     public ExportJobView authorizeDownload(String owner, String id) {
         ExportJob job = owned(owner, id, false);
+        return authorizeDownload(owner, job);
+    }
+
+    private ExportJobView authorizeDownload(String owner, ExportJob job) {
         access.requireScope(owner, snapshot(job).filterSpec().labSectionIds());
         if (job.getState() == ExportJobState.EXPIRED
-                || job.getExpiresAt() != null && !job.getExpiresAt().isAfter(Instant.now())) {
+                || job.getExpiresAt() != null && !job.getExpiresAt().isAfter(now())) {
             throw new ReportingException(410, "reporting.job.expired");
         }
         if (job.getState() != ExportJobState.READY)
             throw new ReportingException(409, "reporting.job.notReady");
         return view(job);
+    }
+
+    public record Download(ExportJobView job, java.io.InputStream input) {
+    }
+
+    public Download download(String owner, String id) throws java.io.IOException {
+        // Open while holding the same row lock as expiry/cleanup. An already open
+        // descriptor can finish after unlink; subsequent requests fail at expiry.
+        var job = authorizeDownload(owner, owned(owner, id, true));
+        return new Download(job, files.open(id));
+    }
+
+    public ExportJobView cancel(String owner, String id) {
+        ExportJob job = owned(owner, id, true);
+        access.requireReports(owner);
+        if (job.getState() == ExportJobState.CANCELLED)
+            return view(job);
+        if (job.getState() != ExportJobState.QUEUED)
+            throw new ReportingException(409, "reporting.job.cannotCancel");
+        job.transitionTo(ExportJobState.CANCELLED);
+        job.setCompletedAt(now());
+        return view(job);
+    }
+
+    public ExportJobView retry(String owner, String id, String clientRequestId) {
+        access.requireReports(owner);
+        if (clientRequestId == null || !clientRequestId.matches("[A-Za-z0-9_-]{1,80}"))
+            throw new ReportingException(422, "reporting.request.invalid");
+        jobs.lockOwner(owner);
+        ExportJob parent = owned(owner, id, true);
+        if (parent.getState() != ExportJobState.FAILED)
+            throw new ReportingException(409, "reporting.job.cannotRetry");
+        ExportJob previous = jobs.submission(owner, clientRequestId);
+        if (previous != null) {
+            if (!id.equals(previous.getParentId()))
+                throw new ReportingException(409, "reporting.request.conflict");
+            return view(previous);
+        }
+        var frozen = snapshot(parent);
+        access.requireScope(owner, frozen.filterSpec().labSectionIds());
+        catalog.validateCurrent(frozen);
+        if (jobs.activeCount(owner) >= settings.maxActive())
+            throw new ReportingException(429, "reporting.jobs.limit");
+        ExportJob child = new ExportJob(owner, clientRequestId, parent.getSourceId(), parent.getLayout(),
+                parent.getRequestJson(), digest(json(Map.of("retryOf", id))), now(), id);
+        jobs.persistJob(child);
+        jobs.flushJobs();
+        return view(child);
     }
 
     public ExportJobView claim(String worker) {
@@ -98,16 +157,16 @@ public class ReportingJobService {
         if (job.getState() != ExportJobState.QUEUED)
             return null;
         job.transitionTo(ExportJobState.GENERATING);
-        job.setStartedAt(Instant.now());
+        job.setStartedAt(now());
         job.setWorkerId(worker);
-        job.setLeaseUntil(Instant.now().plus(5, ChronoUnit.MINUTES));
+        job.setLeaseUntil(now().plus(5, ChronoUnit.MINUTES));
         jobs.flushJobs();
         return view(job);
     }
 
     public String ownerForWorker(String id, String worker) {
         var job = jobs.get(id).orElseThrow();
-        if (job.getState() != ExportJobState.GENERATING || !worker.equals(job.getWorkerId())) {
+        if (!hasLease(job, worker)) {
             throw new ReportingException(409, "reporting.job.claimLost");
         }
         return job.getOwnerId();
@@ -115,15 +174,67 @@ public class ReportingJobService {
 
     public void ready(String owner, String id, String worker, long rows, long size) {
         ExportJob job = owned(owner, id, true);
-        if (job.getState() != ExportJobState.GENERATING || !worker.equals(job.getWorkerId())) {
+        if (!hasLease(job, worker)) {
             throw new ReportingException(409, "reporting.job.claimLost");
         }
         job.transitionTo(ExportJobState.READY);
         job.setRowCount(rows);
         job.setFileSize(size);
-        job.setCompletedAt(Instant.now());
+        job.setCompletedAt(now());
         job.setExpiresAt(job.getCompletedAt().plus(settings.retentionDays(), ChronoUnit.DAYS));
         job.setLeaseUntil(null);
+    }
+
+    private boolean hasLease(ExportJob job, String worker) {
+        return job != null && job.getState() == ExportJobState.GENERATING && worker.equals(job.getWorkerId())
+                && job.getLeaseUntil() != null && job.getLeaseUntil().isAfter(now());
+    }
+
+    public boolean renewLease(String id, String worker) {
+        var job = jobs.locked(id);
+        if (!hasLease(job, worker))
+            return false;
+        job.setLeaseUntil(now().plus(5, ChronoUnit.MINUTES));
+        return true;
+    }
+
+    public java.nio.file.Path stage(String owner, String id, String worker) throws java.io.IOException {
+        if (!hasLease(owned(owner, id, true), worker))
+            throw new ReportingException(409, "reporting.job.claimLost");
+        return files.stage(id, worker);
+    }
+
+    public void publish(String owner, String id, String worker, long rows) throws java.io.IOException {
+        if (!hasLease(owned(owner, id, true), worker))
+            throw new ReportingException(409, "reporting.job.claimLost");
+        ready(owner, id, worker, rows, files.publish(id, worker));
+    }
+
+    public void recover() {
+        for (var job : jobs.dueForRecovery(now())) {
+            if (job.getState() == ExportJobState.GENERATING
+                    && (job.getLeaseUntil() == null || !job.getLeaseUntil().isAfter(now()))) {
+                job.transitionTo(ExportJobState.FAILED);
+                job.setFailureCode("reporting.job.interrupted");
+                job.setCompletedAt(now());
+                job.setLeaseUntil(null);
+            } else if (job.getState() == ExportJobState.READY && job.getExpiresAt() != null
+                    && !job.getExpiresAt().isAfter(now())) {
+                job.transitionTo(ExportJobState.EXPIRED);
+            }
+        }
+    }
+
+    public void cleanupOutput() {
+        for (var job : jobs.pendingCleanup()) {
+            try {
+                files.removeOutput(job.getId(), job.getWorkerId());
+                job.setOutputCleanedAt(now());
+            } catch (java.io.IOException error) {
+                org.openelisglobal.common.log.LogEvent.logWarn(getClass().getSimpleName(), "cleanupOutput",
+                        "Reporting output cleanup will be retried for job " + job.getId());
+            }
+        }
     }
 
     public void failed(String owner, String id, String worker, String code) {
@@ -131,7 +242,7 @@ public class ReportingJobService {
         if (job.getState() == ExportJobState.GENERATING && worker.equals(job.getWorkerId())) {
             job.transitionTo(ExportJobState.FAILED);
             job.setFailureCode(code);
-            job.setCompletedAt(Instant.now());
+            job.setCompletedAt(now());
             job.setLeaseUntil(null);
         }
     }
@@ -153,8 +264,7 @@ public class ReportingJobService {
 
     private ExportJobView view(ExportJob job) {
         String state = job.getState().name();
-        if (job.getState() == ExportJobState.READY && job.getExpiresAt() != null
-                && !job.getExpiresAt().isAfter(Instant.now()))
+        if (job.getState() == ExportJobState.READY && job.getExpiresAt() != null && !job.getExpiresAt().isAfter(now()))
             state = "EXPIRED";
         return new ExportJobView(job.getId(), state, text(job.getSubmittedAt()), text(job.getStartedAt()),
                 text(job.getCompletedAt()), text(job.getExpiresAt()), job.getRowCount(), job.getFileSize(),
