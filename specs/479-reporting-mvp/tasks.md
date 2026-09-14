@@ -4,8 +4,8 @@
 [data-model.md](data-model.md), [contract](contracts/export-api.md),
 [acceptance plan](quickstart.md), [UAT contract](uat.md).
 **Status**: Sample & Testing and queue recovery are publicly testable at frontend
-`e5d9e85ef7` / backend `d56922c11e`. Seven public recovery-stage workflows passed;
-two affected workflows passed again after the frontend loading fix. The live UAT
+`0d65ccaac4` / backend `d56922c11e`. Seven public recovery-stage workflows passed;
+three affected workflows passed after the source-selection update. The live UAT
 checklist has five stories and 14 steps. See [execution.md](execution.md) for the
 current receipt, the full-suite recovery fixture issue and remaining qualification.
 T032, T033 and T035–T038 repeat for each usable stage. T034 remains partial until

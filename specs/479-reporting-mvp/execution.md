@@ -8,9 +8,9 @@ Public availability, automated qualification and human acceptance are separate.
 ## Current Public Stage — Queue Recovery, 2026-09-14
 
 - Application: [Reporting UAT](https://reporting.catalyst.openelis-global.org/CustomDataExport).
-  Frontend `e5d9e85ef79690db3cf0399af7ad6aebf0b95548`; backend
+  Frontend `0d65ccaac4ba46ac7fa76262368170a13fe7306d`; backend
   `d56922c11ed071e992b6e7288be1198efb009717`.
-- Deployment `20260914T102409Z-e5d9e85ef796`; review tooling
+- Deployment `20260914T110442Z-0d65ccaac4ba`; review tooling
   `7356f1d32cfbdea346f200b5f3b2bf05a48610b9`. The public
   [target identity](https://reporting.catalyst.openelis-global.org/__review/target.json)
   records both revisions, successful public browser checks and pending human acceptance.
@@ -56,7 +56,7 @@ application/database containers. That startup path remains an operational gap;
 frontend-only publication avoids it. Previous versioned artifacts and the
 pre-recovery database backup remain available.
 
-## Source Preparation — Local Qualification, 2026-09-14
+## Source Preparation — Frontend Published, 2026-09-14
 
 The shared builder starts newly chosen configured reports with zero columns, as
 the pinned mock does. Users add their fields explicitly; restoring a draft or a
@@ -83,8 +83,17 @@ date interpretations are covered without choosing the unresolved product default
 - Frontend lint and production build pass. Initial sandbox attempts could not
   launch Chromium or access Docker; the permitted runtime runs passed. Those
   environment failures are not counted as product checks.
-- CI at `e6b34a4d2a` has passed frontend and end-to-end checks; its full backend
-  run remains in progress. These results precede this local preparation.
+- CI at `e6b34a4d2a` has passed frontend and the actual
+  [end-to-end checkpoint](https://github.com/DIGI-UW/OpenELIS-Global-2/actions/runs/34834965016),
+  verified through its commit status (not merely the shared-build workflow).
+  Its full backend run remains in progress. These results precede this preparation.
+- Frontend `0d65ccaac4` is now public on unchanged backend `d56922c11e`.
+  All three affected public workflows pass: explicit configured-report columns
+  with CSV output, hidden-filter removal with CSV output, and Reports navigation
+  with Back/Forward/reload. The reported four checks include login. The frontend
+  update retained the backend/database containers and verified served artifact
+  hashes. Fresh CI for `0d65ccaac4` remains queued/running; no full-MVP or human
+  acceptance is claimed.
 
 Three product questions are pending. No answer is inferred from elapsed time:
 
@@ -100,8 +109,9 @@ Three product questions are pending. No answer is inferred from elapsed time:
    with an explicit date-basis label versus excluding them needs resolution.
 
 Source activation and affected CSV expectations wait for these answers. Shared
-frontend and data-query qualification can proceed independently. This checkpoint
-does not establish public deployment or complete T020/T022.
+frontend and data-query qualification can proceed independently. The frontend
+is public; the new Referral data query is not deployed or exposed as a report.
+T020/T022 remain incomplete.
 
 ## M2 Recovery Qualification
 
@@ -121,7 +131,7 @@ on [M1 #4292](https://github.com/DIGI-UW/OpenELIS-Global-2/pull/4292), based on 
   failures; the same 14-test sequence passes after correction. All 67 reporting
   tests also pass after that role fixture (74 tests total). Full-suite CI still
   needs to verify the corrected revision. Frontend and E2E CI passed at `d56922c11e`.
-  The frontend follow-up's fresh CI remains in flight.
+  Fresh CI for the source-preparation checkpoint remains in flight.
 - 26 component tests, frontend/hook lint, formatting, production frontend build
   and Java 21 packaging passed for the loading fix. Delayed-catalog and genuinely
   removed-field tests cover the corrected behavior. Its local expired-re-run
