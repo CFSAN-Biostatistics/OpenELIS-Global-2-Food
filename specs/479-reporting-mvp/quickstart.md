@@ -336,6 +336,39 @@ data and scrolled narrow views differ from the fictional mock captures. This
 iteration changes qualification tools only. It does not establish public-server
 performance, multi-instance crash isolation, migration rollback or human acceptance.
 
+## Two-process crash isolation, 2026-09-14
+
+Run [the two-process procedure](../../projects/reporting-uat/README.md#two-process-crash-isolation)
+on a disposable local stack. Both application processes use the public
+`22e3a66b6175` WAR, the same PostgreSQL database and report volume, separate logs
+and one Spring application context each. The qualification runner checks these
+preconditions and requires loopback URLs and no active exports before starting.
+
+The actual run preserved primary `6d7d3d387b8b`, killed temporary peer
+`e42cd336a48e` and retained database `f4572a3f704c`. Its 59 observations covered the
+normal 300-second lease without editing timestamps. The live lease advanced;
+the live partial file and queued work survived. Only abandoned output was
+removed. After releasing the bounded read stall, the live and queued jobs became
+ready and the failed job's linked retry preserved its frozen request.
+
+| Evidence | Observed result |
+| --- | --- |
+| Live job | `57156fca-b95e-4313-a3bd-503e10107cd2`, completed |
+| Abandoned job | `51c227ed-2807-463c-92e6-26573fac6e47`, interrupted only after its lease expired |
+| Queued job | `50e6ca95-c74e-4623-a0aa-cbe9c505c322`, retained then completed |
+| Linked retry | `7557092a-c7ce-4ebb-801c-9806f17615e0`, completed with unchanged request |
+| Audit | Exactly one `INTERRUPTED` event, for the abandoned job |
+| Actual CSV | UTF-8 BOM, Accession Number/Viral Load; two `REPORTING-MVP-REPEAT,450` rows |
+| CSV SHA-256 | `499ab005f03b3c02d0da1af52097f3f64b6f00599f839beadac3e577fe741e32` |
+
+The receipt and raw observations are in
+`/private/tmp/reporting-multi-process-20260914/isolation/`; command output is
+`/private/tmp/reporting-multi-process-qualification.log`. The stopped peer was
+inspected and removed after evidence capture. The primary application/database
+were not restarted or recreated. The runner releases its read stall in `finally`
+and retains observations on failure. This is local process-isolation evidence;
+public queued cancellation and human acceptance remain separate.
+
 ## Evidence to Record
 
 T016/T017 record M1 evidence; T026–T030 complete the source, recovery and

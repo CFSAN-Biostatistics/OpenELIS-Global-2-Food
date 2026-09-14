@@ -9,8 +9,10 @@ Database section/icon editing and instance override protection are deployed.
 All 10 public browser checks pass, including eight application workflows and
 actual CSV downloads. Local restart/two-profile qualification passes with the
 original values restored. Runtime configuration `7780ee2cd9` retains one
-application context. T041 remains open for RPT-504 publication and review-picker
-rechecking: authoring SSH timed out and the in-app review refresh did not settle.
+application context. Review-widget `54b99f8d76ba` now fixes cross-tab story
+selection; all 104 widget checks, 201 tooling tests, live picker checks and
+three fresh public CSV/authentication checks pass. T041 remains open only for
+RPT-504 publication because the Grist authoring connection timed out.
 The current live checklist still has six stories and 17 steps. The exact
 application revision passes frontend/backend/translation CI; human acceptance
 remains pending.
@@ -18,6 +20,9 @@ See the current receipt and remaining qualification in `execution.md`.
 T027 now passes against the disposable local stack: both 50,000-result layouts,
 bounded fetches, one worker, the five-job limit, ordinary reads and desktop/phone
 downloads. These measurements are local; the public application is unchanged.
+T024/T028 now pass, including two real application processes, live lease renewal,
+abandoned-only cleanup, queued completion and exact downloaded CSVs after killing
+the temporary peer. Public queued cancellation under T021 remains open.
 T032, T033 and T035–T038 repeat for each usable stage. T034 remains partial until
 all workflow fixtures are available. Public availability does not close M1 or M2.
 
@@ -169,7 +174,10 @@ applications.
       isolation now passes CI. A real local
       process kill/restart preserves queued and completed work, fails abandoned
       jobs, removes partial files and permits a successful linked retry; see the
-      runtime qualification record.
+      runtime qualification record. Two real application processes now prove
+      live-worker lease renewal and output isolation after killing the other
+      process, with exact CSV and interruption-audit checks. Public queued
+      cancellation UAT remains open.
 - [ ] T022 [US1] Add Referral and Non-Conformance source mappings/configured
       definitions using the same feature under
       `src/main/java/org/openelisglobal/reports/dataexport/` and the existing
@@ -180,10 +188,13 @@ applications.
       `src/main/java/org/openelisglobal/reports/dataexport/`, preserving
       immutable requests, source/version, layout, labels, current access and
       lineage.
-- [ ] T024 [US4] Implement abandoned-worker recovery, expiry enforcement and
+- [x] T024 [US4] Implement abandoned-worker recovery, expiry enforcement and
       private-file cleanup under
       `src/main/java/org/openelisglobal/reports/dataexport/service/`, making
       T021 pass without interfering with another live application context.
+      Backend lifecycle checks, actual restart/expiry and two-process crash
+      isolation pass. The latter retains the live process/output while the
+      unchanged five-minute lease expires for the killed worker only.
 - [x] T025 [US4] Implement shared recovery controls and source-appropriate
       labels in `frontend/src/components/reports/CustomDataExport/` and
       `frontend/src/languages/en.json`; retain choices, require fresh dates for
@@ -205,16 +216,17 @@ applications.
       criteria. Both layouts preserve all 50,000 results, including 10,000 for
       one specimen. Two runs produce identical files; the final run samples
       concurrent states atomically. Public-server performance remains unmeasured.
-- [ ] T028 [US4] Verify migration/rollback on empty/populated disposable
+- [x] T028 [US4] Verify migration/rollback on empty/populated disposable
       databases, persistent output, restart, retention and cleanup; document
       actual deployment settings/procedures and implementation evidence in
       `specs/479-reporting-mvp/quickstart.md`.
-      Partial: actual process interruption/restart and accelerated local expiry
+      Actual process interruption/restart and accelerated local expiry
       passed, including retained queued/completed work, cleanup, frozen settings
       and unaffected prior downloads. Fresh/populated database migration and
       rollback now pass through the actual Liquibase changelogs, including a
-      50,000-job queue and retained shared definitions. Multi-instance crash
-      isolation remains open; see execution.md.
+      50,000-job queue and retained shared definitions. Two-process crash
+      isolation now passes with live lease renewal, abandoned-only cleanup,
+      queued completion, linked retry and unchanged actual CSVs; see execution.md.
 - [ ] T029 Verify every functional requirement and success criterion against
       implementation evidence; update
       `specs/479-reporting-mvp/checklists/requirements.md` and `quickstart.md`
@@ -297,7 +309,8 @@ reporting scope while completing the navigation contract in `plan.md`.
       already published JSON presentation support.
       Application publication, all 10 public browser checks and actual local
       restart/two-profile/default-restoration checks now pass at `22e3a66b6175`.
-      Only RPT-504 authoring and the current review-picker recheck remain open;
+      Review-picker regression tests and live refresh/reload/two-tab checks now
+      pass at harness `54b99f8d76ba`. Only RPT-504 authoring remains open;
       see the concrete connection/browser evidence in `execution.md`.
 
 ## Dependencies

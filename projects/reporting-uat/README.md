@@ -175,10 +175,50 @@ September 14. The public app logged one Spring root initialization and 457.170
 seconds startup. Five public application workflows plus authentication and the
 pinned-mock capture passed. A separate accelerated local expiry check also
 verified unavailable expired downloads, removed files, retained history and an
-unaffected existing download. Multi-instance crash isolation remains open. Local
-large-volume and migration/rollback qualification now pass. See
+unaffected existing download. Local large-volume, migration/rollback and
+two-process crash isolation qualification now pass. See
 [the current execution record](../../specs/479-reporting-mvp/execution.md) for
 exact deployment identity, evidence and limits.
+
+## Two-process crash isolation
+
+Use `qualify-worker-isolation.py` only on the disposable local reporting stack
+with the `REPORTING-MVP-REPEAT` fixture. Prepare a temporary second application
+service from the primary service's effective Compose definition: retain the same
+database, image, WAR, properties, single-context server configuration and report
+volume, but use an available loopback port and a separate persistent log
+directory. Start only that temporary service with `--no-deps`. Keep the normal
+five-minute worker lease and wait for that same container to finish starting.
+The Compose directory must already have its configured `.env`.
+
+The September 14 run used this command after both applications were ready:
+
+```bash
+python3 projects/reporting-uat/qualify-worker-isolation.py \
+  --primary reporting-mvp-iteration1-app-1 \
+  --peer reporting-mvp-iteration1-recovery-peer-1 \
+  --database reporting-mvp-iteration1-db-1 \
+  --project reporting-mvp-iteration1 \
+  --base-url https://localhost:18485/api/OpenELIS-Global \
+  --peer-url https://localhost:18493/api/OpenELIS-Global \
+  --output /tmp/reporting-worker-isolation
+```
+
+The runner checks process identity, ports, shared image/WAR/output and separate
+logs before submitting jobs. It temporarily stalls result reads with a bounded
+database transaction, identifies each worker through its actual audit log, and
+kills only the temporary peer. While the primary continues renewing its lease,
+the peer's unchanged lease expires naturally. Only the abandoned output is
+removed. The read stall is released in `finally`; the primary completes its own
+job and queued work, and a linked retry preserves the frozen request. Every
+downloaded CSV must match the fixture oracle byte for byte. The retained receipt
+includes process identities, 59 lease observations and the interruption audit.
+Preserve the stopped peer's inspection/logs before removing that service; leave
+the primary, database and named volumes running.
+
+See
+[the qualification record](../../specs/479-reporting-mvp/quickstart.md#two-process-crash-isolation-2026-09-14)
+for this run's exact identities, hash and limits.
 
 ## Reporting audit events
 

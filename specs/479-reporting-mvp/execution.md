@@ -5,6 +5,36 @@ usable stage to Reporting UAT. Both milestones remain in scope. The canonical
 mock defines the interface; MVP scope determines which functions are connected.
 Public availability, automated qualification and human acceptance are separate.
 
+## Two-Process Recovery Qualification — 2026-09-14
+
+The remaining multi-instance crash-isolation check now passes against two real
+application processes sharing the local database and report volume. Both use the
+public stage's `22e3a66b6175` WAR and single-context configuration. The new
+`projects/reporting-uat/qualify-worker-isolation.py` runner starts with no active
+jobs, submits a baseline and then observes one generating job per process plus
+one queued job. A bounded read stall exposes the recovery interval without
+changing job timestamps or the normal 300-second lease.
+
+The temporary peer `e42cd336a48e` was killed with SIGKILL. Primary application
+`6d7d3d387b8b` remained running with its original start time; its lease continued
+renewing across 59 observations. Its partial file and queued job remained intact.
+Only the killed worker's job failed as interrupted and its partial file was
+removed. Releasing the stall let the live and queued jobs complete. A linked
+retry retained the abandoned job's frozen request. All downloads matched the
+baseline CSV byte for byte, preserving both repeated values. Exactly one
+`INTERRUPTED` audit event identified the killed worker's job. Database
+`f4572a3f704c` was retained. The peer's final inspection and logs were saved before
+removing that temporary service; primary and database remain running.
+
+Receipt: `/private/tmp/reporting-multi-process-20260914/isolation/verified.json`;
+observations, ownership logs and actual CSV are in the same directory. CSV
+SHA-256 `499ab005f03b3c02d0da1af52097f3f64b6f00599f839beadac3e577fe741e32`.
+See quickstart for the reproducible procedure. This closes T024 and T028 when
+combined with their recorded lifecycle, retention and migration checks. It adds
+local operational evidence to the existing public application; it does not
+claim a new public deployment or human acceptance. T021's public queued-cancel
+workflow and the source-activation/product decisions remain open.
+
 ## Current Public Stage — Database Menu Presentation, 2026-09-14
 
 The navigation follow-through now persists optional section/icon metadata in the
@@ -69,13 +99,30 @@ but not published: direct authoring SSH and a relay through the deployment host
 both timed out. No Grist rows or human answers were changed. The public checklist
 and same-origin catalog still provide six stories and 17 steps at revision
 `14333b9e6281374aac57eeb38177a7fca0bba1ff340f380457261af19e3b3481`.
-The review panel shows the new application revision, but its refresh did not
-settle in the in-app browser and the story picker needs rechecking. The exact
-same-origin checklist/catalog endpoints returned HTTP 200 in under 0.3 seconds;
-that browser behavior is not evidence of a server-side checklist outage.
-Do not claim RPT-504 or the current picker check complete. The exact application
-revision passes frontend, backend and translation CI. Human acceptance remains
-pending.
+The review-picker problem was subsequently reproduced locally: application tabs
+on different routes repeatedly replaced a shared story preference. Review-tooling
+commit `54b99f8d76bac9b46a2082e3549a7d013e8406ff` now keeps navigation per tab
+while synchronizing an explicit pop-out with its opener. All 104 widget browser
+checks and 201 tooling tests pass; two earlier checks were corrected to wait for
+the selected checklist and settled scroll position. The fix is published only
+to Reporting UAT, with both local and public script bytes verified. Application,
+database and web container identities/start times remained unchanged. Review
+answers and the six-story/17-step checklist were not changed.
+
+Live in-app validation now passes: all six stories are selectable; the reporting
+tab retains its navigation story while a separate menu-administration tab keeps
+its routine-export story, including after refresh/reload. The reopened picker was
+visually inspected. Three fresh public automated checks pass (authentication,
+repeated-result spreadsheet CSV and per-test turnaround in both layouts).
+Receipts: `/private/tmp/reporting-review-tab-publication.json` and
+`/private/tmp/reporting-review-tab-public-verification.json`; tests:
+`/private/tmp/reporting-review-widget-release-final.log`,
+`/private/tmp/reporting-review-unit-final.log`,
+`/private/tmp/reporting-review-public-csv.log`. The review fix is in
+[draft PR 21](https://github.com/DIGI-UW/openelis-review-tooling/pull/21), stacked
+on the exact published review runtime. RPT-504 publication alone remains open
+under T041. The exact application revision passes frontend, backend and
+translation CI. Human acceptance remains pending.
 
 Logs and screenshots: `/private/tmp/reporting-menu-final-backend.log`,
 `/private/tmp/reporting-menu-responsive-browser/`,
