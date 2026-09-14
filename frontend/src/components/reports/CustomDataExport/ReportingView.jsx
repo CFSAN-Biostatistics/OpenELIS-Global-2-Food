@@ -23,6 +23,12 @@ import PageBreadCrumb from "../../common/PageBreadCrumb";
 import ReportingColumns from "./ReportingColumns";
 import { downloadUrl } from "./api";
 
+const sourceTagColors = {
+  SAMPLE_TESTING: "blue",
+  REFERRALS: "teal",
+  NON_CONFORMANCE: "magenta",
+};
+
 // The presentation follows ReportBuilder/ReportQueue in openelis-work 5b2df7e34f.
 // Real data and mutations come from the existing reporting controller component.
 export default function ReportingView(p) {
@@ -264,7 +270,11 @@ export default function ReportingView(p) {
             breadcrumbs={[
               { label: "home.label", link: "/" },
               { label: "banner.menu.reports", link: "" },
-              { label: panel === "queue" ? "reporting.queue" : "reporting.title", link: "" },
+              {
+                label:
+                  panel === "queue" ? "reporting.queue" : "reporting.title",
+                link: "",
+              },
             ]}
           />
           <h1 className="page-title" ref={title} tabIndex={-1}>
@@ -920,7 +930,15 @@ export default function ReportingView(p) {
                   <>
                     <div className="review-section">
                       <h3>{t("reporting.reportType")}</h3>
-                      <Tag type="blue">{data.definition.label}</Tag>
+                      <Tag
+                        type={
+                          sourceTagColors[
+                            data.definition.source || data.definition.id
+                          ] || "gray"
+                        }
+                      >
+                        {data.definition.label}
+                      </Tag>
                       <p>{t(`reporting.layout.${draft.layout}`)}</p>
                     </div>
                     <div className="review-section">
@@ -939,18 +957,33 @@ export default function ReportingView(p) {
                         {t("reporting.design.periodDays", {
                           count: p.periodDays,
                         })}
+                        {" · "}
+                        {t(
+                          `reporting.dateAnchor.${data.definition.dateAnchor}`,
+                        )}
                       </span>
                     </div>
                     <div className="review-section">
-                      <h3>{t("reporting.design.testStatus")}</h3>
+                      <h3>
+                        {t(
+                          data.statuses.length
+                            ? "reporting.design.testStatus"
+                            : "reporting.tests",
+                        )}
+                      </h3>
                       <p>
-                        {p.lookup(data.tests, p.effectiveFilters.testIds)} ·{" "}
-                        {p.effectiveFilters.resultStatuses.length
-                          ? p.lookup(
-                              data.statuses,
-                              p.effectiveFilters.resultStatuses,
-                            )
-                          : t("reporting.finalized")}
+                        {p.lookup(data.tests, p.effectiveFilters.testIds)}
+                        {data.statuses.length > 0 && (
+                          <>
+                            {" · "}
+                            {p.effectiveFilters.resultStatuses.length
+                              ? p.lookup(
+                                  data.statuses,
+                                  p.effectiveFilters.resultStatuses,
+                                )
+                              : t("reporting.finalized")}
+                          </>
+                        )}
                       </p>
 
                       <h3>{t("reporting.design.labScope")}</h3>

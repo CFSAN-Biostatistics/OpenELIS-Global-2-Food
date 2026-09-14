@@ -1102,3 +1102,183 @@ test("menu administration saves database icons and identifies instance-controlle
     managed.getByText("Managed by instance configuration"),
   ).toHaveCount(2);
 });
+
+for (const viewport of [
+  { width: 1280, height: 900 },
+  { width: 390, height: 844 },
+]) {
+  test(`Referrals preserve returned and pending rows through shared reports at ${viewport.width}px`, async ({
+    page,
+  }, testInfo) => {
+    testInfo.setTimeout(90_000);
+    await page.setViewportSize(viewport);
+    await page.goto("/reports/custom-data-export");
+    await page
+      .getByRole("button", { name: "Start a new export", exact: true })
+      .click();
+    await page.getByRole("radio", { name: /^Referrals/ }).click();
+    const available = page.getByRole("region", { name: "Available fields" });
+    await expect(
+      available.getByRole("button", { name: "Referrals", exact: true }),
+    ).toHaveAttribute("aria-expanded", "false");
+    if (viewport.width < 600) {
+      await expect(
+        page.getByRole("button", { name: "Your columns (0)", exact: true }),
+      ).toBeVisible();
+    } else {
+      await expect(
+        page.getByRole("heading", { name: "Your CSV columns (0)" }),
+      ).toBeVisible();
+    }
+    const columns = [
+      "Accession Number",
+      "Referral ID",
+      "Referral Result ID",
+      "Result ID",
+      "Referred Lab",
+      "Referred Test Name",
+      "Referral Date",
+      "Referral Result Value",
+      "Referral Result Date",
+      "Referral Status",
+    ];
+    for (const label of columns) await addField(page, label);
+    if (viewport.width < 600)
+      await page
+        .getByRole("button", { name: "Your columns (10)", exact: true })
+        .click();
+    await page.screenshot({
+      path: testInfo.outputPath("referral-columns.png"),
+      fullPage: true,
+    });
+    await page
+      .getByRole("button", { name: "Next: Set Filters", exact: true })
+      .click();
+    await expect(page.getByText(/Uses referral sent dates in/)).toBeVisible();
+    await expect(
+      page.getByRole("combobox", { name: /^Result statuses/ }),
+    ).toHaveCount(0);
+    await setPeriod(page, "2026-05-07");
+    await reviewReport(page);
+    await expect(page.getByText(/Finalized/)).toHaveCount(0);
+    await expect(
+      page.getByText(/2026-05-07.*referral sent dates/),
+    ).toBeVisible();
+    await page.screenshot({
+      path: testInfo.outputPath("referral-review.png"),
+      fullPage: true,
+    });
+    const reportName = `Referral UAT ${viewport.width} ${Date.now()}`;
+    await saveReport(page, reportName);
+    await savedLibrary(page);
+    await page
+      .getByRole("searchbox", { name: "Search shared reports", exact: true })
+      .fill(reportName);
+    const card = page.getByRole("article", { name: reportName, exact: true });
+    await card.getByRole("button", { name: "Use report", exact: true }).click();
+    await expect(page.getByLabel("Date from", { exact: true })).toHaveValue("");
+    await expect(page.getByLabel("Date to", { exact: true })).toHaveValue("");
+    await setPeriod(page, "2026-05-07");
+    const { headers, records } = await downloadReport(page, 3);
+    expect(headers).toEqual(columns);
+    const returned = records.filter((row) => row[7] !== "");
+    const pending = records.filter((row) => row[7] === "");
+    expect(returned).toHaveLength(2);
+    expect(new Set(returned.map((row) => row[2])).size).toBe(2);
+    expect(new Set(returned.map((row) => row[3])).size).toBe(2);
+    expect(returned.map((row) => row.slice(4))).toEqual([
+      [
+        "Synthetic Reference Lab",
+        "Viral Load",
+        "2026-05-07",
+        "450",
+        "2026-05-08",
+        "COMPLETED",
+      ],
+      [
+        "Synthetic Reference Lab",
+        "Viral Load",
+        "2026-05-07",
+        "450",
+        "2026-05-09",
+        "COMPLETED",
+      ],
+    ]);
+    expect(pending).toHaveLength(1);
+    expect(pending[0].slice(2)).toEqual([
+      "",
+      "",
+      "Synthetic Reference Lab",
+      "Viral Load",
+      "2026-05-07",
+      "",
+      "",
+      "REQUESTED",
+    ]);
+    expect(records.map((row) => row[0])).toEqual([
+      accession,
+      accession,
+      accession,
+    ]);
+    expect(new Set(records.map((row) => row[1])).size).toBe(2);
+    await savedLibrary(page);
+    await page
+      .getByRole("searchbox", { name: "Search shared reports", exact: true })
+      .fill(reportName);
+    await card.getByRole("button", { name: /Delete shared report/ }).click();
+    const deleted = page.waitForResponse(
+      (response) =>
+        response.request().method() === "DELETE" &&
+        response.url().includes("/saved-configs/"),
+    );
+    await page.getByRole("button", { name: /Delete$/ }).click();
+    await deleted;
+    await expect(
+      page.getByRole("dialog", { name: "Delete shared report", exact: true }),
+    ).toBeHidden();
+    await expect(card).toBeHidden();
+    await page.reload();
+    await expect(
+      page.getByRole("searchbox", {
+        name: "Search shared reports",
+        exact: true,
+      }),
+    ).toHaveValue(reportName);
+    await expect(card).toBeHidden();
+  });
+}
+
+test("capture the canonical Referral workflow at matching widths", async ({
+  page,
+}, testInfo) => {
+  test.skip(
+    !process.env.REPORTING_MOCK_URL,
+    "Set the pinned mock URL for direct design comparison.",
+  );
+  await page.goto(process.env.REPORTING_MOCK_URL!);
+  await page
+    .getByRole("button", { name: "Start a new export", exact: true })
+    .click();
+  await page.getByRole("radio", { name: /^Referrals/ }).click();
+  await captureWidths(page, testInfo, "mock-referral-collapsed", false);
+  for (const name of [
+    "Accession Number",
+    "Referring Lab",
+    "Referred Test Name",
+    "Referral Date",
+    "Referral Result Value",
+    "Referral Result Date",
+    "Referral Status",
+  ])
+    await addField(page, name);
+  await captureWidths(page, testInfo, "mock-referral-columns", false);
+  await page.getByRole("button", { name: /^Next: Set Filters/ }).click();
+  await page.getByLabel("Date From *", { exact: true }).fill("2026-05-07");
+  await page.getByLabel("Date To *", { exact: true }).fill("2026-05-07");
+  await captureWidths(page, testInfo, "mock-referral-filters", false);
+  await page.getByRole("button", { name: /^Next: Review & Submit/ }).click();
+  await expect(
+    page.getByRole("button", { name: "Create CSV", exact: true }),
+  ).toBeVisible();
+  await captureWidths(page, testInfo, "mock-referral-review", false);
+});

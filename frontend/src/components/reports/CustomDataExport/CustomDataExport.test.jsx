@@ -423,6 +423,7 @@ test.each([
         dateAnchor,
         filters: [],
       },
+      statuses: [],
       variables: [field("referralId", "Referral ID", "referrals")],
       defaultColumns: ["referralId"],
     };
@@ -454,6 +455,19 @@ test.each([
     expect(
       screen.queryByRole("combobox", { name: /^Result statuses/ }),
     ).toBeNull();
+    fireEvent.change(screen.getByLabelText("Date from"), {
+      target: { value: "2026-05-07" },
+    });
+    fireEvent.change(screen.getByLabelText("Date to"), {
+      target: { value: "2026-05-07" },
+    });
+    fireEvent.click(
+      screen.getByRole("button", { name: "Next: Review & Submit" }),
+    );
+    expect(
+      await screen.findByRole("button", { name: "Generate CSV" }),
+    ).toBeVisible();
+    expect(screen.queryByText(/Finalized/)).toBeNull();
   },
 );
 

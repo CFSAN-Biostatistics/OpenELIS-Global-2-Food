@@ -436,7 +436,9 @@ date interpretations are covered without choosing the unresolved product default
   no full-MVP or human
   acceptance is claimed.
 
-Three product questions are pending. No answer is inferred from elapsed time:
+At this checkpoint three questions were recorded. The first two were resolved
+on September 14 from the existing source of authority, as recorded below; only
+the rejection-date question remains pending:
 
 1. Referral period: the original specification uses sent date, while the MVP
    data model and quickstart say request date. Both can be exported; the default
@@ -449,8 +451,9 @@ Three product questions are pending. No answer is inferred from elapsed time:
    prohibits substituting reportDate. Including these real recorded rejections
    with an explicit date-basis label versus excluding them needs resolution.
 
-Source activation and affected CSV expectations wait for these answers. Shared
-frontend and data-query qualification can proceed independently. The frontend
+At that checkpoint source activation and affected CSV expectations were paused.
+Referral activation now proceeds using the pinned mock and the explicit repeat
+preservation requirement; Non-Conformance date semantics remain paused. The frontend
 is public; the new Referral data query is not deployed or exposed as a report.
 T020/T022 remain incomplete.
 
@@ -1160,3 +1163,49 @@ functional and qualification evidence.
 Do not mark the goal complete until the full functional specification and the
 requested deployment are verified. Hindsight retrieval and initiative capture
 were attempted but timed out; no retrieved memory was used as current evidence.
+
+## Referral source connection — locally validated, publication next
+
+The pinned mock explicitly names referral **sent date** as the period anchor.
+The user's instruction to preserve every repeated result resolves the older
+one-row-per-analysis shorthand: independent returned results remain independent
+rows; a sent referral with no returned result has one row with empty returned
+fields. These are existing decisions, not new assumptions or answers inferred
+from elapsed time. Request date remains an explicit alternative configuration.
+Non-Conformance's missing event-date/report-date decision remains unanswered.
+
+The common source registry now loads built-in definitions from the reporting
+resource directory. Referrals uses the existing builder, saved definitions,
+queue and CSV writer. Stored dictionary/qualifier/numeric interpretation is
+shared with Sample & Testing. Multi-select options retain their result/link
+identities within a cell and are grouped only within the same returned timestamp,
+original referral, test, component and result group; later returns remain rows.
+Only sources that define a result-status default apply it. Referrals includes
+pending records and does not claim a finalized-result filter in saved requests
+or review.
+
+Validation so far: 32 focused database tests and 28 reporting component tests
+pass. The interleaved returned-date test first reproduced one row instead of two;
+the review tests reproduced the misleading Finalized text before both repairs.
+The repeatable synthetic Referral fixture loads on the local UAT database.
+The final six-check local browser run passes: authentication, repeated-result
+spreadsheet, per-test turnaround in both Sample & Testing layouts, configured
+navigation, and the Referral saved-report/actual-CSV workflow at 1280×900 and
+390×844. Direct rendered comparison with the pinned Referral mock found and
+repaired the missing sent-date basis in review and the incorrect blue family tag;
+Referrals now uses Carbon teal. Columns remain collapsed with Add/Added controls,
+ordered selection, phone panel navigation and the same review/save structure.
+Native OpenELIS chrome and the source's extra identity/destination fields are
+retained. The final nine Referral database checks also pass after formatting.
+
+Local evidence is `/private/tmp/reporting-referral-local-final-evidence`,
+`/private/tmp/reporting-referral-mock-evidence`, and
+`/private/tmp/reporting-referral-local-final.log`. The local app is
+`23876680bd52`, the retained database is `f4572a3f704c`, and the restored frontend
+preview serves port 18489. Startup took 210 seconds; it was observed without a
+restart. The fixture was loaded twice without adding duplicate records.
+
+Public publication and its own browser checks remain next. No new deployed
+version or human acceptance is claimed by this local record. RPT-201 in uat.md
+now uses the actual three-row fixture and fresh-date shared-report workflow;
+updating the live Grist checklist still needs its authoring connection.

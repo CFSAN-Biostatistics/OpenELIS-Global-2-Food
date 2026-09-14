@@ -88,7 +88,7 @@ acceptance.
 | Source                                                   | Required proof                                                                                                                                                       |
 | -------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Sample & Testing                                         | Specimen collection date, stable result/component identity and both layouts                                                                                          |
-| Referrals                                                | Referral request date, referred-analysis occurrence identity and all selected linked results                                                                         |
+| Referrals                                                | Referral sent date, referral/result occurrence identities, every independent returned result and a pending row for a referral awaiting results                       |
 | Non-Conformance / Rejections                             | `NcEvent.dateOfEvent`, recorded rejection dates where applicable, specimen links and distinct occurrence identity; no double counting linked event/rejection records |
 | Additional configured definition over an existing source | New labels/defaults/allowed fields appear through configuration without report-specific frontend or queue code                                                       |
 
@@ -351,15 +351,15 @@ the live partial file and queued work survived. Only abandoned output was
 removed. After releasing the bounded read stall, the live and queued jobs became
 ready and the failed job's linked retry preserved its frozen request.
 
-| Evidence | Observed result |
-| --- | --- |
-| Live job | `57156fca-b95e-4313-a3bd-503e10107cd2`, completed |
+| Evidence      | Observed result                                                                  |
+| ------------- | -------------------------------------------------------------------------------- |
+| Live job      | `57156fca-b95e-4313-a3bd-503e10107cd2`, completed                                |
 | Abandoned job | `51c227ed-2807-463c-92e6-26573fac6e47`, interrupted only after its lease expired |
-| Queued job | `50e6ca95-c74e-4623-a0aa-cbe9c505c322`, retained then completed |
-| Linked retry | `7557092a-c7ce-4ebb-801c-9806f17615e0`, completed with unchanged request |
-| Audit | Exactly one `INTERRUPTED` event, for the abandoned job |
-| Actual CSV | UTF-8 BOM, Accession Number/Viral Load; two `REPORTING-MVP-REPEAT,450` rows |
-| CSV SHA-256 | `499ab005f03b3c02d0da1af52097f3f64b6f00599f839beadac3e577fe741e32` |
+| Queued job    | `50e6ca95-c74e-4623-a0aa-cbe9c505c322`, retained then completed                  |
+| Linked retry  | `7557092a-c7ce-4ebb-801c-9806f17615e0`, completed with unchanged request         |
+| Audit         | Exactly one `INTERRUPTED` event, for the abandoned job                           |
+| Actual CSV    | UTF-8 BOM, Accession Number/Viral Load; two `REPORTING-MVP-REPEAT,450` rows      |
+| CSV SHA-256   | `499ab005f03b3c02d0da1af52097f3f64b6f00599f839beadac3e577fe741e32`               |
 
 The receipt and raw observations are in
 `/private/tmp/reporting-multi-process-20260914/isolation/`; command output is
@@ -401,3 +401,20 @@ unavailable capabilities alongside each stage. Publication requires application 
 preflight with inspected CSV contents, the `reporting` Grist checklist, the
 review overlay and an authenticated submission/download check. Record human UAT
 as pending until a reviewer actually returns a revision-bound report.
+
+### Referral stage acceptance fixture
+
+Load `src/test/resources/fixtures/reporting-referrals.sql` after the existing
+repeated-results fixture (the shared loader does this). Choose Referrals, add
+Accession Number, Referral ID, Referral Result ID, Result ID, Referred Lab,
+Referred Test Name, Referral Date, Referral Result Value, Referral Result Date
+and Referral Status. Use May 7, 2026 for both period dates. Review must identify
+sent dates and must not claim Finalized-only results.
+
+Save a shared report, reopen it, enter fresh May 7 dates and generate the CSV.
+Expect three rows for `REPORTING-MVP-REPEAT`: two separate 450 returns from
+Synthetic Reference Lab, dated May 8 and May 9 with separate link/result IDs,
+and one pending REQUESTED referral with blank returned fields. The draft and
+May 8 sent referral must be absent. Repeat at desktop and phone widths using
+the same workflow and expectations. The `Referrals preserve returned and pending
+rows through shared reports` browser checks implement this UAT walkthrough.

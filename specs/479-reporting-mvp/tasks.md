@@ -154,11 +154,12 @@ applications.
       dates/statuses, repeated results, event/rejection links and avoiding
       duplicate occurrences; test an additional definition over an existing
       source with no frontend/queue code changes.
-      Partial: five real-database Referral mapping checks pass. The shared
-      builder has 28 component checks and configured-report browser coverage.
-      Referral date/row semantics and native rejection date coverage have
-      unanswered product questions recorded in execution.md; affected source
-      activation and CSV expectations remain open.
+      Partial: nine real-database Referral checks now pass, including configured
+      date/column mappings, pending and repeated results, interleaved multi-select
+      returned dates and source-specific status defaults. Sent date and repeat
+      preservation follow the pinned mock and explicit user instruction.
+      Native rejection date coverage remains an unanswered product question;
+      Non-Conformance activation and affected expectations remain open.
 - [ ] T021 [US4] Add failing lifecycle tests under
       `src/test/java/org/openelisglobal/reports/dataexport/` for retry lineage,
       queued cancellation, concurrent claims, restart/live-worker isolation,
@@ -183,6 +184,9 @@ applications.
       `src/main/java/org/openelisglobal/reports/dataexport/` and the existing
       resource/configuration locations, making T020 pass; record exact date and
       event-link rules in `specs/479-reporting-mvp/data-model.md`.
+      Partial: Referrals is connected and locally validated through the existing
+      builder, shared reports, queue and actual CSV at desktop/phone widths.
+      Non-Conformance remains open; public Referral publication is next.
 - [x] T023 [US4] Implement failed-job retry and queued-only cancellation through
       the common service/controller paths under
       `src/main/java/org/openelisglobal/reports/dataexport/`, preserving

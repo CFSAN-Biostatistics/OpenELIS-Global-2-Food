@@ -46,7 +46,10 @@ is implied by the agent's walkthrough or automated checks.
   `reporting-recovery.sql`. Deep link with `?view=queue&job=<id>` after sign-in.
   Their two-column CSV contains Accession Number and Viral Load, with both 450
   readings. Public availability is recorded in the deployment receipt.
-- Planned referral fixture (not yet seeded): `REPORTING-MVP-REFERRAL`
+- Referral fixture: the `REPORTING-MVP-REPEAT` analysis has two returned 450
+  readings and one pending referral sent on May 7, 2026. Use May 7 for the
+  Referral period. `reporting-referrals.sql` also includes an unsent draft and
+  a May 8 sent referral, both excluded from that period.
 - Planned non-conformance fixture (not yet seeded): `REPORTING-MVP-NCE`
 
 Fixtures are public synthetic data. Seeding is idempotent for one deployment
@@ -113,15 +116,22 @@ through the same reporting experience.
 Current-stage availability check: `RPT-200` required — Open Report type in
 the builder. Expect Referrals and Non-Conformance alongside Sample & Testing.
 Choose Start a new export and inspect both type cards. Mark Fail while they
-remain unavailable. The restored design displays both as Not yet connected;
+remain unavailable. The local Referral increment is connected; public
+availability is recorded separately in the deployment receipt. Non-Conformance
+remains Not yet connected;
 visible cards do not establish functional acceptance. No unseeded fixture is needed for this availability check.
 The three execution checks below become runnable when their sources and
 fixtures arrive; preserve their stable planned keys.
 
-1. `RPT-201` required — Select Referrals, use the fixture period and generate a
-   report including the referral identity, accession, destination, event date
-   and status. Expect exactly one `REPORTING-MVP-REFERRAL` occurrence with the
-   configured date meaning and no duplicated rows.
+1. `RPT-201` required — Select Referrals and add Accession Number, Referral ID,
+   Referral Result ID, Result ID, Referred Lab, Referred Test Name, Referral Date,
+   Referral Result Value, Referral Result Date and Referral Status. Use May 7,
+   2026 for both dates. Review identifies referral sent dates and does not claim
+   Finalized-only results. Save a shared report, reopen it and choose fresh May 7
+   dates. Download three rows for `REPORTING-MVP-REPEAT`: two distinct 450 returns
+   from Synthetic Reference Lab, dated May 8 and May 9, plus one REQUESTED
+   referral with blank returned fields. Returned rows retain distinct link/result
+   IDs. Exclude the unsent draft and May 8 sent referral. Repeat on a phone.
 2. `RPT-202` required — Select Non-Conformance, use the fixture period and
    generate a report including the event identity, accession, reason, event
    date and status. Expect exactly one `REPORTING-MVP-NCE` occurrence linked to
