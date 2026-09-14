@@ -3,23 +3,25 @@
 **Inputs**: [spec.md](spec.md), [plan.md](plan.md),
 [data-model.md](data-model.md), [contract](contracts/export-api.md),
 [acceptance plan](quickstart.md), [UAT contract](uat.md).
-**Status**: Sample & Testing, queue recovery and configurable navigation are
-publicly testable at frontend/backend/instance configuration `22e3a66b6175`.
-Database section/icon editing and instance override protection are deployed.
-All 10 public browser checks pass, including eight application workflows and
-actual CSV downloads. Local restart/two-profile qualification passes with the
-original values restored. Runtime configuration `7780ee2cd9` retains one
-application context. Review-widget `54b99f8d76ba` now fixes cross-tab story
-selection; all 104 widget checks, 201 tooling tests, live picker checks and
-three fresh public CSV/authentication checks pass. T041 remains open only for
-RPT-504 publication because the Grist authoring connection timed out.
-The current live checklist still has six stories and 17 steps. The exact
-application revision passes frontend/backend/translation CI; human acceptance
-remains pending.
+**Status**: Sample & Testing, Referrals, queue recovery and configurable
+navigation are publicly testable at frontend/backend/instance configuration
+`d48cd790c492`. Six public checks pass for this Referral increment, including
+actual CSV downloads, shared report reuse, desktop/phone Referral workflows,
+Sample & Testing repeats/turnaround, and configured navigation. Direct public
+screen comparison used the pinned mock at widths 1280 and 390.
+Database section/icon editing and instance override protection remain deployed;
+the earlier 10-check public navigation run and local restart/two-profile
+qualification remain recorded separately. Runtime configuration `7780ee2cd9`
+retains one application context. Review widget `54b99f8d76ba` is unchanged and
+retains its earlier cross-tab verification. The live checklist still has six
+stories and 17 steps: RPT-201 and RPT-504 are prepared, but publication remains
+blocked by the Grist authoring connection timeout. Frontend and translation CI
+pass for `d48cd790c492`; backend Build + Test is still running. Non-Conformance,
+public queued cancellation, final audit and human acceptance remain open.
 See the current receipt and remaining qualification in `execution.md`.
 T027 now passes against the disposable local stack: both 50,000-result layouts,
 bounded fetches, one worker, the five-job limit, ordinary reads and desktop/phone
-downloads. These measurements are local; the public application is unchanged.
+downloads. These workload measurements are local; they are not public performance evidence.
 T024/T028 now pass, including two real application processes, live lease renewal,
 abandoned-only cleanup, queued completion and exact downloaded CSVs after killing
 the temporary peer. Public queued cancellation under T021 remains open.
@@ -184,9 +186,9 @@ applications.
       `src/main/java/org/openelisglobal/reports/dataexport/` and the existing
       resource/configuration locations, making T020 pass; record exact date and
       event-link rules in `specs/479-reporting-mvp/data-model.md`.
-      Partial: Referrals is connected and locally validated through the existing
-      builder, shared reports, queue and actual CSV at desktop/phone widths.
-      Non-Conformance remains open; public Referral publication is next.
+      Partial: Referrals is connected and publicly validated at `d48cd790c492`
+      through the existing builder, shared reports, queue and actual CSV at
+      desktop/phone widths. Non-Conformance remains open.
 - [x] T023 [US4] Implement failed-job retry and queued-only cancellation through
       the common service/controller paths under
       `src/main/java/org/openelisglobal/reports/dataexport/`, preserving

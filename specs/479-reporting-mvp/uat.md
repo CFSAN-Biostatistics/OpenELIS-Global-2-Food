@@ -116,12 +116,12 @@ through the same reporting experience.
 Current-stage availability check: `RPT-200` required — Open Report type in
 the builder. Expect Referrals and Non-Conformance alongside Sample & Testing.
 Choose Start a new export and inspect both type cards. Mark Fail while they
-remain unavailable. The local Referral increment is connected; public
-availability is recorded separately in the deployment receipt. Non-Conformance
-remains Not yet connected;
+remain unavailable. Referrals is publicly connected at `d48cd790c492`;
+Non-Conformance remains Not yet connected;
 visible cards do not establish functional acceptance. No unseeded fixture is needed for this availability check.
-The three execution checks below become runnable when their sources and
-fixtures arrive; preserve their stable planned keys.
+RPT-201 is runnable now with the deployed fixture, although its Grist checklist
+publication is still blocked by the authoring connection. The remaining checks
+become runnable as their sources arrive; preserve their stable planned keys.
 
 1. `RPT-201` required — Select Referrals and add Accession Number, Referral ID,
    Referral Result ID, Result ID, Referred Lab, Referred Test Name, Referral Date,

@@ -5,6 +5,54 @@ usable stage to Reporting UAT. Both milestones remain in scope. The canonical
 mock defines the interface; MVP scope determines which functions are connected.
 Public availability, automated qualification and human acceptance are separate.
 
+## Current Public Stage — Referrals, 2026-09-14
+
+The [public reporting application](https://reporting.catalyst.openelis-global.org/reports/custom-data-export)
+now serves frontend, backend and instance configuration
+`d48cd790c49294ddb4a36c9333d3acc744ebb3c4`, deployment
+`20260914T184156Z-d48cd790c492`. Review tooling remains `54b99f8d76ba` and runtime
+configuration remains `7780ee2cd987`. The
+[live identity](https://reporting.catalyst.openelis-global.org/__review/target.json)
+records this ready stage, its checks and the remaining work.
+
+Six public browser checks passed in 2.1 minutes: authentication, Sample & Testing
+spreadsheet repeats, turnaround in both layouts, configured sidebar/query context
+and retained draft, and the Referral saved-report/fresh-date/actual-CSV workflow
+at 1280×900 and 390×844. For May 7, the Referral CSV contains two independently
+identified 450 returns dated May 8 and May 9, plus one pending REQUESTED row.
+The unsent draft and May 8 sent referral are excluded. Only the test-created
+shared reports were removed after their workflows; existing reports were retained.
+Public desktop and phone columns/review captures were inspected against the
+pinned mock. The collapsed catalog, ordered selected fields, mobile panels,
+teal Referral label and explicit sent-date basis are present. Native OpenELIS
+chrome, real result identifiers and the background-generation message remain the
+recorded implementation-specific differences.
+
+All 210 artifact hashes were checked before deployment; served HTML and its
+referenced assets match the release. Application `0714c3b49924` started once and
+became ready after approximately 480 seconds; observation continued on that same
+container. Database `f9933a28cb4b`, report files and logs were retained. The
+synthetic Referral fixture was loaded and validated. The application has one
+context; the obsolete duplicate context returns 404. Previous artifacts,
+configuration, identity, logs and a database backup remain with the release.
+
+Public evidence: `/private/tmp/reporting-referral-public-evidence`,
+`/private/tmp/reporting-referral-public-browser.log`, and
+`/private/tmp/reporting-referral-public-verification.json`. The remote release is
+`/home/ubuntu/reporting-uat/releases/d48cd790c49294ddb4a36c9333d3acc744ebb3c4`;
+its `public-verification.json` preserves the earlier menu restart/profile and
+review-widget evidence with their original scope and timestamps.
+
+Frontend, static, image and translation checks pass for the deployed revision;
+backend Build + Test (run `34880970783`) is still running at this checkpoint.
+The live checklist remains six stories and 17 steps at revision
+`14333b9e6281374aac57eeb38177a7fca0bba1ff340f380457261af19e3b3481`.
+RPT-201 and RPT-504 instructions are prepared; the authoring SSH timeout still
+prevents publishing them. No human answers were modified. Non-Conformance's
+missing event-date decision, repeatable public queued cancellation, final audit
+and human acceptance remain open. This usable stage does not complete M2 or the
+full goal.
+
 ## Two-Process Recovery Qualification — 2026-09-14
 
 The remaining multi-instance crash-isolation check now passes against two real
@@ -35,7 +83,7 @@ local operational evidence to the existing public application; it does not
 claim a new public deployment or human acceptance. T021's public queued-cancel
 workflow and the source-activation/product decisions remain open.
 
-## Current Public Stage — Database Menu Presentation, 2026-09-14
+## Previous Public Stage — Database Menu Presentation, 2026-09-14
 
 The navigation follow-through now persists optional section/icon metadata in the
 existing menu table and edits it through Global Menu Configuration. Server-owned
@@ -1164,7 +1212,7 @@ Do not mark the goal complete until the full functional specification and the
 requested deployment are verified. Hindsight retrieval and initiative capture
 were attempted but timed out; no retrieved memory was used as current evidence.
 
-## Referral source connection — locally validated, publication next
+## Referral source connection — local validation before publication
 
 The pinned mock explicitly names referral **sent date** as the period anchor.
 The user's instruction to preserve every repeated result resolves the older
@@ -1205,7 +1253,8 @@ Local evidence is `/private/tmp/reporting-referral-local-final-evidence`,
 preview serves port 18489. Startup took 210 seconds; it was observed without a
 restart. The fixture was loaded twice without adding duplicate records.
 
-Public publication and its own browser checks remain next. No new deployed
-version or human acceptance is claimed by this local record. RPT-201 in uat.md
+This local record preceded publication. The current public stage above records
+the subsequent deployment and its own browser checks; human acceptance remains
+separate. RPT-201 in uat.md
 now uses the actual three-row fixture and fresh-date shared-report workflow;
 updating the live Grist checklist still needs its authoring connection.
