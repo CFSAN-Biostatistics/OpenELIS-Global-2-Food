@@ -40,6 +40,22 @@ components, observation-history types and questionnaire items where a supported
 mapping can resolve values. A new item of an already supported type needs no
 reporting-code change. A new source type may require a mapping.
 
+For Sample & Testing, received date/time comes from the specimen record and the
+ordered-test count is the number of analyses belonging to the sample. The
+turnaround columns are whole elapsed minutes for order-to-result,
+received-to-validated, order-to-collection, collection-to-received and
+resulted-to-validated. Order time is the start of the stored order date in the
+laboratory timezone; collection, receipt, completion and release use their
+stored timestamps. A missing endpoint produces an empty value.
+
+Supported configured questions come from observation-history types with
+a nonblank description. Their field identity is `observation:<type id>` and
+their current description is the displayed label. Answers attached to the
+sample or its patient are included. Literal answers remain literal, dictionary
+answers use the current dictionary display value, localization-key answers use
+the current message value, and multiple answers of the same type are joined in
+stored order with `; `.
+
 Names do not establish identity. Renames retain identity; duplicate labels do
 not merge fields. Capture selected labels and source-definition version on
 submission. Retired/retyped fields in a reopened draft need an explanation and
@@ -86,8 +102,9 @@ missing timestamps and relevant demographic context rather than invent values.
 
 **Statuses**: Finalized is the default Sample & Testing filter. Supported status
 choices use the existing status service. Corrected finalized results remain
-included with current values; a correction awaiting finalization is excluded by
-the default filter. Do not invent a standalone Corrected status enum.
+included with current values and display `Corrected`; a correction awaiting
+finalization is excluded by the default filter. Do not invent a standalone
+Corrected status enum.
 
 **Dates**: Inclusive dates become the half-open interval from the start of the
 first day to the start of the day after the last day, in the laboratory

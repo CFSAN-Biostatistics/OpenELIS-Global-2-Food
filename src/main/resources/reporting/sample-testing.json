@@ -5,8 +5,8 @@
   "source": "SAMPLE_TESTING",
   "dateAnchor": "collectionDate",
   "layouts": ["SPREADSHEET", "RESULT_LIST"],
-  "attributes": ["accessionNumber", "specimenId", "collectionDate", "collectionTime", "receivedDate", "orderDate", "sampleType", "sampleStatus", "priority", "patientName", "dateOfBirth", "sex", "nationalId", "phoneNumber", "address", "resultId", "testName", "component", "loincCode", "resultValue", "resultUnit", "resultStatus", "dateResulted", "validationDate", "labSection"],
-  "catalogs": ["tests", "components"],
+  "attributes": ["accessionNumber", "specimenId", "collectionDate", "collectionTime", "receivedDate", "receivedTime", "orderDate", "sampleType", "sampleStatus", "priority", "numberOfTests", "patientName", "dateOfBirth", "sex", "nationalId", "phoneNumber", "address", "resultId", "testName", "component", "loincCode", "resultValue", "resultUnit", "resultStatus", "dateResulted", "validationDate", "labSection", "orderToResultMinutes", "receivedToValidatedMinutes", "orderToCollectionMinutes", "collectionToReceivedMinutes", "resultedToValidatedMinutes"],
+  "catalogs": ["tests", "components", "observations"],
   "filters": ["labSectionIds", "testIds", "resultStatuses"],
   "defaultColumns": {
     "SPREADSHEET": ["accessionNumber", "specimenId", "collectionDate", "sampleType"],

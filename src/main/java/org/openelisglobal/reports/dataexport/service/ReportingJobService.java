@@ -23,14 +23,19 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 public class ReportingJobService {
     private final ObjectMapper mapper = new ObjectMapper();
+    private final ExportJobDAO jobs;
+    private final ReportingCatalogService catalog;
+    private final ReportingAccess access;
+    private final ReportingSettings settings;
+
     @Autowired
-    private ExportJobDAO jobs;
-    @Autowired
-    private ReportingCatalogService catalog;
-    @Autowired
-    private ReportingAccess access;
-    @Autowired
-    private ReportingSettings settings;
+    public ReportingJobService(ExportJobDAO jobs, ReportingCatalogService catalog, ReportingAccess access,
+            ReportingSettings settings) {
+        this.jobs = jobs;
+        this.catalog = catalog;
+        this.access = access;
+        this.settings = settings;
+    }
 
     public ExportJobView submit(String owner, ExportSubmission request) {
         access.requireReports(owner);

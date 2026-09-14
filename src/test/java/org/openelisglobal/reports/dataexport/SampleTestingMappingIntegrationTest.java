@@ -6,6 +6,7 @@ import static org.junit.Assert.assertNotEquals;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import java.io.StringWriter;
+import java.sql.Date;
 import java.sql.Timestamp;
 import java.util.List;
 import java.util.Map;
@@ -16,6 +17,10 @@ import org.openelisglobal.analysis.service.AnalysisService;
 import org.openelisglobal.analysis.valueholder.Analysis;
 import org.openelisglobal.common.services.IStatusService;
 import org.openelisglobal.common.services.StatusService.AnalysisStatus;
+import org.openelisglobal.observationhistory.service.ObservationHistoryService;
+import org.openelisglobal.observationhistory.valueholder.ObservationHistory;
+import org.openelisglobal.observationhistorytype.service.ObservationHistoryTypeService;
+import org.openelisglobal.observationhistorytype.valueholder.ObservationHistoryType;
 import org.openelisglobal.reports.dataexport.form.ExportFilter;
 import org.openelisglobal.reports.dataexport.form.ExportSnapshot;
 import org.openelisglobal.reports.dataexport.form.ReportSourceConfig;
@@ -49,6 +54,10 @@ public class SampleTestingMappingIntegrationTest extends BaseWebContextSensitive
     private SampleItemService specimens;
     @Autowired
     private IStatusService statuses;
+    @Autowired
+    private ObservationHistoryService observations;
+    @Autowired
+    private ObservationHistoryTypeService observationTypes;
     @PersistenceContext
     private EntityManager entityManager;
     @Autowired
@@ -180,5 +189,86 @@ public class SampleTestingMappingIntegrationTest extends BaseWebContextSensitive
             assertEquals(accession + ",2026-08-20,120.125", lines[1]);
             assertEquals(lines[1], lines[2]);
         }
+    }
+
+    @Test
+    public void turnaroundAndCorrectionUsePersistedWorkflowState() throws Exception {
+        Analysis analysis = analyses.get("1");
+        analysis.setStatusId(statuses.getStatusID(AnalysisStatus.Finalized));
+        analysis.setCompletedDate(Timestamp.valueOf("2026-08-20 15:00:00"));
+        analysis.setReleasedDate(Timestamp.valueOf("2026-08-20 17:00:00"));
+        analysis.setCorrectedSincePatientReport(true);
+        analyses.update(analysis);
+        SampleItem specimen = analysis.getSampleItem();
+        specimen.setCollectionDate(Timestamp.valueOf("2026-08-20 10:00:00"));
+        specimen.setReceivedDate(Timestamp.valueOf("2026-08-20 11:30:00"));
+        specimen.getSample().setEnteredDate(Date.valueOf("2026-08-19"));
+        specimens.update(specimen);
+        reading(analysis, options.get("1"), "85.0");
+        entityManager.flush();
+
+        var fields = source.catalog().stream()
+                .filter(v -> List.of("receivedTime", "numberOfTests", "resultStatus", "orderToResultMinutes",
+                        "receivedToValidatedMinutes", "orderToCollectionMinutes", "collectionToReceivedMinutes",
+                        "resultedToValidatedMinutes").contains(v.id()))
+                .toList();
+        ExportFilter filter = new ExportFilter("2026-08-20", "2026-08-20",
+                List.of(analysis.getTestSection().getId()), List.of("1"), List.of("FINALIZED"));
+        ReportSourceConfig definition = new ReportSourceConfig("SAMPLE_TESTING", 1, "Sample & Testing",
+                "SAMPLE_TESTING", "collectionDate", List.of("RESULT_LIST"), fields.stream().map(v -> v.id()).toList(),
+                List.of(), List.of("testIds"), Map.of("RESULT_LIST", List.of("receivedTime")));
+        StringWriter csv = new StringWriter();
+
+        assertEquals(1, source.write(csv, new ExportSnapshot(definition, "RESULT_LIST", fields, filter,
+                java.time.ZoneId.systemDefault().getId(), List.of(analysis.getStatusId()))));
+        assertEquals(
+                "Received Time,Number of Tests Ordered,Result Status,Order to Result (min),Received to Validated (min),Order to Collection (min),Collection to Received (min),Resulted to Validated (min)\r\n"
+                        + "11:30,1,Corrected,2340,330,2040,90,120\r\n",
+                csv.toString().substring(1));
+    }
+
+    @Test
+    public void configuredObservationAppearsByStableIdentityAndUsesItsCurrentLabel() throws Exception {
+        ObservationHistoryType type = new ObservationHistoryType();
+        type.setTypeName("programCohort");
+        type.setDescription("Program Cohort");
+        observationTypes.insert(type);
+        ObservationHistory observation = new ObservationHistory();
+        observation.setObservationHistoryTypeId(type.getId());
+        observation.setSampleId("1");
+        observation.setValue("Cohort A");
+        observation.setValueType(ObservationHistory.ValueType.LITERAL);
+        observations.insert(observation);
+        Analysis analysis = analyses.get("1");
+        analysis.setStatusId(statuses.getStatusID(AnalysisStatus.Finalized));
+        analyses.update(analysis);
+        SampleItem specimen = analysis.getSampleItem();
+        specimen.setCollectionDate(Timestamp.valueOf("2026-08-20 10:00:00"));
+        specimens.update(specimen);
+        reading(analysis, options.get("1"), "85.0");
+        entityManager.flush();
+
+        String fieldId = "observation:" + type.getId();
+        var field = source.catalog().stream().filter(v -> v.id().equals(fieldId)).findFirst()
+                .orElseThrow();
+        assertEquals("Program Cohort", field.label());
+        ExportFilter filter = new ExportFilter("2026-08-20", "2026-08-20",
+                List.of(analysis.getTestSection().getId()), List.of("1"), List.of("FINALIZED"));
+        ReportSourceConfig definition = new ReportSourceConfig("SAMPLE_TESTING", 1, "Sample & Testing",
+                "SAMPLE_TESTING", "collectionDate", List.of("RESULT_LIST"), List.of("accessionNumber"),
+                List.of("observations"), List.of("testIds"), Map.of("RESULT_LIST", List.of("accessionNumber")));
+        StringWriter csv = new StringWriter();
+        source.write(csv, new ExportSnapshot(definition, "RESULT_LIST", List.of(field), filter,
+                java.time.ZoneId.systemDefault().getId(), List.of(analysis.getStatusId())));
+        assertEquals("Program Cohort\r\nCohort A\r\n", csv.toString().substring(1));
+
+        type.setDescription("Program Enrollment Cohort");
+        observationTypes.update(type);
+        entityManager.flush();
+        entityManager.clear();
+        var renamed = source.catalog().stream().filter(v -> v.id().equals(fieldId)).findFirst()
+                .orElseThrow();
+        assertEquals(field.id(), renamed.id());
+        assertEquals("Program Enrollment Cohort", renamed.label());
     }
 }

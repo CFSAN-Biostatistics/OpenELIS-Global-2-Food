@@ -4,6 +4,8 @@ import java.util.List;
 import java.util.stream.Stream;
 import org.openelisglobal.common.dao.BaseDAO;
 import org.openelisglobal.patient.valueholder.Patient;
+import org.openelisglobal.observationhistory.valueholder.ObservationHistory;
+import org.openelisglobal.observationhistorytype.valueholder.ObservationHistoryType;
 import org.openelisglobal.reports.dataexport.form.ExportSnapshot;
 import org.openelisglobal.result.valueholder.Result;
 import org.openelisglobal.test.valueholder.Test;
@@ -17,6 +19,12 @@ public interface SampleTestingExportDAO extends BaseDAO<Result, String> {
     List<TestResultComponent> components();
 
     Patient patient(String sampleId);
+
+    long analysisCount(String sampleId);
+
+    List<ObservationHistoryType> observationTypes();
+
+    List<ObservationHistory> observations(String sampleId, String patientId);
 
     String dictionary(String id);
 

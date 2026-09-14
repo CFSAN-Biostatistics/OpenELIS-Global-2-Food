@@ -3,7 +3,9 @@ package org.openelisglobal.reports.dataexport.service;
 import java.io.IOException;
 import java.io.Writer;
 import java.sql.Timestamp;
+import java.time.Instant;
 import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -14,6 +16,8 @@ import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.openelisglobal.common.services.IStatusService;
+import org.openelisglobal.internationalization.MessageUtil;
+import org.openelisglobal.observationhistory.valueholder.ObservationHistory;
 import org.openelisglobal.patient.valueholder.Patient;
 import org.openelisglobal.reports.dataexport.dao.SampleTestingExportDAO;
 import org.openelisglobal.reports.dataexport.form.ExportRecord;
@@ -51,10 +55,12 @@ public class SampleTestingSource implements ReportingSource {
         common(fields, "collectionDate", "Collection Date", "date", "sample", BOTH);
         common(fields, "collectionTime", "Collection Time", "time", "sample", BOTH);
         common(fields, "receivedDate", "Received Date", "date", "sample", BOTH);
+        common(fields, "receivedTime", "Received Time", "time", "sample", BOTH);
         common(fields, "orderDate", "Order Date", "date", "sample", BOTH);
         common(fields, "sampleType", "Sample Type", "text", "sample", BOTH);
         common(fields, "sampleStatus", "Sample Status", "text", "sample", BOTH);
         common(fields, "priority", "Priority", "text", "sample", BOTH);
+        common(fields, "numberOfTests", "Number of Tests Ordered", "number", "sample", BOTH);
         common(fields, "patientName", "Patient Name", "text", "patient", BOTH);
         common(fields, "dateOfBirth", "Date of Birth", "date", "patient", BOTH);
         common(fields, "sex", "Sex", "text", "patient", BOTH);
@@ -71,6 +77,11 @@ public class SampleTestingSource implements ReportingSource {
         common(fields, "dateResulted", "Date Resulted", "datetime", "result", DETAIL);
         common(fields, "validationDate", "Validation Date", "datetime", "result", DETAIL);
         common(fields, "labSection", "Lab Section", "text", "result", DETAIL);
+        common(fields, "orderToResultMinutes", "Order to Result (min)", "number", "turnaround", BOTH);
+        common(fields, "receivedToValidatedMinutes", "Received to Validated (min)", "number", "turnaround", BOTH);
+        common(fields, "orderToCollectionMinutes", "Order to Collection (min)", "number", "turnaround", BOTH);
+        common(fields, "collectionToReceivedMinutes", "Collection to Received (min)", "number", "turnaround", BOTH);
+        common(fields, "resultedToValidatedMinutes", "Resulted to Validated (min)", "number", "turnaround", BOTH);
         var tests = dao.tests();
         var names = tests.stream().collect(Collectors.toMap(t -> t.getId(), t -> t.getDescription()));
         tests.forEach(t -> fields
@@ -78,6 +89,8 @@ public class SampleTestingSource implements ReportingSource {
         dao.components().stream().filter(c -> names.containsKey(c.getTestId()))
                 .forEach(c -> fields.add(new ReportingVariable("component:" + c.getId(),
                         names.get(c.getTestId()) + " — " + c.getLabel(), c.getResultType(), "components", true, BOTH)));
+        dao.observationTypes().forEach(t -> fields.add(
+                new ReportingVariable("observation:" + t.getId(), t.getDescription(), "text", "observations", false, BOTH)));
         return fields;
     }
 
@@ -97,7 +110,10 @@ public class SampleTestingSource implements ReportingSource {
                 private Normalized pending;
                 private int count;
                 private String specimenId;
+                private String sampleId;
                 private Map<String, String> patientFields = Map.of();
+                private Map<String, String> observationFields = Map.of();
+                private long analysisCount;
 
                 private Normalized read() {
                     while (input.hasNext()) {
@@ -107,9 +123,17 @@ public class SampleTestingSource implements ReportingSource {
                         var specimen = result.getAnalysis().getSampleItem();
                         if (!Objects.equals(specimenId, specimen.getId())) {
                             specimenId = specimen.getId();
-                            patientFields = patientFields(dao.patient(specimen.getSample().getId()), zone);
+                            Patient patient = dao.patient(specimen.getSample().getId());
+                            patientFields = patientFields(patient, zone);
+                            observationFields = observationFields(
+                                    dao.observations(specimen.getSample().getId(), patient == null ? null : patient.getId()));
                         }
-                        Normalized value = normalize(result, request, components, patientFields, zone);
+                        if (!Objects.equals(sampleId, specimen.getSample().getId())) {
+                            sampleId = specimen.getSample().getId();
+                            analysisCount = dao.analysisCount(sampleId);
+                        }
+                        Normalized value = normalize(result, request, components, patientFields, observationFields,
+                                analysisCount, zone);
                         if (++count % 250 == 0)
                             dao.clearReadBatch();
                         return value;
@@ -155,7 +179,7 @@ public class SampleTestingSource implements ReportingSource {
     }
 
     private Normalized normalize(Result r, ExportSnapshot request, Map<String, TestResultComponent> components,
-            Map<String, String> patientFields, ZoneId zone) {
+            Map<String, String> patientFields, Map<String, String> observationFields, long analysisCount, ZoneId zone) {
         var analysis = r.getAnalysis();
         var specimen = analysis.getSampleItem();
         var sample = specimen.getSample();
@@ -163,25 +187,40 @@ public class SampleTestingSource implements ReportingSource {
         String componentId = r.getTestResult() == null ? null : r.getTestResult().getComponentId();
         TestResultComponent component = components.get(componentId);
         Map<String, String> a = new LinkedHashMap<>(patientFields);
+        a.putAll(observationFields);
         a.put("accessionNumber", sample.getAccessionNumber());
         a.put("specimenId", specimen.getId());
         a.put("collectionDate", date(specimen.getCollectionDate(), zone));
         a.put("collectionTime", specimen.getCollectionDate() == null ? null
                 : specimen.getCollectionDate().toInstant().atZone(zone).toLocalTime().toString());
         a.put("receivedDate", date(specimen.getReceivedDate(), zone));
+        a.put("receivedTime", time(specimen.getReceivedDate(), zone));
         a.put("orderDate", sample.getEnteredDate() == null ? null : sample.getEnteredDate().toLocalDate().toString());
         a.put("sampleType", specimen.getTypeOfSample() == null ? null : specimen.getTypeOfSample().getDescription());
         a.put("sampleStatus", statuses.getStatusNameFromId(specimen.getStatusId()));
         a.put("priority", sample.getPriority() == null ? null : sample.getPriority().toString());
+        a.put("numberOfTests", Long.toString(analysisCount));
         a.put("resultId", r.getId());
         a.put("testName", test.getDescription());
         a.put("component", component == null ? null : component.getLabel());
         a.put("loincCode", test.getLoinc());
         a.put("resultUnit", test.getUnitOfMeasure() == null ? null : test.getUnitOfMeasure().getUnitOfMeasureName());
-        a.put("resultStatus", statuses.getStatusNameFromId(analysis.getStatusId()));
+        a.put("resultStatus",
+                analysis.isCorrectedSincePatientReport() ? "Corrected" : statuses.getStatusNameFromId(analysis.getStatusId()));
         a.put("dateResulted", timestamp(analysis.getCompletedDate(), zone));
         a.put("validationDate", timestamp(analysis.getReleasedDate(), zone));
         a.put("labSection", analysis.getTestSection() == null ? null : analysis.getTestSection().getTestSectionName());
+        Instant order = sample.getEnteredDate() == null ? null
+                : sample.getEnteredDate().toLocalDate().atStartOfDay(zone).toInstant();
+        Instant collected = instant(specimen.getCollectionDate());
+        Instant received = instant(specimen.getReceivedDate());
+        Instant resulted = instant(analysis.getCompletedDate());
+        Instant validated = instant(analysis.getReleasedDate());
+        a.put("orderToResultMinutes", minutes(order, resulted));
+        a.put("receivedToValidatedMinutes", minutes(received, validated));
+        a.put("orderToCollectionMinutes", minutes(order, collected));
+        a.put("collectionToReceivedMinutes", minutes(collected, received));
+        a.put("resultedToValidatedMinutes", minutes(resulted, validated));
         List<String> fields = new ArrayList<>();
         if (componentId == null || component == null || component.getIsPrimary())
             fields.add("test:" + test.getId());
@@ -234,6 +273,22 @@ public class SampleTestingSource implements ReportingSource {
         return fields;
     }
 
+    private Map<String, String> observationFields(List<ObservationHistory> observations) {
+        Map<String, List<String>> grouped = new LinkedHashMap<>();
+        for (ObservationHistory observation : observations) {
+            String value = observation.getValue();
+            if (ObservationHistory.ValueType.DICTIONARY.getCode().equals(observation.getValueType()))
+                value = dao.dictionary(value);
+            else if (ObservationHistory.ValueType.KEY.getCode().equals(observation.getValueType()))
+                value = MessageUtil.getMessage(value);
+            grouped.computeIfAbsent("observation:" + observation.getObservationHistoryTypeId(), key -> new ArrayList<>())
+                    .add(value == null ? "" : value);
+        }
+        Map<String, String> fields = new LinkedHashMap<>();
+        grouped.forEach((key, values) -> fields.put(key, String.join("; ", values)));
+        return fields;
+    }
+
     private static String join(String separator, String... values) {
         return java.util.Arrays.stream(values).filter(v -> v != null && !v.isBlank())
                 .collect(Collectors.joining(separator));
@@ -245,6 +300,18 @@ public class SampleTestingSource implements ReportingSource {
 
     private static String timestamp(Timestamp value, ZoneId zone) {
         return value == null ? null : value.toInstant().atZone(zone).toOffsetDateTime().toString();
+    }
+
+    private static String time(Timestamp value, ZoneId zone) {
+        return value == null ? null : value.toInstant().atZone(zone).toLocalTime().toString();
+    }
+
+    private static Instant instant(Timestamp value) {
+        return value == null ? null : value.toInstant();
+    }
+
+    private static String minutes(Instant start, Instant end) {
+        return start == null || end == null ? null : Long.toString(ChronoUnit.MINUTES.between(start, end));
     }
 
     private record Normalized(String id, String specimen, Map<String, String> attributes, List<String> measurementIds,

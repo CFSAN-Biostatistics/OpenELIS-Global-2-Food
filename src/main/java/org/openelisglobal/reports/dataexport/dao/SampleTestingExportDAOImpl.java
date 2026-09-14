@@ -6,6 +6,8 @@ import java.util.List;
 import java.util.stream.Stream;
 import org.hibernate.jpa.QueryHints;
 import org.openelisglobal.common.daoimpl.BaseDAOImpl;
+import org.openelisglobal.observationhistory.valueholder.ObservationHistory;
+import org.openelisglobal.observationhistorytype.valueholder.ObservationHistoryType;
 import org.openelisglobal.patient.valueholder.Patient;
 import org.openelisglobal.reports.dataexport.form.ExportSnapshot;
 import org.openelisglobal.reports.dataexport.service.ExportDateRange;
@@ -65,6 +67,32 @@ public class SampleTestingExportDAOImpl extends BaseDAOImpl<Result, String> impl
                                 + "where p.id in (select sh.patientId from SampleHuman sh where sh.sampleId = :sample)",
                         Patient.class)
                 .setParameter("sample", sampleId).setMaxResults(1).getResultStream().findFirst().orElse(null);
+    }
+
+    @Override
+    public long analysisCount(String sampleId) {
+        return entityManager
+                .createQuery("select count(a) from Analysis a where a.sampleItem.sample.id = :sample", Long.class)
+                .setParameter("sample", sampleId).getSingleResult();
+    }
+
+    @Override
+    public List<ObservationHistoryType> observationTypes() {
+        return entityManager.createQuery(
+                "from ObservationHistoryType t where t.description is not null and t.description <> '' "
+                        + "order by t.description, t.id",
+                ObservationHistoryType.class).getResultList();
+    }
+
+    @Override
+    public List<ObservationHistory> observations(String sampleId, String patientId) {
+        String hql = "from ObservationHistory o where o.sampleId = :sample "
+                + (patientId == null ? "" : "or o.patientId = :patient ")
+                + "order by o.observationHistoryTypeId, o.id";
+        var query = entityManager.createQuery(hql, ObservationHistory.class).setParameter("sample", sampleId);
+        if (patientId != null)
+            query.setParameter("patient", patientId);
+        return query.getResultList();
     }
 
     @Override

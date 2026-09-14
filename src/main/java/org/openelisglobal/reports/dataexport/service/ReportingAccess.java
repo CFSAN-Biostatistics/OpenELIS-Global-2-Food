@@ -16,16 +16,20 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @Transactional(readOnly = true)
 public class ReportingAccess {
+    private final UserRoleService roles;
+    private final SystemUserService users;
+    private final UserService userService;
+
     @Autowired
-    private UserRoleService roles;
-    @Autowired
-    private SystemUserService users;
-    @Autowired
-    private UserService userService;
+    public ReportingAccess(UserRoleService roles, SystemUserService users, UserService userService) {
+        this.roles = roles;
+        this.users = users;
+        this.userService = userService;
+    }
 
     public void requireReports(String owner) {
         var user = users.get(owner);
-        if (!"Y".equals(user.getIsActive())
+        if (user == null || !"Y".equals(user.getIsActive())
                 || !roles.userInRole(owner, List.of(Constants.ROLE_GLOBAL_ADMIN, Constants.ROLE_REPORTS))) {
             throw new ReportingException(403, "reporting.access.denied");
         }
@@ -43,9 +47,10 @@ public class ReportingAccess {
         if (roles.userInRole(owner, Constants.ROLE_GLOBAL_ADMIN))
             return;
         var mapping = roles.getUserLabUnitRoles(owner);
-        Set<String> allowed = mapping == null ? Set.of()
-                : mapping.getLabUnitRoleMap().stream().filter(m -> !m.getRoles().isEmpty()).map(m -> m.getLabUnit())
-                        .collect(Collectors.toSet());
+        Set<String> allowed = mapping == null || mapping.getLabUnitRoleMap() == null ? Set.of()
+                : mapping.getLabUnitRoleMap().stream()
+                        .filter(m -> m != null && m.getLabUnit() != null && m.getRoles() != null && !m.getRoles().isEmpty())
+                        .map(m -> m.getLabUnit()).collect(Collectors.toSet());
         if (!allowed.contains(UnifiedSystemUserController.ALL_LAB_UNITS) && !allowed.containsAll(requested)) {
             throw new ReportingException(403, "reporting.access.scopeChanged");
         }
