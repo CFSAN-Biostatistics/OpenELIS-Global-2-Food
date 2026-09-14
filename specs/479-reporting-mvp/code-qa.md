@@ -59,9 +59,16 @@ no video, final-stack deployment or human acceptance is credited by that run.
 
 ## Remaining review and evidence
 
-- Inspect the final navigation/configuration diff and rerun its focused tests
-  after assembling that slice. Compare final rendered screens directly with the
-  pinned mock at matching desktop and narrow widths.
+- Navigation source review: `MenuConfigurationLoader` copies configured entries
+  without mutating persisted defaults; `MenuServiceImpl` excludes controlled
+  fields from saves and rebuilds the effective cache after commit. The annotation
+  mapping replaces the old XML registration. `ConfiguredSideNav` provides one
+  Carbon renderer, and superseded navigation styles/renderers are removed.
+  Upstream menu-domain filtering is preserved. The assembled stack passes both
+  builds, 74 affected component tests and 18 mapping/configuration/rollback/race
+  tests. A focused navigation walkthrough plus authentication passes against the
+  existing public build. Final rendered comparisons at matching desktop and
+  narrow widths remain required.
 - Run the connected workflow specification on the final tested deployment,
   record it through `core-demo-video`, inspect screenshots and representative
   video frames, and publish playable artifacts with revision/checksum receipts.
