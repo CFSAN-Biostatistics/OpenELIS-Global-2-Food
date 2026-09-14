@@ -320,11 +320,16 @@ test("detailed layout exports both result identities and keeps the chosen period
   expect(new Set(identities).size).toBe(2);
 });
 
-test("another configured report uses its own defaults and the same builder and queue", async ({
+test("another configured report uses explicit column choices and the same builder and queue", async ({
   page,
 }) => {
   await openBuilder(page);
   await configuredReport(page, "Sample summary");
+  await expect(
+    page.getByRole("heading", { name: "Your CSV columns (0)", exact: true }),
+  ).toBeVisible();
+  for (const label of ["Specimen ID", "Accession Number"])
+    await addField(page, label);
   const preview = page.getByRole("region", { name: "CSV header preview" });
   await expect(preview.getByRole("columnheader")).toHaveText([
     "Specimen ID",
@@ -382,7 +387,8 @@ test("switching to a report without optional filters cannot retain a hidden test
   await tests.press("Escape");
   await page.getByRole("button", { name: "Back", exact: true }).click();
   await configuredReport(page, "Finalized sample summary");
-  await addField(page, "Viral Load");
+  for (const label of ["Specimen ID", "Accession Number", "Viral Load"])
+    await addField(page, label);
   await page
     .getByRole("button", { name: "Next: Set Filters", exact: true })
     .click();

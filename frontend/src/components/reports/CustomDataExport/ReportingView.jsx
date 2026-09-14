@@ -755,6 +755,10 @@ export default function ReportingView(p) {
                   <>
                     <p className="column-hint">
                       {t("reporting.periodHelp", {
+                        // i18n-keys: reporting.dateAnchor.*
+                        dateMeaning: t(
+                          `reporting.dateAnchor.${data.definition.dateAnchor}`,
+                        ),
                         days: data.maxDays,
                         timezone: data.timezone,
                       })}

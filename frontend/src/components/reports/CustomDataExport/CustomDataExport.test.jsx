@@ -21,9 +21,11 @@ import CustomDataExport, { clearReportingDraft } from "./CustomDataExport";
 const source = {
   id: "SAMPLE_TESTING",
   label: "Sample & Testing",
+  dateAnchor: "collectionDate",
   layouts: ["SPREADSHEET", "RESULT_LIST"],
 };
 let configuredFilters;
+let alternateCatalog;
 const field = (id, label, group = "sample") => ({ id, label, group });
 const catalog = (layout) => ({
   definition: { ...source, filters: configuredFilters },
@@ -65,6 +67,7 @@ const json = (body, status = 200) => ({
 beforeEach(() => {
   consoleErrors = vi.spyOn(console, "error");
   configuredFilters = ["labSectionIds", "testIds", "resultStatuses"];
+  alternateCatalog = undefined;
   clearReportingDraft();
   requests = [];
   failSubmission = false;
@@ -80,9 +83,17 @@ beforeEach(() => {
   vi.stubGlobal(
     "fetch",
     vi.fn(async (url, options = {}) => {
-      if (url.includes("/report-types")) return json([source]);
+      if (url.includes("/report-types"))
+        return json(
+          alternateCatalog ? [source, alternateCatalog.definition] : [source],
+        );
       if (url.includes("/variables")) {
         if (catalogGate) await catalogGate;
+        if (
+          alternateCatalog &&
+          url.includes(`reportType=${alternateCatalog.definition.id}`)
+        )
+          return json(alternateCatalog);
         return json(
           catalog(
             url.includes("layout=RESULT_LIST") ? "RESULT_LIST" : "SPREADSHEET",
@@ -311,18 +322,24 @@ test("rerun waits for its catalog without reporting valid fields or filters as u
     await screen.findByRole("button", { name: "Re-run", exact: true }),
   );
   await waitFor(() =>
-    expect(fetch.mock.calls.some(([url]) => url.includes("/variables"))).toBe(true),
+    expect(fetch.mock.calls.some(([url]) => url.includes("/variables"))).toBe(
+      true,
+    ),
   );
-  expect(screen.queryByText(messages["reporting.filters.unavailable"])).toBeNull();
+  expect(
+    screen.queryByText(messages["reporting.filters.unavailable"]),
+  ).toBeNull();
   expect(screen.queryByText(messages["reporting.columns.stale"])).toBeNull();
   expect(screen.getByText(messages["reporting.loading"])).toBeVisible();
   expect(screen.queryByLabelText("Date from")).toBeNull();
   await act(async () => resolveCatalog());
   expect(await screen.findByLabelText("Date from")).toHaveValue("");
-  expect(screen.getByRole("combobox", { name: /^Tests / })).toHaveAccessibleName(
-    /Total items selected: 1/,
-  );
-  expect(screen.queryByText(messages["reporting.filters.unavailable"])).toBeNull();
+  expect(
+    screen.getByRole("combobox", { name: /^Tests / }),
+  ).toHaveAccessibleName(/Total items selected: 1/);
+  expect(
+    screen.queryByText(messages["reporting.filters.unavailable"]),
+  ).toBeNull();
   expect(screen.queryByText(messages["reporting.columns.stale"])).toBeNull();
   expect(requests).toEqual([]);
 });
@@ -334,9 +351,17 @@ test("rerun preserves a removed field and requires correction after its catalog 
   fireEvent.click(
     await screen.findByRole("button", { name: "Re-run", exact: true }),
   );
-  expect(await screen.findByText(messages["reporting.columns.stale"])).toBeVisible();
-  expect(await screen.findByRole("button", { name: "Remove test:removed" })).toBeVisible();
-  expect(screen.getByRole("button", { name: messages["reporting.design.nextFilters"] })).toBeDisabled();
+  expect(
+    await screen.findByText(messages["reporting.columns.stale"]),
+  ).toBeVisible();
+  expect(
+    await screen.findByRole("button", { name: "Remove test:removed" }),
+  ).toBeVisible();
+  expect(
+    screen.getByRole("button", {
+      name: messages["reporting.design.nextFilters"],
+    }),
+  ).toBeDisabled();
   expect(requests).toEqual([]);
 });
 
@@ -382,6 +407,55 @@ test("the mock overview leads to collapsed groups and Add actions without select
     screen.getByRole("button", { name: "Drag Hemoglobin to reorder" }),
   ).toBeVisible();
 });
+
+test.each([
+  ["sentDate", "referral sent dates"],
+  ["requestDate", "referral request dates"],
+])(
+  "another report starts with explicit Add choices and explains its %s period",
+  async (dateAnchor, dateMeaning) => {
+    alternateCatalog = {
+      ...catalog("TABLE"),
+      definition: {
+        id: "REFERRALS",
+        label: "Referrals",
+        layouts: ["TABLE"],
+        dateAnchor,
+        filters: [],
+      },
+      variables: [field("referralId", "Referral ID", "referrals")],
+      defaultColumns: ["referralId"],
+    };
+    open();
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Start a new export" }),
+    );
+    fireEvent.click(await screen.findByRole("radio", { name: /Referrals/ }));
+    expect(
+      await screen.findByRole("heading", { name: "Your CSV columns (0)" }),
+    ).toBeVisible();
+    const available = screen.getByRole("region", { name: "Available fields" });
+    const group = within(available).getByRole("button", {
+      name: "Referrals",
+      exact: true,
+    });
+    expect(group).toHaveAttribute("aria-expanded", "false");
+    fireEvent.click(group);
+    fireEvent.click(
+      within(available).getByRole("button", { name: "Add Referral ID" }),
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Next: Set Filters" }));
+    expect(
+      screen.getByText(
+        `Uses ${dateMeaning} in UTC, including both dates. Maximum period: 90 days.`,
+      ),
+    ).toBeVisible();
+    expect(screen.queryByRole("combobox", { name: /^Tests/ })).toBeNull();
+    expect(
+      screen.queryByRole("combobox", { name: /^Result statuses/ }),
+    ).toBeNull();
+  },
+);
 
 test("the mock column picker keeps exact keyboard ordering and focus", async () => {
   open();

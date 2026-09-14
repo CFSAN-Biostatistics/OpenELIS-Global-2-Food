@@ -276,16 +276,18 @@ function ReportingBuilder({ owner }) {
   const effectiveFilters = Object.fromEntries(
     filterNames.map((name) => [name, supportsFilter(name) ? draft[name] : []]),
   );
-  const unavailableFilters = !!catalog.data && filterNames.some(
-    (name) =>
-      !supportsFilter(name) &&
-      draft[name].length > 0 &&
-      !(
-        name === "resultStatuses" &&
-        draft[name].length === 1 &&
-        draft[name][0] === "FINALIZED"
-      ),
-  );
+  const unavailableFilters =
+    !!catalog.data &&
+    filterNames.some(
+      (name) =>
+        !supportsFilter(name) &&
+        draft[name].length > 0 &&
+        !(
+          name === "resultStatuses" &&
+          draft[name].length === 1 &&
+          draft[name][0] === "FINALIZED"
+        ),
+    );
   const savedDefinition = () => ({
     schemaVersion: 1,
     reportType: draft.reportType,
@@ -563,7 +565,7 @@ function ReportingBuilder({ owner }) {
     const key = `${type.id}:${layout}`;
     setDraft((value) => {
       const columns = { ...value.columns };
-      delete columns[key];
+      columns[key] = [];
       return {
         ...value,
         reportType: type.id,

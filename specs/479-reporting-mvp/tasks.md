@@ -135,6 +135,11 @@ applications.
       dates/statuses, repeated results, event/rejection links and avoiding
       duplicate occurrences; test an additional definition over an existing
       source with no frontend/queue code changes.
+      Partial: five real-database Referral mapping checks pass. The shared
+      builder has 28 component checks and configured-report browser coverage.
+      Referral date/row semantics and native rejection date coverage have
+      unanswered product questions recorded in execution.md; affected source
+      activation and CSV expectations remain open.
 - [ ] T021 [US4] Add failing lifecycle tests under
       `src/test/java/org/openelisglobal/reports/dataexport/` for retry lineage,
       queued cancellation, concurrent claims, restart/live-worker isolation,

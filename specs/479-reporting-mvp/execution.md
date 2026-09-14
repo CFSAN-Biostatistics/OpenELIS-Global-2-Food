@@ -56,6 +56,53 @@ application/database containers. That startup path remains an operational gap;
 frontend-only publication avoids it. Previous versioned artifacts and the
 pre-recovery database backup remain available.
 
+## Source Preparation — Local Qualification, 2026-09-14
+
+The shared builder starts newly chosen configured reports with zero columns, as
+the pinned mock does. Users add their fields explicitly; restoring a draft or a
+saved report retains its choices. The period explanation now uses the configured
+date anchor instead of always claiming specimen collection dates. Both referral
+date interpretations are covered without choosing the unresolved product default.
+
+- 28 component checks pass. Four real-browser application workflows pass:
+  configured-report CSV, hidden-filter removal, Reports navigation with
+  Back/Forward/reload, and desktop/narrow column interactions and accessibility.
+  A separate pinned-mock capture also passes. The six reported browser checks
+  include authentication; actual downloaded CSV assertions are unchanged.
+- Rendered comparisons use 1280×900 and 390×844. The application keeps the mock's
+  empty selection, collapsed groups, Add/Added controls and ordered columns.
+  Date guidance remains within the date card on narrow screens. The native
+  OpenELIS shell and real instance catalog remain distinct from fictional mock
+  data and preview controls.
+- A parameterized Referral data query preserves linked result identities and
+  referrals without returned results. Five database tests cover independent
+  request/sent dates, local date boundaries across daylight saving, repeated
+  results, referred-test/section filtering and invalid mapping rejection.
+  The complete focused run passes 79 tests, including the preceding role-fixture
+  sequence. No Referral report source is enabled by this preparation.
+- Frontend lint and production build pass. Initial sandbox attempts could not
+  launch Chromium or access Docker; the permitted runtime runs passed. Those
+  environment failures are not counted as product checks.
+- CI at `e6b34a4d2a` has passed frontend and end-to-end checks; its full backend
+  run remains in progress. These results precede this local preparation.
+
+Three product questions are pending. No answer is inferred from elapsed time:
+
+1. Referral period: the original specification uses sent date, while the MVP
+   data model and quickstart say request date. Both can be exported; the default
+   inclusion rule needs resolution.
+2. Referral repeats: the original one-row-per-analysis description conflicts
+   with preserving each returned result on separate rows. Raw result identities
+   are retained while the final row presentation remains open.
+3. Recorded rejection dates: native RejectionController creates NcEvent with
+   reportDate and specimen links but leaves dateOfEvent empty. The current MVP
+   prohibits substituting reportDate. Including these real recorded rejections
+   with an explicit date-basis label versus excluding them needs resolution.
+
+Source activation and affected CSV expectations wait for these answers. Shared
+frontend and data-query qualification can proceed independently. This checkpoint
+does not establish public deployment or complete T020/T022.
+
 ## M2 Recovery Qualification
 
 Draft [PR #4295](https://github.com/DIGI-UW/OpenELIS-Global-2/pull/4295) is stacked
