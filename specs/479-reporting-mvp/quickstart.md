@@ -225,6 +225,70 @@ limits, no process exhaustion and successful ordinary reads. Report measurements
 with environment details; this workload does not establish a universal
 production service level.
 
+### Recorded 50,000-result run, 2026-09-14
+
+T027 passes. Reproduce with the [local workload runner](../../projects/reporting-uat/README.md#50000-result-workload)
+and its focused `core-performance` browser test. The fixture has 5,001 specimens,
+10,001 analyses and 50,000 finalized results on May 7, 2026. Five thousand
+specimens have two analyses with four readings each; one specimen has 10,000
+readings. Equal adjacent values have distinct identities. Expected spreadsheet
+and detailed-list counts are both 50,000, including every repeat and its
+30/90-minute turnaround. Three concurrent ordinary reports each produce the
+independently expected two rows with value 450.
+
+| Observation                              | First run     | Final run with atomic state sampling |
+| ---------------------------------------- | ------------- | ------------------------------------ |
+| Spreadsheet generation                   | 60.745 s      | 46.146 s                             |
+| Detailed-list generation                 | 54.447 s      | 46.136 s                             |
+| Java baseline resident memory            | 1,393,424 KiB | 1,490,920 KiB                        |
+| Java peak resident memory                | 1,503,172 KiB | 1,501,904 KiB                        |
+| Successful ordinary authenticated reads  | 162           | 144                                  |
+| Longest ordinary read                    | 1.409 s       | 1.336 s                              |
+| Observed 95th-percentile ordinary read   | 0.692 s       | 0.884 s                              |
+| Follow-up cursor fetches per large query | 200 / 200     | 200 / 200                            |
+
+The final runner uses a single database statement for each concurrency
+observation, avoiding counts assembled from different instants. Five jobs were
+active before the sixth submission returned 429; at most one job was observed
+generating. All five completed correctly without process exhaustion or restart.
+Session, queue and catalog reads used a separate authenticated client. The
+reported percentile is the sorted sample at `floor((n-1) * 0.95)`; these are
+observed local request durations, not an asserted response-time service level.
+
+Both runs produced byte-identical files. The spreadsheet is 1,445,747 bytes,
+SHA-256 `029cf33d7980615cca9b0647a571fea4f8ebc8e4a47e33752d592e243a09ba90`.
+The detailed list is 1,736,904 bytes,
+SHA-256 `44cef8c22e51eecbd6c84a24aef3cc95437ebe3cdf4da7bb67c427efc80773ab`.
+The oracle checks all values, specimen/result identities and repeat
+multiplicities, rather than only row counts or comparison between two generated
+files. Fixture SHA-256:
+`a1d7bdd74821715e08a0fcefefb04f27a52d137895a907741cae493a90c5c3e9`.
+
+Environment: Docker VM `aarch64`, 17 CPUs and 48,388,898,816 bytes memory; no
+explicit container CPU/memory cap; Java heap `-Xmx2g`; PostgreSQL 14.4. Image
+digest `sha256:2217d76104051589d99eb808cef22ae692f6ad2d12a0fadc70ecc549162df36f`.
+WAR SHA-256 `b46f2001500fd5405b9c2b6dc5f3c9d804e671efbdc5b8a335b07394bd284440`;
+its 4,216 application class files match public backend `d56922c11e` exactly.
+Frontend `0d65ccaac4` and the single-application native API overlay were used.
+The runner resets only the actual Java process's resident high-water counter;
+query logging is temporarily enabled for cursor evidence and restored afterward.
+Measured durations include logging overhead and are specific to this local stack.
+
+Streaming is verified through the transactional query's 250-row fetch size,
+observed cursor fetches, persistence-context clearing every 250 records, and
+the writer's bounded pending-row implementation. All nine
+`ReportingCsvWriterTest` checks pass, including consumption/output during a
+50,000-result repeat stream. Resident-memory readings alone are not treated as
+proof of bounded allocation.
+
+Both actual browser downloads pass at 1280×900 and 390×844, including ready/row
+count, reload, byte/hash checks and no horizontal overflow or page errors. The
+reported three checks include authentication. Reviewed screenshots preserve the
+mock's queue table/card and action hierarchy; native OpenELIS chrome, actual job
+data and scrolled narrow views differ from the fictional mock captures. This
+iteration changes qualification tools only. It does not establish public-server
+performance, multi-instance crash isolation, migration rollback or human acceptance.
+
 ## Evidence to Record
 
 T016/T017 record M1 evidence; T026–T030 complete the source, recovery and

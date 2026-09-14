@@ -10,6 +10,9 @@ configuration `7780ee2cd9` removes duplicate application startup; five public
 workflows and matched mock captures pass after that update. The live UAT
 checklist has five stories and 14 steps. See [execution.md](execution.md) for the
 current receipt, the corrected full-suite recovery fixture and remaining qualification.
+T027 now passes against the disposable local stack: both 50,000-result layouts,
+bounded fetches, one worker, the five-job limit, ordinary reads and desktop/phone
+downloads. These measurements are local; the public application is unchanged.
 T032, T033 and T035–T038 repeat for each usable stage. T034 remains partial until
 all workflow fixtures are available. Public availability does not close M1 or M2.
 
@@ -179,11 +182,19 @@ applications.
       builder/saved-report/download flow; compare real fixture records and
       dates, test additional configuration without code changes, and audit the
       focused browser tests using `specs/479-reporting-mvp/quickstart.md`.
-- [ ] T027 [US4] Add/run a reproducible 50,000-result qualification under
-      `src/test/java/org/openelisglobal/reports/dataexport/` and
-      `src/test/resources/`; record expected counts, batches, memory, duration,
+- [x] T027 [US4] Add/run a reproducible 50,000-result qualification using
+      `projects/reporting-uat/qualify-workload.py`, the fixture under
+      `src/test/resources/fixtures/`, the incremental Java writer test under
+      `src/test/java/org/openelisglobal/reports/dataexport/` and browser downloads
+      under `frontend/playwright/tests/performance/core/`; record expected counts, batches, memory, duration,
       worker limits and ordinary request behavior in
       `specs/479-reporting-mvp/quickstart.md`.
+      The operational runner exercises the full running WAR, real database and
+      HTTP queue so process memory, cursor fetches and concurrent ordinary reads
+      are measured directly. This changes the test location, not the acceptance
+      criteria. Both layouts preserve all 50,000 results, including 10,000 for
+      one specimen. Two runs produce identical files; the final run samples
+      concurrent states atomically. Public-server performance remains unmeasured.
 - [ ] T028 [US4] Verify migration/rollback on empty/populated disposable
       databases, persistent output, restart, retention and cleanup; document
       actual deployment settings/procedures and implementation evidence in

@@ -111,7 +111,7 @@ Recovery fixture correction `e6b34a4d2a` passed its full backend CI run
 `34834207814`, in addition to frontend and the actual E2E checkpoint. Source
 preparation `0d65ccaac4` now also passes backend `34836215711`, frontend
 `34836215623` and the actual E2E checkpoint `34837613118`. The runtime-tools
-commit `7780ee2cd9` has fresh CI in flight.
+commit `7780ee2cd9` also passes backend CI `34840293019`.
 
 A separate local retention check created and downloaded a new synthetic report,
 verified its configured seven-day expiry, then shortened only that job's expiry
@@ -120,8 +120,50 @@ scheduler marked it EXPIRED and removed its CSV while preserving row count,
 file size, history and frozen settings. An unrelated ready download stayed
 byte-identical. This is accelerated fixture qualification, not a seven-day soak
 or an in-flight download race; the latter has service/database test coverage.
-Multi-instance crash isolation, migration rollback, large-volume and public
+Multi-instance crash isolation, migration rollback and public
 cancellation qualification remain open. These checks do not close all of T021/T028.
+
+## Local Workload Qualification — Passed, 2026-09-14
+
+T027 passes with the existing application artifacts and corrected single-worker
+runtime. The public deployment above is unchanged; no workload data was seeded
+there. The reproducible [runner and browser check](../../projects/reporting-uat/README.md#50000-result-workload)
+exercise real submissions and downloads over 5,001 synthetic specimens, 10,001
+analyses and 50,000 results. One specimen has 10,000 repeats. Independent CSV
+oracles check every value, identity, turnaround and repeat multiplicity in both
+layouts, alongside three ordinary two-result exports.
+
+Two runs produced identical CSV bytes. The final run generated each large file
+in about 46.1 seconds, observed a Java resident-memory peak of 1,501,904 KiB,
+and completed 144 ordinary authenticated session/queue/catalog reads with no
+failures (maximum 1.336 seconds). Atomic database observations found at most
+one generating job; five active jobs were present before the sixth submission
+returned 429. Each large query used 200 follow-up cursor fetches at the configured
+250-row fetch size. Temporary query logging was restored after both runs.
+
+Both browser workflows pass at 1280×900 and 390×844, including reload and actual
+50,000-row downloads with identical hashes. The three reported checks include
+authentication. Reviewed screenshots retain the mock's table/card structure and
+download/details controls without horizontal overflow. Narrow captures are
+scrolled to the selected real job; these supplement the previous matched
+full-page mock comparisons, rather than establishing pixel identity. No
+application interface changed in this iteration. Nine writer tests also pass,
+including incremental consumption/output of a 50,000-result repeat set.
+
+The workload browser file is registered in `core-performance`, verified by native
+Playwright listing and execution. The packaged project-validator cannot resolve
+the existing `CORE_PERFORMANCE_TESTS` constant; its diagnostic is a helper
+limitation, not evidence of an unregistered test. No project configuration was
+changed to bypass that limitation. Measurements, environment, hashes and
+reproduction instructions are in [quickstart.md](quickstart.md#recorded-50000-result-run-2026-09-14).
+These local results do not establish public performance or human acceptance.
+
+The qualification-only change passes full Spotless and frontend formatting,
+frontend lint, Python syntax validation, and Java 21 packaging with both test
+skip flags. The separate nine-test writer run and actual browser run above
+provide test evidence; the package build itself did not execute tests. No
+application artifact changed and no redeployment was required for this test-only
+increment. New commit CI is tracked separately from the passed runtime baseline.
 
 ## Source Preparation — Frontend Published, 2026-09-14
 

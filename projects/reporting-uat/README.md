@@ -90,7 +90,75 @@ September 14. The public app logged one Spring root initialization and 457.170
 seconds startup. Five public application workflows plus authentication and the
 pinned-mock capture passed. A separate accelerated local expiry check also
 verified unavailable expired downloads, removed files, retained history and an
-unaffected existing download. Multi-instance crash isolation, migration rollback
-and large-volume qualification remain open. See
+unaffected existing download. Multi-instance crash isolation and migration
+rollback remain open. The local large-volume qualification below now passes. See
 [the current execution record](../../specs/479-reporting-mvp/execution.md) for
 exact deployment identity, evidence and limits.
+
+## 50,000-result workload
+
+Use the disposable local stack with the single-application overlay and the
+existing May 5 repeat fixture. The runner requires loopback access, matching
+Compose project labels, no active reporting jobs and a new evidence directory.
+The idempotent synthetic fixture adds 5,001 specimens, 10,001 analyses and
+50,000 results on May 7, including 10,000 repeats for one specimen. It refuses
+an occupied date or incomplete fixture and deletes no existing records.
+
+```sh
+python3 -u projects/reporting-uat/qualify-workload.py \
+  --base-url https://localhost:18485/api/OpenELIS-Global \
+  --app-container reporting-mvp-iteration1-app-1 \
+  --db-container reporting-mvp-iteration1-db-1 \
+  --project reporting-mvp-iteration1 \
+  --seed \
+  --output /tmp/reporting-workload-evidence
+```
+
+It submits two large exports plus three routine exports, proves the sixth
+concurrent submission is rejected, samples atomic job states and ordinary
+authenticated reads, and verifies every downloaded cell against independent
+expected values. Spreadsheet checks preserve repeated-value multiplicity;
+detailed-list checks additionally require every distinct result identity. Both
+layouts retain their own 30/90-minute turnaround values.
+
+The runner locates the actual Java process, resets only its Linux
+resident-memory peak counter, and samples current/peak resident memory. See
+[Linux process-memory counters](https://docs.kernel.org/filesystems/proc.html).
+It temporarily enables statement logging in the disposable PostgreSQL instance
+using its existing administrator, captures cursor-fetch counts, then restores
+the original setting and override state even on a failed check or ordinary
+interrupt. Timings include that logging overhead. Cursor fetches provide runtime
+evidence for the transactional 250-row streaming query; see
+[PostgreSQL JDBC cursor behavior](https://jdbc.postgresql.org/documentation/query/).
+The verifier may collect the downloaded CSV in memory; the measured memory is
+the separate application process that generates it.
+
+Run the focused browser check from `frontend/` while the qualified jobs are
+still available in the queue:
+
+```sh
+BASE_URL=http://127.0.0.1:18489 \
+REPORTING_WORKLOAD_RECEIPT=/tmp/reporting-workload-evidence/verified.json \
+npm run pw:test -- playwright/tests/performance/core/reporting-workload.spec.ts \
+  --project=core-performance --reporter=line \
+  --output=/tmp/reporting-workload-browser
+```
+
+Both layouts are checked at desktop and phone widths for ready state, row count,
+reload, horizontal overflow and actual browser download bytes against the
+independently qualified receipt. Without an explicit receipt the workload tests
+skip; they do not silently claim qualification against an unseeded environment.
+Native Playwright `--list` and execution verify project registration. The
+packaged project-validator currently omits `CORE_PERFORMANCE_TESTS` from the
+constants it resolves. The test audit found semantic/test-ID selectors,
+event/assertion waits, diagnostic capture and no forced interactions or fixed
+timing gates.
+
+The September 14 final run passed: 50,000 rows per layout in 46.1 seconds each,
+1,501,904 KiB peak resident memory, 144 ordinary reads without failures, one
+generating worker observed, five active jobs allowed and the sixth rejected.
+Both large streams had 200 follow-up cursor fetches. A preceding run produced
+identical files; nine writer tests and both browser workflows also pass. See
+[the measurement record](../../specs/479-reporting-mvp/quickstart.md#recorded-50000-result-run-2026-09-14)
+for exact hashes, environment and limits. This is local qualification; the
+public application and its synthetic fixture set remain unchanged.
