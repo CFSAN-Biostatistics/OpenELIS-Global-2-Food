@@ -90,8 +90,39 @@ and `/private/tmp/reporting-navigation-final-recorded.log`; recordings are under
 `/private/tmp/reporting-navigation-final-recorded/`. Publication and remote CI
 for this follow-up remain required.
 
-Updated recordings, shared publication and remote CI for the repaired commit
-remain pending. No human acceptance or full-MVP completion is claimed.
+The inspected recordings are now published at
+[the repair evidence gallery](https://reporting.catalyst.openelis-global.org/reporting-evidence/20260914-navigation-ba3c/).
+They cover local frontend `ba3c5ad` with backend `9baa356`. Public application
+publication and final remote CI remain pending; recording publication alone does
+not satisfy either. No human acceptance or full-MVP completion is claimed.
+
+## Direction audit and configured initial selection
+
+The September 14 audit compared the pinned mock with the desktop/phone captures
+and live builder. A fresh public run on `9baa356` passed authentication plus three
+reporting workflows: both Sample & Testing layouts and Referrals. Independently
+parsed CSVs preserved repeated rows and each result's turnaround; paired queue
+re-downloads were byte-identical. This is focused workflow evidence, not proof
+of every acceptance criterion.
+
+The audit found a report-ID exception in `CustomDataExport.jsx`: Sample & Testing
+ignored catalog defaults while other reports applied them. Follow-up `bf7fbf5`
+uses the existing defaults contract for every source. Explicit empty defaults
+are now valid; the bundled version-4 configuration preserves the empty picker.
+Instance overrides are applied, while an explicitly cleared draft stays empty
+after reload. Export and shared-report validation still reject no selected
+columns. The two database suites passed 15 checks, the configuration unit suite
+passed seven, and the reporting component suite passed 30. Backend/frontend
+production builds, formatting and targeted test lint passed. The backend build
+skipped tests; the separately executed test suites supply the test evidence.
+
+Navigation consolidation claims have also been narrowed to match source: main
+navigation uses `ConfiguredSideNav`, administration uses `AdminSideNav`, and both
+share typography styles. The separate administration list is not a completed
+configuration-driven consolidation. Non-Conformance and the outstanding date
+question remain open. The requirements checklist now accurately records the
+resolved Referral decisions; historical execution entries remain dated.
+
 
 ## Finding: simultaneous shared-report edits returned a server error
 
@@ -167,3 +198,17 @@ no video, final-stack deployment or human acceptance is credited by that run.
   semantics and disconnected source receive no acceptance credit.
 - Refresh CI for the submitted commits and publish review links. This local
   record and prior green checks do not stand in for those gates.
+
+
+## Standard-profile menu test correction
+
+CI run `34906793852` passed 100 tests in core shard 1 and failed the menu workflow
+when its cleanup tried to locate a direct Admin link. The trace and screenshot
+show a healthy Dashboard. The standard `volume/menu/menu_config.json` puts
+Admin dashboard inside an Admin group, while the Reporting profile uses a direct
+Admin link. The test now follows either explicitly configured structure before
+opening Global Menu Configuration. Persistence, original-value restoration,
+Dashboard/error assertions and timeouts are unchanged. The Reporting-profile
+workflow passed with authentication (two checks, 9.9 seconds) against compiled
+local frontend `ba3c5ad`. Standard-profile confirmation in new-commit CI remains
+required; the completed failing run is not represented as green.

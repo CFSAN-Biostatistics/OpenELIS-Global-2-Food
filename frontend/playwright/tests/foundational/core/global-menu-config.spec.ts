@@ -7,10 +7,28 @@ const menuId = "menu_workplan_priority";
 
 async function openSettings(page: Page) {
   if (new URL(page.url()).pathname === "/Dashboard") {
-    await page.getByRole("link", { name: "Admin", exact: true }).click();
     const navigation = page.getByRole("navigation", {
       name: "Side navigation",
     });
+    const adminLink = navigation.getByRole("link", {
+      name: "Admin",
+      exact: true,
+    });
+    const adminGroup = navigation.getByRole("button", {
+      name: "Admin",
+      exact: true,
+    });
+    await expect(adminLink.or(adminGroup)).toBeVisible();
+    // The standard profile groups Admin dashboard under Admin; the Reporting
+    // profile makes Admin a direct link to the same administration page.
+    if (await adminGroup.count()) {
+      await adminGroup.click();
+      await navigation
+        .getByRole("link", { name: "Admin dashboard", exact: true })
+        .click();
+    } else {
+      await adminLink.click();
+    }
     await navigation
       .getByRole("button", { name: "Menu Configuration", exact: true })
       .click();

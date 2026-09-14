@@ -14,9 +14,11 @@ until that follow-up is finished.
   returned results and pending referrals are preserved.
 - Delivery: immutable requests, duplicate submission protection, queued
   cancellation, retry lineage, worker recovery, expiry and file cleanup.
-- Navigation: one Carbon renderer, consistent typography, reports hierarchy and
-  routed drafts; database defaults plus instance configuration, sections/icons,
-  and an editor that preserves controlled values.
+- Navigation: a configured Carbon renderer for the main menu, shared typography
+  with the separate administration renderer, reports hierarchy and routed drafts;
+  database defaults plus instance configuration, sections/icons, and an editor
+  that preserves controlled values. Administration's hardcoded entry list is
+  still a separate legacy path; this checkpoint does not claim its replacement.
 - Public UAT: stable synthetic fixtures, actual CSV comparisons, desktop and
   narrow-screen workflows, and deployment provenance.
 
@@ -59,14 +61,22 @@ contains six inspected recordings from the local compiled stack.
 passed seven checks including authentication, with actual CSV comparisons.
 These are automated results; human acceptance remains pending.
 
-The first nine PRs passed their checks. The navigation PR's backend and frontend
-checks passed, but its E2E checkpoint failed on global menu editing and two
-microbiology workflows. The repairs in this follow-up pass all three affected
-workflows locally against the compiled frontend, including desktop and phone
-layout assertions. Updated recordings, publication and CI for the repaired
-commit remain pending. The [code-QA record](code-qa.md) documents the Dashboard
-error found during navigation and its locally validated cancellation/retry
-repair; public verification of that follow-up remains required.
+The original stack's first nine PRs passed their checks. Navigation's three E2E
+failures were repaired, followed by a Dashboard failed-load/cancellation repair.
+[Inspected repair recordings](https://reporting.catalyst.openelis-global.org/reporting-evidence/20260914-navigation-ba3c/)
+cover local frontend `ba3c5ad` against backend `9baa356`. Four affected checks
+including authentication passed. That evidence does not establish public delivery
+of the repairs. The `ba3c5ad` frontend checks passed, but its completed E2E run found a menu-test
+assumption about the standard Admin group versus the Reporting direct link.
+The latest test correction follows both configurations; new-commit CI remains
+required. Backend CI was still running at the latest inspection.
+
+Reporting UI follow-up `bf7fbf5` removes the primary-report exception for initial
+columns. Its bundled defaults remain empty, and instance configuration can
+choose defaults in either layout. It passed 22 backend tests, 30 component tests,
+and both production builds. The assembled branch, public publication and CI for
+this correction still require verification. The [code-QA record](code-qa.md)
+separates these stages from full-MVP completion and human acceptance.
 
 Before calling this checkpoint merge-ready:
 

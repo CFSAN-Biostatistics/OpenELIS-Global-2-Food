@@ -1,7 +1,8 @@
 # Implementation Plan: Configurable Reporting MVP
 
 **Delivery update:** The [review stopping point](review-stopping-point.md)
-now governs PR packaging: an official GitHub stack, one clean commit per PR,
+now governs PR packaging: an official GitHub stack, one initial snapshot commit
+per PR followed by ordinary review-repair commits,
 roughly 600 lines of real business logic (separate from markup, styles,
 declarations, tests, fixtures, helpers and documentation), and separate
 navigation changes. M1/M2 below retain functional traceability; their old
@@ -9,9 +10,10 @@ one-PR-per-milestone branch packaging is superseded. The full MVP scope remains.
 
 **Branch**: `spec/479-ogc-479-reporting-mvp`  
 **Date**: 2026-09-13  
-**Status**: Canonical frontend, Sample & Testing and queue recovery are publicly deployed.
-Full-suite recovery qualification, remaining M1 checks and the other source mappings are in progress;
-the complete MVP remains pending.
+**Status**: The canonical frontend, Sample & Testing, Referrals and queue recovery
+are publicly deployed. Remaining acceptance checks, current-commit CI, checklist
+publication and Non-Conformance remain open; the complete MVP is not finished.
+See the review stopping point for revision-specific evidence.
 
 **Specification**: [spec.md](spec.md)  
 **Inspected code baseline**: `e57a53399c2134fe3ff58009119cc05906c61e5e`
