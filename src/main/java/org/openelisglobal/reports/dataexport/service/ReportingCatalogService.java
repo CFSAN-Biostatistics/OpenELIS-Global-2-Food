@@ -19,6 +19,8 @@ import org.openelisglobal.reports.dataexport.form.ExportSnapshot;
 import org.openelisglobal.reports.dataexport.form.ExportSubmission;
 import org.openelisglobal.reports.dataexport.form.ReportSourceConfig;
 import org.openelisglobal.reports.dataexport.form.ReportingVariable;
+import org.openelisglobal.reports.dataexport.form.SavedReportDefinition;
+import org.openelisglobal.reports.dataexport.form.SavedReportFilters;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
@@ -135,7 +137,9 @@ public class ReportingCatalogService {
         if (!permitted.containsAll(scope))
             throw new ReportingException(403, "reporting.access.denied");
         access.requireScope(owner, scope);
-        var currentTests = samples.tests().stream().map(t -> t.getId()).collect(Collectors.toSet());
+        var currentTests = samples.tests().stream()
+                .filter(t -> t.getTestSection() != null && permitted.contains(t.getTestSection().getId()))
+                .map(t -> t.getId()).collect(Collectors.toSet());
         if (!currentTests.containsAll(filter.testIds()))
             throw new ReportingException(422, "reporting.tests.stale");
         var selectedStatuses = filter.resultStatuses().isEmpty() ? List.of("FINALIZED")
@@ -156,6 +160,37 @@ public class ReportingCatalogService {
                 settings.zone().getId(), ids);
     }
 
+    public SavedReportDefinition validateSaved(String owner, SavedReportDefinition request) {
+        if (request == null || request.schemaVersion() != 1 || request.selectedVariables().isEmpty()
+                || request.selectedVariables().stream().anyMatch(java.util.Objects::isNull)
+                || new HashSet<>(request.selectedVariables()).size() != request.selectedVariables().size()) {
+            throw new ReportingException(422, "reporting.saved.invalid");
+        }
+        var definition = definition(request.reportType());
+        var available = variables(definition, request.layout()).stream()
+                .collect(Collectors.toMap(ReportingVariable::id, Function.identity()));
+        if (!available.keySet().containsAll(request.selectedVariables()))
+            throw new ReportingException(422, "reporting.columns.stale");
+
+        var permitted = access.requestSections(owner).stream().map(s -> s.getId()).sorted().toList();
+        var requestedSections = request.filters().labSectionIds().stream().distinct().sorted().toList();
+        if (!permitted.containsAll(requestedSections))
+            throw new ReportingException(403, "reporting.access.denied");
+        if (!requestedSections.isEmpty())
+            access.requireScope(owner, requestedSections);
+
+        var currentTests = samples.tests().stream()
+                .filter(t -> t.getTestSection() != null && permitted.contains(t.getTestSection().getId()))
+                .map(t -> t.getId()).collect(Collectors.toSet());
+        var requestedTests = request.filters().testIds().stream().distinct().sorted().toList();
+        if (!currentTests.containsAll(requestedTests))
+            throw new ReportingException(422, "reporting.tests.stale");
+
+        var selectedStatuses = normalizeStatuses(request.filters().resultStatuses());
+        return new SavedReportDefinition(1, definition.id(), request.layout(), request.selectedVariables(),
+                new SavedReportFilters(requestedSections, requestedTests, selectedStatuses));
+    }
+
     public void validateCurrent(ExportSnapshot snapshot) {
         var current = definition(snapshot.definition().id());
         if (!current.equals(snapshot.definition()))
@@ -167,5 +202,18 @@ public class ReportingCatalogService {
                 throw new ReportingException(409, "reporting.columns.stale");
             }
         }
+    }
+
+    private List<String> normalizeStatuses(List<String> requested) {
+        var selected = requested.isEmpty() ? List.of("FINALIZED") : requested.stream().distinct().sorted().toList();
+        for (String name : selected) {
+            AnalysisStatus status = java.util.Arrays.stream(AnalysisStatus.values())
+                    .filter(s -> s.name().toUpperCase(java.util.Locale.ROOT).equals(name)).findFirst()
+                    .orElseThrow(() -> new ReportingException(422, "reporting.status.invalid"));
+            String id = statuses.getStatusID(status);
+            if (id == null || "-1".equals(id))
+                throw new ReportingException(422, "reporting.status.invalid");
+        }
+        return selected;
     }
 }

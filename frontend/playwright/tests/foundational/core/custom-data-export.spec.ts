@@ -214,3 +214,74 @@ test("Reports entry explains invalid periods and restores a reviewed draft after
       .getByRole("columnheader"),
   ).toHaveText(headers);
 });
+
+test("a shared report reopens with fresh dates and supports confirmed update, copy, and delete", async ({
+  page,
+}, testInfo) => {
+  testInfo.setTimeout(60_000);
+  const reportName = `Reporting UAT ${Date.now()}`;
+  const copyName = `${reportName} copy`;
+
+  await openBuilder(page);
+  await page.getByRole("button", { name: "Save report", exact: true }).click();
+  await page.getByLabel("Report name", { exact: true }).fill(reportName);
+  await page
+    .getByRole("button", { name: "Save shared report", exact: true })
+    .click();
+  await expect(
+    page.getByText(`Saved as ${reportName}.`, { exact: true }),
+  ).toBeVisible();
+
+  await page
+    .getByRole("button", { name: "Shared reports", exact: true })
+    .click();
+  await page
+    .getByRole("searchbox", { name: "Search shared reports", exact: true })
+    .fill(reportName);
+  let card = page.getByRole("article", { name: reportName, exact: true });
+  await expect(card).toBeVisible();
+  await card.getByRole("button", { name: "Open", exact: true }).click();
+  await expect(page.getByLabel("Date from", { exact: true })).toHaveValue("");
+  await expect(page.getByLabel("Date to", { exact: true })).toHaveValue("");
+  await expect(
+    page.getByText("Choose fresh dates before running this saved report.", {
+      exact: true,
+    }),
+  ).toBeVisible();
+
+  await page.locator('label[for="reporting-field-patientName"]').click();
+  await page
+    .getByRole("button", { name: "Update shared report", exact: true })
+    .click();
+  await page.getByRole("button", { name: "Update", exact: true }).click();
+  await expect(
+    page.getByText(`Updated ${reportName}.`, { exact: true }),
+  ).toBeVisible();
+
+  await page.getByRole("button", { name: "Save a copy", exact: true }).click();
+  await page.getByLabel("Report name", { exact: true }).fill(copyName);
+  await page
+    .getByRole("button", { name: "Save shared report", exact: true })
+    .click();
+  await expect(
+    page.getByText(`Saved as ${copyName}.`, { exact: true }),
+  ).toBeVisible();
+
+  for (const name of [reportName, copyName]) {
+    await page
+      .getByRole("button", { name: "Shared reports", exact: true })
+      .click();
+    await page
+      .getByRole("searchbox", { name: "Search shared reports", exact: true })
+      .fill(name);
+    card = page.getByRole("article", { name, exact: true });
+    await expect(card).toBeVisible();
+    await card.getByRole("button", { name: /Delete shared report/ }).click();
+    await page.getByRole("button", { name: /Delete$/, exact: false }).click();
+    await expect(card).toBeHidden();
+    if (name === reportName)
+      await page
+        .getByRole("button", { name: "Back to report builder", exact: true })
+        .click();
+  }
+});

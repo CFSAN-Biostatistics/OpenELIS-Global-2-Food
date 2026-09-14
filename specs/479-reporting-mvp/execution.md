@@ -64,6 +64,38 @@ This completes the local navigation, period-validation and session-draft
 increment. Shared definitions, wider Sample & Testing field coverage, access
 cases and complete queue behavior remain open.
 
+## Acceptance-driven Iteration 3
+
+Outcome: create and reuse instance-shared report definitions without saving a
+date range, support confirmed update/copy/delete, and reject a genuinely stale
+edit without losing the draft.
+
+Current evidence on 2026-09-13:
+
+- Shared definitions use the existing `report_definition` store under the
+  distinct `CSV_SAVED` type. The registered Liquibase change adds updater
+  attribution and applied successfully to the isolated database.
+- Four service checks cover date-free creation, shared searchable listing,
+  optimistic update conflicts and versioned soft deletion. Eight component
+  checks cover the builder plus save/reopen/fresh-date/conflict/copy/delete
+  behavior.
+- The first real-browser attempt exposed that an update response must carry the
+  database's post-flush version. A later attempt exposed a cached-card race that
+  could submit the pre-update version to delete. Both defects were fixed without
+  weakening conflict detection.
+- A clean qualification run passed authentication plus all five reporting
+  scenarios in 26.2 seconds against the packaged backend, current production
+  frontend bundle and real isolated PostgreSQL database. The shared scenario
+  created a named report, reopened it with blank dates, updated it, saved a copy
+  and deleted both definitions.
+- All 29 focused reporting backend checks pass, including database migrations,
+  source mapping, repeated results, persistence and CSV behavior. The production
+  frontend build and all eight focused component checks pass.
+
+This completes the local shared-definition increment. Wider Sample & Testing
+field coverage, access/admission cases and the M2 source/recovery behavior remain
+open; no deployment or human UAT conclusion follows from this local result.
+
 ## M1 Acceptance Checkpoint
 
 The implementation is reviewable as a foundation, but M1 is not complete. The
@@ -78,7 +110,7 @@ following ledger is the gate for continued work:
 | CSV contract and streaming                             | Nine focused writer checks include BOM, escaping, nulls, ordering, zero rows, repeats and 50,000 streamed records | Proven at formatter level; database workload remains open             |
 | Date validation and retained draft                     | Component and browser checks cover the inclusive limit, invalid ranges, queue visit and reload                    | Proven locally                                                        |
 | Immutable jobs and owner submission identity           | Database persistence checks pass                                                                                  | Proven at persistence level; API concurrency/access cases remain open |
-| Shared saved reports                                   | No complete implementation or acceptance evidence                                                                 | Open                                                                  |
+| Shared saved reports                                   | Service, component and real-browser create/reopen/update/copy/delete checks; dates are omitted and stale edits return 409 | Proven locally; second-user deployed UAT remains open                 |
 | Wider Sample & Testing fields and additional questions | Core sample, patient and result fields exist                                                                      | Open; mapping oracles and browser comparisons incomplete              |
 | Queue lifecycle and recovery                           | Submit, generate, poll and download work                                                                          | Open; retry, cancel, recovery, expiry and audit remain M2             |
 | Referral and Non-Conformance definitions               | Not implemented                                                                                                   | Open in M2                                                            |
@@ -129,8 +161,9 @@ completion gate.
 - Immutable job request persistence, submission uniqueness per owner, lifecycle
   transitions, ORM registration and a Liquibase migration with rollback.
 - Typed source-configuration parsing, an instance-aware catalog and a shared
-  source interface now connect to Sample & Testing execution. Deployment
-  configuration loading and shared saved-report editing remain pending.
+  source interface now connect to Sample & Testing execution. Shared
+  saved-report editing is implemented; deployment configuration loading remains
+  pending.
 - Existing `ReportDefinition` storage will hold source definitions and shared
   saved reports, using distinct CSV report types. Its current patient-report
   consumer selects `PATIENT` explicitly. Two initially drafted new definition
@@ -147,9 +180,9 @@ completion gate.
 | Source configuration          | Four tests passed, including an extra definition over the same supported source                                                                                                                            |
 | PostgreSQL job persistence    | Three tests passed against a disposable database using the repository test setup; migration `479-001-reporting-export-jobs` ran successfully                                                               |
 | Stored source relationships   | Two tests passed: configured component identity survives rename and repeated values; collection dates distinguish specimens under one accession                                                            |
-| Combined reporting validation | All 25 focused Java tests passed on 2026-09-13, including source and database checks; JaCoCo report generated                                                                                              |
-| Frontend component/build      | Five focused component checks and the production frontend build passed on 2026-09-13                                                                                                                       |
-| Focused browser acceptance    | Five Playwright checks passed in 37.3 seconds against the packaged app on 2026-09-13: sign-in, both CSV layouts, repeated values, zero-row output, date validation, queue navigation and draft restoration |
+| Combined reporting validation | All 29 focused Java tests passed on 2026-09-13, including source, saved-definition and database checks; JaCoCo report generated                                                                            |
+| Frontend component/build      | Eight focused component checks and the production frontend build passed on 2026-09-13                                                                                                                       |
+| Focused browser acceptance    | Six Playwright checks passed in 26.2 seconds against the packaged app on 2026-09-13: sign-in, both CSV layouts, repeated values, zero-row output, date validation, queue/draft restoration and shared reports |
 | Formatting                    | Feature-scoped Java formatting passed; frontend dependencies installed from the lockfile                                                                                                                   |
 
 The numeric streaming test is a formatter test, not the complete source/database
@@ -222,9 +255,8 @@ a reviewer returns a report.
 ## Remaining Delivery Work
 
 - Complete T002 and M1: prove current result/component/value and
-  configured-field mappings, implement bounded data access, shared reports, job
-  execution/API and native Carbon reporting UI; verify real downloaded CSVs and
-  M1 review evidence.
+  configured-field mappings, bounded access/admission behavior and the remaining
+  native builder cases; verify real downloaded CSVs and M1 review evidence.
 - Complete M2 through the same engine: referral/non-conformance mappings and
   definitions, retry/cancel/restart/expiry, full source/recovery/workload tests
   and the second milestone PR.

@@ -6,11 +6,13 @@ import java.util.Map;
 import org.openelisglobal.common.rest.BaseRestController;
 import org.openelisglobal.common.util.UserContextHolder;
 import org.openelisglobal.reports.dataexport.form.ExportSubmission;
+import org.openelisglobal.reports.dataexport.form.SavedReportMutation;
 import org.openelisglobal.reports.dataexport.service.ReportingAccess;
 import org.openelisglobal.reports.dataexport.service.ReportingCatalogService;
 import org.openelisglobal.reports.dataexport.service.ReportingException;
 import org.openelisglobal.reports.dataexport.service.ReportingFiles;
 import org.openelisglobal.reports.dataexport.service.ReportingJobService;
+import org.openelisglobal.reports.dataexport.service.ReportingSavedConfigService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -28,6 +30,8 @@ public class ReportingExportController extends BaseRestController {
     private ReportingJobService jobs;
     @Autowired
     private ReportingFiles files;
+    @Autowired
+    private ReportingSavedConfigService savedReports;
 
     private String owner() {
         String id = user.getCurrentSysUserId();
@@ -46,6 +50,33 @@ public class ReportingExportController extends BaseRestController {
     public Object variables(@RequestParam String reportType,
             @RequestParam(defaultValue = "SPREADSHEET") String layout) {
         return catalog.catalog(owner(), reportType, layout);
+    }
+
+    @GetMapping("/saved-configs")
+    public Object savedReports(@RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size, @RequestParam(defaultValue = "") String search) {
+        return savedReports.list(owner(), page, size, search);
+    }
+
+    @PostMapping("/saved-configs")
+    public Object createSavedReport(@RequestBody SavedReportMutation request) {
+        return ResponseEntity.status(201).body(savedReports.create(owner(), request));
+    }
+
+    @GetMapping("/saved-configs/{id}")
+    public Object savedReport(@PathVariable String id) {
+        return savedReports.detail(owner(), id);
+    }
+
+    @PutMapping("/saved-configs/{id}")
+    public Object updateSavedReport(@PathVariable String id, @RequestBody SavedReportMutation request) {
+        return savedReports.update(owner(), id, request);
+    }
+
+    @DeleteMapping("/saved-configs/{id}")
+    public Object deleteSavedReport(@PathVariable String id, @RequestParam String expectedVersion) {
+        savedReports.remove(owner(), id, expectedVersion);
+        return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/jobs")

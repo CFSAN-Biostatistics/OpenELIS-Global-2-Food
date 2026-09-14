@@ -8,6 +8,7 @@ import {
   Grid,
   InlineLoading,
   InlineNotification,
+  Modal,
   MultiSelect,
   Search,
   TextInput,
@@ -18,7 +19,14 @@ import { useIntl } from "react-intl";
 import UserSessionDetailsContext from "../../../UserSessionDetailsContext";
 import PageBreadCrumb from "../../common/PageBreadCrumb";
 import { serverQuery } from "../../utils/queryClient";
-import { downloadUrl, reportingPath, submitReport } from "./api";
+import {
+  createSavedReport,
+  deleteSavedReport,
+  downloadUrl,
+  reportingPath,
+  submitReport,
+  updateSavedReport,
+} from "./api";
 import "./CustomDataExport.scss";
 
 // Reports links can reload the page. Keep only the draft in this browser session.
@@ -43,6 +51,7 @@ const emptyDraft = () => ({
   resultStatuses: ["FINALIZED"],
   jobId: null,
   review: false,
+  savedReport: null,
 });
 function readDraft(owner) {
   if (!owner) return emptyDraft();
@@ -100,7 +109,14 @@ function ReportingBuilder({ owner }) {
   const review = draft.review;
   const [datesTouched, setDatesTouched] = useState({ from: false, to: false });
   const [search, setSearch] = useState("");
-  const [showQueue, setShowQueue] = useState(false);
+  const [panel, setPanel] = useState("builder");
+  const [saveOpen, setSaveOpen] = useState(false);
+  const [saveName, setSaveName] = useState("");
+  const [savedSearch, setSavedSearch] = useState("");
+  const [savedNotice, setSavedNotice] = useState("");
+  const [freshDatePrompt, setFreshDatePrompt] = useState(false);
+  const [deleteCandidate, setDeleteCandidate] = useState(null);
+  const [updateOpen, setUpdateOpen] = useState(false);
   const [positionMessage, setPositionMessage] = useState("");
   const [queuePage, setQueuePage] = useState(0);
   const submitted = useRef(null);
@@ -130,8 +146,15 @@ function ReportingBuilder({ owner }) {
       ["reporting-queue", owner, queuePage],
       `${reportingPath}/jobs?page=${queuePage}`,
     ),
-    enabled: showQueue,
+    enabled: panel === "queue",
     refetchInterval: (data) => (data?.activeCount > 0 ? 2000 : false),
+  });
+  const savedReports = useQuery({
+    ...serverQuery(
+      ["reporting-saved", owner, savedSearch],
+      `${reportingPath}/saved-configs?page=0&size=100&search=${encodeURIComponent(savedSearch)}`,
+    ),
+    enabled: panel === "saved",
   });
   const submission = useMutation({
     mutationFn: submitReport,
@@ -139,6 +162,69 @@ function ReportingBuilder({ owner }) {
       queryClient.setQueryData(["reporting-job", owner, result.id], result);
       setDraft((value) => ({ ...value, jobId: result.id }));
       queryClient.invalidateQueries({ queryKey: ["reporting-queue", owner] });
+    },
+  });
+  const savedDefinition = () => ({
+    schemaVersion: 1,
+    reportType: draft.reportType,
+    layout: draft.layout,
+    selectedVariables: selected,
+    filters: {
+      labSectionIds: draft.labSectionIds,
+      testIds: draft.testIds,
+      resultStatuses: draft.resultStatuses,
+    },
+  });
+  const createSaved = useMutation({
+    mutationFn: createSavedReport,
+    onSuccess: (result) => {
+      setDraft((value) => ({ ...value, savedReport: result }));
+      setSavedNotice(t("reporting.saved.created", { name: result.name }));
+      setSaveOpen(false);
+      queryClient.invalidateQueries({ queryKey: ["reporting-saved", owner] });
+    },
+  });
+  const updateSaved = useMutation({
+    mutationFn: updateSavedReport,
+    onSuccess: (result) => {
+      setDraft((value) => ({ ...value, savedReport: result }));
+      setSavedNotice(t("reporting.saved.updated", { name: result.name }));
+      setUpdateOpen(false);
+      queryClient.setQueriesData(
+        { queryKey: ["reporting-saved", owner] },
+        (page) =>
+          page?.reports
+            ? {
+                ...page,
+                reports: page.reports.map((saved) =>
+                  saved.id === result.id ? result : saved,
+                ),
+              }
+            : page,
+      );
+      queryClient.invalidateQueries({ queryKey: ["reporting-saved", owner] });
+    },
+  });
+  const removeSaved = useMutation({
+    mutationFn: deleteSavedReport,
+    onSuccess: () => {
+      const removedId = deleteCandidate?.id;
+      if (draft.savedReport?.id === removedId)
+        setDraft((value) => ({ ...value, savedReport: null }));
+      setDeleteCandidate(null);
+      queryClient.setQueriesData(
+        { queryKey: ["reporting-saved", owner] },
+        (page) =>
+          page?.reports
+            ? {
+                ...page,
+                reports: page.reports.filter(
+                  (saved) => saved.id !== removedId,
+                ),
+              }
+            : page,
+      );
+      queryClient.invalidateQueries({ queryKey: ["reporting-saved", owner] });
     },
   });
 
@@ -200,6 +286,47 @@ function ReportingBuilder({ owner }) {
   const update = (changes) => {
     setDraft((value) => ({ ...value, ...changes }));
     submission.reset();
+  };
+  const openSaved = (saved, copy = false) => {
+    const definition = saved.definition;
+    const key = `${definition.reportType}:${definition.layout}`;
+    setDraft((value) => ({
+      ...value,
+      reportType: definition.reportType,
+      layout: definition.layout,
+      columns: {
+        ...value.columns,
+        [key]: definition.selectedVariables,
+      },
+      dateFrom: "",
+      dateTo: "",
+      labSectionIds: definition.filters.labSectionIds,
+      testIds: definition.filters.testIds,
+      resultStatuses: definition.filters.resultStatuses,
+      jobId: null,
+      review: false,
+      savedReport: copy ? null : saved,
+    }));
+    setDatesTouched({ from: false, to: false });
+    setFreshDatePrompt(true);
+    setPanel("builder");
+    setSavedNotice("");
+    if (copy) {
+      setSaveName(t("reporting.saved.copyName", { name: saved.name }));
+      setSaveOpen(true);
+    }
+  };
+  const saveCurrent = () => {
+    createSaved.mutate({ name: saveName, definition: savedDefinition() });
+  };
+  const updateCurrent = () => {
+    setUpdateOpen(false);
+    updateSaved.mutate({
+      id: draft.savedReport.id,
+      name: draft.savedReport.name,
+      expectedVersion: draft.savedReport.version,
+      definition: savedDefinition(),
+    });
   };
   const setColumns = (columns) =>
     update({ columns: { ...draft.columns, [columnKey]: columns } });
@@ -291,9 +418,20 @@ function ReportingBuilder({ owner }) {
           <h1>{t("reporting.title")}</h1>
           <p>{t("reporting.description")}</p>
         </div>
-        <Button kind="tertiary" onClick={() => setShowQueue(!showQueue)}>
-          {t(showQueue ? "reporting.builder" : "reporting.queue")}
-        </Button>
+        <div className="reporting-title-actions">
+          <Button
+            kind="tertiary"
+            onClick={() => setPanel(panel === "saved" ? "builder" : "saved")}
+          >
+            {t(panel === "saved" ? "reporting.builder" : "reporting.saved.library")}
+          </Button>
+          <Button
+            kind="tertiary"
+            onClick={() => setPanel(panel === "queue" ? "builder" : "queue")}
+          >
+            {t(panel === "queue" ? "reporting.builder" : "reporting.queue")}
+          </Button>
+        </div>
       </div>
       {(types.error || catalog.error) && (
         <InlineNotification
@@ -303,7 +441,7 @@ function ReportingBuilder({ owner }) {
           hideCloseButton
         />
       )}
-      {showQueue ? (
+      {panel === "queue" ? (
         <section aria-label={t("reporting.queue")}>
           <h2>{t("reporting.queue")}</h2>
           {queue.isLoading && (
@@ -335,6 +473,51 @@ function ReportingBuilder({ owner }) {
             </Button>
           </div>
         </section>
+      ) : panel === "saved" ? (
+        <section aria-label={t("reporting.saved.library")}>
+          <h2>{t("reporting.saved.library")}</h2>
+          <Search
+            id="reporting-saved-search"
+            labelText={t("reporting.saved.search")}
+            placeholder={t("reporting.saved.search")}
+            value={savedSearch}
+            onChange={(event) => setSavedSearch(event.target.value)}
+          />
+          {savedReports.isLoading && (
+            <InlineLoading description={t("reporting.saved.loading")} />
+          )}
+          {savedReports.error && (
+            <InlineNotification
+              kind="error"
+              title={t("reporting.saved.loadError")}
+              hideCloseButton
+            />
+          )}
+          {savedReports.data?.reports.length === 0 && (
+            <p>{t("reporting.saved.empty")}</p>
+          )}
+          <div className="reporting-saved-list">
+            {savedReports.data?.reports.map((saved) => (
+              <Tile role="article" aria-label={saved.name} key={saved.id}>
+                <div>
+                  <h3>{saved.name}</h3>
+                  <p>{t("reporting.saved.shared")}</p>
+                </div>
+                <div className="reporting-actions">
+                  <Button size="sm" onClick={() => openSaved(saved)}>
+                    {t("reporting.saved.open")}
+                  </Button>
+                  <Button kind="secondary" size="sm" onClick={() => openSaved(saved, true)}>
+                    {t("reporting.saved.copy")}
+                  </Button>
+                  <Button kind="danger--tertiary" size="sm" onClick={() => setDeleteCandidate(saved)}>
+                    {t("reporting.saved.delete")}
+                  </Button>
+                </div>
+              </Tile>
+            ))}
+          </div>
+        </section>
       ) : (
         <>
           {catalog.isLoading && (
@@ -342,6 +525,27 @@ function ReportingBuilder({ owner }) {
           )}
           {catalog.data && (
             <>
+              {savedNotice && (
+                <InlineNotification
+                  kind="success"
+                  title={savedNotice}
+                  hideCloseButton
+                />
+              )}
+              {freshDatePrompt && (!draft.dateFrom || !draft.dateTo) && (
+                <InlineNotification
+                  kind="info"
+                  title={t("reporting.saved.freshDates")}
+                  hideCloseButton
+                />
+              )}
+              {(createSaved.error || updateSaved.error) && (
+                <InlineNotification
+                  kind="error"
+                  title={errorText(createSaved.error || updateSaved.error)}
+                  hideCloseButton
+                />
+              )}
               {!review ? (
                 <>
                   <Grid className="reporting-controls">
@@ -653,6 +857,39 @@ function ReportingBuilder({ owner }) {
                 />
               )}
               <div className="reporting-actions">
+                <div className="reporting-saved-actions">
+                  {draft.savedReport ? (
+                    <>
+                      <Button
+                        kind="tertiary"
+                        disabled={!selected.length || stale.length > 0 || updateSaved.isLoading}
+                        onClick={() => setUpdateOpen(true)}
+                      >
+                        {t("reporting.saved.update")}
+                      </Button>
+                      <Button
+                        kind="ghost"
+                        onClick={() => {
+                          setSaveName(t("reporting.saved.copyName", { name: draft.savedReport.name }));
+                          setSaveOpen(true);
+                        }}
+                      >
+                        {t("reporting.saved.copy")}
+                      </Button>
+                    </>
+                  ) : (
+                    <Button
+                      kind="tertiary"
+                      disabled={!selected.length || stale.length > 0}
+                      onClick={() => {
+                        setSaveName("");
+                        setSaveOpen(true);
+                      }}
+                    >
+                      {t("reporting.saved.save")}
+                    </Button>
+                  )}
+                </div>
                 {review && (
                   <Button
                     kind="secondary"
@@ -693,6 +930,63 @@ function ReportingBuilder({ owner }) {
           )}
         </>
       )}
+      <Modal
+        open={saveOpen}
+        modalHeading={t("reporting.saved.save")}
+        primaryButtonText={t("reporting.saved.confirmSave")}
+        secondaryButtonText={t("reporting.saved.cancel")}
+        primaryButtonDisabled={!saveName.trim() || createSaved.isLoading}
+        onRequestSubmit={saveCurrent}
+        onRequestClose={() => setSaveOpen(false)}
+      >
+        {createSaved.error && (
+          <InlineNotification
+            kind="error"
+            title={errorText(createSaved.error)}
+            hideCloseButton
+          />
+        )}
+        <TextInput
+          id="reporting-saved-name"
+          labelText={t("reporting.saved.name")}
+          value={saveName}
+          maxLength={200}
+          onChange={(event) => setSaveName(event.target.value)}
+        />
+      </Modal>
+      <Modal
+        open={updateOpen}
+        modalHeading={t("reporting.saved.update")}
+        primaryButtonText={t("reporting.saved.confirmUpdate")}
+        secondaryButtonText={t("reporting.saved.cancel")}
+        onRequestSubmit={updateCurrent}
+        onRequestClose={() => setUpdateOpen(false)}
+      >
+        <p>{t("reporting.saved.updateHelp", { name: draft.savedReport?.name })}</p>
+      </Modal>
+      <Modal
+        danger
+        open={!!deleteCandidate}
+        modalHeading={t("reporting.saved.delete")}
+        primaryButtonText={t("reporting.saved.confirmDelete")}
+        secondaryButtonText={t("reporting.saved.cancel")}
+        onRequestSubmit={() =>
+          removeSaved.mutate({
+            id: deleteCandidate.id,
+            expectedVersion: deleteCandidate.version,
+          })
+        }
+        onRequestClose={() => setDeleteCandidate(null)}
+      >
+        {removeSaved.error && (
+          <InlineNotification
+            kind="error"
+            title={errorText(removeSaved.error)}
+            hideCloseButton
+          />
+        )}
+        <p>{t("reporting.saved.deleteHelp", { name: deleteCandidate?.name })}</p>
+      </Modal>
     </main>
   );
 }

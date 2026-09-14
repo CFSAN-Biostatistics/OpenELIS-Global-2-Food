@@ -55,4 +55,16 @@
       <delete tableName="menu" schemaName="clinlims"><where>element_id = 'menu_reports_custom_data_export'</where></delete>
     </rollback>
   </changeSet>
+  <changeSet id="479-003-report-definition-updated-by" author="pmanko">
+    <preConditions onFail="HALT">
+      <tableExists tableName="report_definition" schemaName="clinlims"/>
+      <not><columnExists tableName="report_definition" columnName="updated_by" schemaName="clinlims"/></not>
+    </preConditions>
+    <addColumn tableName="report_definition" schemaName="clinlims">
+      <column name="updated_by" type="varchar(50)"/>
+    </addColumn>
+    <rollback>
+      <dropColumn tableName="report_definition" schemaName="clinlims" columnName="updated_by"/>
+    </rollback>
+  </changeSet>
 </databaseChangeLog>

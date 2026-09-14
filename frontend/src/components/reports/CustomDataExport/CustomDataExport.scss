@@ -26,6 +26,17 @@
     flex-wrap: wrap;
     margin-block: spacing.$spacing-06;
   }
+  .reporting-title-actions,
+  .reporting-saved-actions {
+    display: flex;
+    gap: spacing.$spacing-03;
+    flex-wrap: wrap;
+  }
+  .reporting-saved-list {
+    display: grid;
+    gap: spacing.$spacing-04;
+    margin-top: spacing.$spacing-05;
+  }
   .reporting-controls > div {
     margin-bottom: spacing.$spacing-05;
   }
