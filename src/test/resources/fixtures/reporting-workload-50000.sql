@@ -1,4 +1,5 @@
--- Public synthetic workload; load only through the disposable-local runner.
+-- Public synthetic workload for the disposable local or dedicated Reporting UAT stack.
+-- Load through qualify-workload.py (local) or prepare-cancellation-workload.py.
 -- 5,000 specimens have two analyses with four readings each (40,000 results).
 -- One additional specimen has 10,000 readings, exercising a large repeat group.
 -- Adjacent readings have equal values but distinct identities. No rows are deleted.

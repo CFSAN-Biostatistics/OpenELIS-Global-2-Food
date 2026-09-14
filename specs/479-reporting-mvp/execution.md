@@ -1258,3 +1258,41 @@ the subsequent deployment and its own browser checks; human acceptance remains
 separate. RPT-201 in uat.md
 now uses the actual three-row fixture and fresh-date shared-report workflow;
 updating the live Grist checklist still needs its authoring connection.
+
+## Natural queued-cancellation qualification — local, 2026-09-14
+
+A new opt-in browser workflow uses the existing 50,000-result fixture to occupy
+one real worker, then submits a normal May 5 report. It exercises Keep queued,
+reload, confirmed cancellation and another reload. After the large job finishes,
+the cancelled job remains CANCELLED with no start time, row count or file size;
+a direct download returns 409. The actual large CSV is compared row-for-row with
+an independent 50,000-row oracle, including equal repeated results. No worker
+pause, database lock, artificial timestamp or queue-state injection is used.
+
+The final local run passes three checks in 1.5 minutes: authentication and this
+workflow at 1280×900 and 390×844. Evidence is
+`/private/tmp/reporting-cancel-natural-local-verified-evidence` and its sibling
+`reporting-cancel-natural-local-verified.log`. Initial test-authoring failures
+were diagnosed from screenshots, browser traces and source: Carbon adds a
+screen-reader danger label to the confirm button; the separate Node HTTP client
+followed a local login redirect; and AppConfig omits null JSON properties.
+Those test assumptions were corrected. Application code was not changed.
+The expected 409 download rejection is the only final browser resource error;
+there were no page exceptions. The application completed both 50,000-row jobs.
+
+Direct inspection used the canonical queue captures at matching widths. The
+implementation retains the same columns, status/action placement and mobile
+labeled-row layout. Cancellation adds the existing native Carbon confirmation
+required by the functional specification; the mock's Cancel action is immediate.
+Desktop and phone confirmations and the resulting Cancelled rows were inspected.
+
+`projects/reporting-uat/prepare-cancellation-workload.py` verifies the actual
+stack, requires a ready identity for public Reporting UAT and an idle
+worker, backs up the database, loads the idempotent
+fixture and checks 50,000 unique results / 5,001 specimens / 10,001 analyses.
+Its local run passed against the already-seeded data with application
+`23876680bd52` retained; receipt
+`/private/tmp/reporting-cancel-setup-local-20260914/verified.json`.
+Public preflight found no active jobs and no records on the fixture collection
+date. Public fixture installation and its own browser checks are next; this local
+record does not close T021 or claim public/human acceptance.

@@ -152,9 +152,15 @@ from ordinary queued or failed jobs without reconstructing the report.
 2. `RPT-302` required — Open the prepared failed job and choose Retry. Expect a
    new linked job with the same frozen definition, columns and scope while the
    original remains FAILED.
-3. `RPT-303` required — Cancel the prepared queued job after confirmation.
-   Expect CANCELLED and no generated download. If it has already begun, expect a
-   clear refusal rather than a false cancellation.
+3. `RPT-303` required — With the 50,000-result synthetic workload loaded, start a
+   Sample & Testing spreadsheet with Accession Number and Viral Load for May 7, 2026. While it is Generating, return to the overview and start the same columns
+   for May 5. In My Report Queue, choose Cancel on that queued May 5 job, then
+   Keep queued. Reload; it remains Queued. Choose Cancel again and confirm Cancel
+   export. Expect Cancelled after reload with no download, including after the
+   first job finishes. The large report contains 50,000 rows, preserving repeated
+   equal values. Repeat on a phone. If processing has already begun, expect a clear
+   refusal rather than a false cancellation; prepare both reports in separate tabs
+   before starting the large one when more setup time is needed.
 4. `RPT-304` required — Open the prepared expired job and restore its choices.
    Expect download to remain unavailable and generation to require a fresh date
    range.

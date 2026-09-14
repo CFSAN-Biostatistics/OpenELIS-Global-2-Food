@@ -418,3 +418,61 @@ and one pending REQUESTED referral with blank returned fields. The draft and
 May 8 sent referral must be absent. Repeat at desktop and phone widths using
 the same workflow and expectations. The `Referrals preserve returned and pending
 rows through shared reports` browser checks implement this UAT walkthrough.
+
+### Repeatable queued-cancellation UAT
+
+The existing 50,000-result synthetic workload creates ordinary queued work while
+one real export runs. No database lock, worker pause, timestamp alteration or
+special queue exception is used. Preparation is opt-in for the disposable local
+stack or the dedicated public Reporting UAT stack; ordinary CI does not load this
+large fixture. Existing records are retained, and the fixture refuses an occupied
+reporting date that is not its own already-complete dataset.
+
+Run the guarded setup from the application repository with the worker idle:
+
+```sh
+python3 projects/reporting-uat/prepare-cancellation-workload.py \
+  --project reporting-mvp-iteration1 \
+  --app-container reporting-mvp-iteration1-app-1 \
+  --db-container reporting-mvp-iteration1-db-1 \
+  --fixture src/test/resources/fixtures/reporting-workload-50000.sql \
+  --output /private/tmp/reporting-cancellation-setup
+```
+
+The output directory must be new. Setup verifies the actual stack, takes a
+backup, loads the idempotent fixture and verifies 50,000 result identities across
+5,001 specimens and 10,001 analyses. The public procedure uses project
+`reporting-uat`, its matching app/database containers and
+`--identity /home/ubuntu/reporting-uat/runtime/identity/target.json`; run it on the
+reporting host with the exact committed script and fixture. It requires that
+identity to name the ready Reporting UAT instance and retains the live app.
+
+With TEST_USER and TEST_PASS supplied in the environment, run the registered
+workflow against either the local preview or public reporting URL:
+
+```sh
+cd frontend
+REPORTING_WORKLOAD=true BASE_URL=http://127.0.0.1:18489 npm run pw:test -- \
+  playwright/tests/foundational/core/custom-data-export-recovery.spec.ts \
+  --project=core-app --workers=1 --max-failures=1 --grep 'naturally queued'
+```
+
+Human and automated flow: create a Sample & Testing spreadsheet with Accession
+Number and Viral Load for May 7, 2026. Generate it and observe Generating. Return
+to the overview, start another report with the same columns for May 5, then open
+My Report Queue. The May 5 job is Queued while the first report runs. Choose
+Cancel, then Keep queued; reload and verify it remains Queued. Open Cancel again
+and confirm Cancel export. Expect Cancelled after reload, no download, and no
+later transition to Generating or Ready. Once the large report completes, its
+actual CSV must preserve all 50,000 rows, including the equal repeated readings.
+The browser also checks that the cancelled job has no start time, row count or
+file size and that a direct download is refused. Repeat at desktop and phone
+widths and compare the queue with the pinned mock. The confirmation uses the
+existing Carbon modal required by the functional specification; the mock's
+queue cancellation is immediate.
+
+If a human run reaches the job after it starts, do not call that a successful
+cancellation: the interface must refuse cancellation clearly. Prepare both
+reports in separate tabs before generating the large one when more setup time
+is needed. The next attempt should create new jobs, preserving the first run's
+history.

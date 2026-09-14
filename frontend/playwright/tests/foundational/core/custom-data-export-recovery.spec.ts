@@ -165,3 +165,163 @@ test("an expired report retains its columns and filters but requests fresh dates
     fullPage: false,
   });
 });
+
+async function submitCancellationReport(page: Page, day: string) {
+  await page.goto("/reports/custom-data-export");
+  await page
+    .getByRole("button", { name: "Start a new export", exact: true })
+    .click();
+  await page.getByRole("radio", { name: /^Sample & Testing/ }).click();
+  for (const label of ["Accession Number", "Viral Load"]) {
+    await page
+      .getByRole("searchbox", { name: "Find a field", exact: true })
+      .fill(label);
+    await page
+      .getByRole("button", { name: `Add ${label}`, exact: true })
+      .click();
+    await page
+      .getByRole("button", { name: "Clear search", exact: true })
+      .click();
+  }
+  await page
+    .getByRole("button", { name: "Next: Set Filters", exact: true })
+    .click();
+  await page.getByLabel("Date from", { exact: true }).fill(day);
+  await page.getByLabel("Date to", { exact: true }).fill(day);
+  await page
+    .getByRole("button", { name: "Next: Review & Submit", exact: true })
+    .click();
+  const submitted = page.waitForResponse(
+    (response) =>
+      new URL(response.url()).pathname === jobsPath &&
+      response.request().method() === "POST",
+  );
+  await page.getByRole("button", { name: "Generate CSV", exact: true }).click();
+  const job = await (await submitted).json();
+  await expect(
+    page.getByRole("region", { name: "Your current report" }),
+  ).toBeVisible();
+  return job;
+}
+
+for (const viewport of [
+  { width: 1280, height: 900 },
+  { width: 390, height: 844 },
+]) {
+  test(`a naturally queued export requires confirmation and stays cancelled at ${viewport.width}px`, async ({
+    page,
+  }, testInfo) => {
+    // This workload is explicit opt-in: ordinary CI does not seed 50,000 results.
+    // Run the same workflow locally and on the dedicated synthetic public UAT target.
+    test.skip(
+      process.env.REPORTING_WORKLOAD !== "true",
+      "Requires the reporting-workload-50000.sql fixture",
+    );
+    testInfo.setTimeout(240_000);
+    await page.setViewportSize(viewport);
+    const large = await submitCancellationReport(page, "2026-05-07");
+    await expect(
+      page.getByRole("region", { name: "Your current report" }),
+    ).toContainText("Generating", { timeout: 15_000 });
+    const queued = await submitCancellationReport(page, "2026-05-05");
+    await expect(
+      page.getByRole("region", { name: "Your current report" }),
+    ).toContainText("Queued");
+    await page
+      .getByRole("button", { name: "My Report Queue", exact: true })
+      .click();
+    const row = page.getByTestId(`reporting-job-${queued.id}`);
+    await expect(row).toContainText("Queued");
+    await row.getByRole("button", { name: "Cancel", exact: true }).click();
+    const dialog = page.getByRole("dialog", {
+      name: "Cancel export",
+      exact: true,
+    });
+    await expect(dialog).toBeVisible();
+    await expect(dialog).toContainText(
+      "If processing has already started, it will continue",
+    );
+    await page.screenshot({
+      path: testInfo.outputPath("cancel-confirmation.png"),
+      fullPage: false,
+    });
+    await dialog
+      .getByRole("button", { name: "Keep queued", exact: true })
+      .click();
+    await expect(dialog).toBeHidden();
+    await page.reload();
+    await expect(row).toContainText("Queued");
+    await row.getByRole("button", { name: "Cancel", exact: true }).click();
+    await dialog.getByRole("button", { name: /Cancel export$/ }).click();
+    await expect(dialog).toBeHidden();
+    await expect(row).toContainText("Cancelled");
+    await expect(
+      row.getByRole("link", { name: "Download CSV", exact: true }),
+    ).toHaveCount(0);
+    await page.reload();
+    await expect(row).toContainText("Cancelled");
+    await page.screenshot({
+      path: testInfo.outputPath("cancelled-queue.png"),
+      fullPage: false,
+    });
+
+    // Let the real workload finish, then verify the cancelled job was never claimed.
+    // No worker pause, database lock, fake timestamps or injected queue state is used.
+    const largeRow = page.getByTestId(`reporting-job-${large.id}`);
+    const link = largeRow.getByRole("link", {
+      name: "Download CSV",
+      exact: true,
+    });
+    await expect(link).toBeVisible({ timeout: 180_000 });
+    const downloading = page.waitForEvent("download");
+    await link.click();
+    const download = await downloading;
+    expect(await download.failure()).toBeNull();
+    const stream = await download.createReadStream();
+    const chunks: Buffer[] = [];
+    for await (const chunk of stream) chunks.push(Buffer.from(chunk));
+    const bytes = Buffer.concat(chunks);
+    const expected = ["\uFEFFAccession Number,Viral Load"];
+    for (let specimen = 1; specimen <= 5001; specimen++) {
+      const count = specimen === 5001 ? 10000 : 8;
+      for (let reading = 0; reading < count; reading++) {
+        const value =
+          specimen === 5001
+            ? 100 + (Math.floor(reading / 2) % 50)
+            : (specimen % 1000) + Math.floor((reading % 4) / 2);
+        expected.push(
+          `RPT50K-V1-${String(specimen).padStart(5, "0")},${value}`,
+        );
+      }
+    }
+    expect(bytes.toString("utf8")).toBe(expected.join("\r\n") + "\r\n");
+    await testInfo.attach("workload.csv", {
+      body: bytes,
+      contentType: "text/csv",
+    });
+    // Check through the same authenticated browser as the user workflow.
+    // The separate Node request client follows a login redirect on the HTTP preview.
+    const final = await page.evaluate(async (path) => {
+      const response = await fetch(path, { credentials: "same-origin" });
+      return response.json();
+    }, `${jobsPath}/${queued.id}`);
+    expect(final.state).toBe("CANCELLED");
+    // AppConfig omits null JSON fields; neither form may imply generated output.
+    expect(final.startedAt ?? null).toBeNull();
+    expect(final.rowCount ?? null).toBeNull();
+    expect(final.fileSize ?? null).toBeNull();
+    const unavailable = await page.evaluate(async (path) => {
+      const response = await fetch(path, { credentials: "same-origin" });
+      return response.status;
+    }, `${jobsPath}/${queued.id}/download`);
+    expect(unavailable).toBe(409);
+    await testInfo.attach("cancellation.json", {
+      body: JSON.stringify(
+        { workloadJob: large.id, cancelledJob: final, viewport },
+        null,
+        2,
+      ),
+      contentType: "application/json",
+    });
+  });
+}
