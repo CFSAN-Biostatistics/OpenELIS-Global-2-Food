@@ -2,8 +2,8 @@
 
 **Branch**: `spec/479-ogc-479-reporting-mvp`  
 **Date**: 2026-09-13  
-**Status**: M1 implementation in progress; full MVP, UAT integration and
-deployment remain pending
+**Status**: M1 implementation and mock-parity remediation in progress. The
+Sample & Testing stage is publicly deployed; the complete MVP remains pending.
 
 **Specification**: [spec.md](spec.md)  
 **Inspected code baseline**: `e57a53399c2134fe3ff58009119cc05906c61e5e`
@@ -162,6 +162,36 @@ not reinterpret an event's reported date as the event date or assume a catalog
 entry is an event occurrence. The mapping tests prove those differences. Flat
 event reports can use the common tabular formatter directly; they do not need an
 artificial test pivot.
+
+### Interface Authority and Frontend State
+
+The pinned interactive mock is authoritative for layout and interactions. MVP
+scope limits connected functionality; it does not reduce the supplied design.
+Use the direct comparison gate in [design-parity.md](design-parity.md) for every
+UI increment, with actual desktop and narrow-screen interactions.
+
+React Router owns navigable state in the query string: overview/builder/saved/
+queue, builder step, source and layout, shared-report identity, queue page/job
+and saved-report search. Browser Back/Forward and reload must reproduce that
+location. Preserve unrelated review parameters. Normalize invalid parameters
+with replacement navigation; do not add history entries for typing or repairs.
+A deep link to review without the necessary draft returns to the required step.
+
+Draft contents (ordered selections per source/layout, filters and dates) remain
+in the existing browser-session draft. A saved-report link loads its server
+configuration and asks for fresh dates. The URL does not claim to serialize an
+unsaved report. TanStack Query owns server catalog, saved definitions and frozen
+job records. Late responses must not overwrite a newer draft, and completed jobs
+remain retrievable through the queue after navigation.
+
+Keep transient interface controls local to the current draft. Reset them for a
+new export, preserve keyboard focus during ordering and move focus into a newly
+opened workflow step. Render collapsed groups without mounting every field
+control; filter requests must not fire on every keystroke. Include loading,
+empty, error and recovery states. Use Carbon controls, tokens and localized copy.
+Check real downloaded values, unexpected browser errors, accessibility and
+visual fidelity separately; a passing screenshot capture alone proves none of
+the others.
 
 ### Low-Friction Interface and Shared Reports
 

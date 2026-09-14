@@ -3,10 +3,13 @@
 **Inputs**: [spec.md](spec.md), [plan.md](plan.md),
 [data-model.md](data-model.md), [contract](contracts/export-api.md),
 [acceptance plan](quickstart.md), [UAT contract](uat.md).
-**Status**: M1 implementation in progress. T001–T003, T005, T007, T009 and T011 are
+**Status**: M1 implementation in progress. T001–T003, T005–T007, T009, T011 and T014 are
 complete; other tasks remain open until their full acceptance conditions pass. See
 [execution.md](execution.md) for current evidence and the subsequently authorized
-Catalyst deployment tasks.
+Catalyst deployment tasks. The Sample & Testing stage is publicly testable;
+T032, T033 and T035–T038 are complete for application `ebc6983898` and repeat
+for each later usable stage. T034 remains partial until the remaining workflow
+fixtures are available. Public availability does not close M1 or M2 qualification.
 
 Use one engine and configured source definitions. Complete useful functionality
 first: instance-aware columns, both layouts, every repeated result and shared
@@ -47,7 +50,7 @@ completes the other mock source definitions and operational qualification.
       flow without additional setup.
       Service/database checks and the two-user native browser flow pass; see
       Iteration 6 in `execution.md`. Access-negative browser cases remain in T016.
-- [ ] T006 [P] [US2] Add component tests in
+- [x] T006 [P] [US2] Add component tests in
       `frontend/src/components/reports/CustomDataExport/` for
       configuration-driven fields/filters, defaults, search/order, layout
       switching, retained edits, inline ready download and shared
@@ -93,11 +96,13 @@ completes the other mock source definitions and operational qualification.
       `src/main/java/org/openelisglobal/reports/dataexport/controller/` and
       `form/` following `specs/479-reporting-mvp/contracts/export-api.md`; use
       shared instance scope for definitions and owner scope for jobs/files.
-- [ ] T014 [US1] Implement the common Carbon builder, source-driven
+- [x] T014 [US1] Implement the common Carbon builder, source-driven
       fields/filters, both layouts and shared report reuse in
       `frontend/src/components/reports/CustomDataExport/`; wire Reports
       navigation and `frontend/src/languages/en.json`, preserving state and
-      confirmations from T006.
+      confirmations from T006. Use URL-owned navigation and session drafts as
+      specified in the plan; verify Back/Forward, reload, deep links, late
+      responses, keyboard focus and fresh-export reset.
 - [ ] T015 [US4] Add inline job progress/ready download and the basic personal
       queue using current shared query utilities in
       `frontend/src/components/reports/CustomDataExport/`; wire configured
@@ -113,7 +118,7 @@ completes the other mock source definitions and operational qualification.
       confirm useful reporting works before expanding the source definitions.
 - [ ] T018 Open the M1 PR to `develop`, linking the spec, UI evidence and actual
       CSV comparisons. Report current required CI results and the remaining M2
-      scope; do not merge or deploy as part of this task.
+      scope; do not merge. Publish each usable stage through the UAT tasks below.
 
 ## M2 — Remaining Configurations and Recoverable Delivery
 
@@ -187,11 +192,11 @@ fixtures and expected outcomes. Publish working stages with explicit known gaps;
 do not wait for completion of the whole MVP. Full MVP acceptance remains a
 separate completion criterion. Repeat these delivery tasks for each stage.
 
-- [ ] T032 Record the exact application revision, current CI and stage scope, then
+- [x] T032 Record the exact application revision, current CI and stage scope, then
       create a reproducible deployment candidate for
       `reporting.catalyst.openelis-global.org`. Record current Catalyst capacity,
       existing service ownership, backup and rollback inputs before mutation.
-- [ ] T033 Provision or update the reporting UAT application without changing
+- [x] T033 Provision or update the reporting UAT application without changing
       the existing Catalyst UI, databases or unrelated CSiM deployments. Use
       persistent output storage and publish `/__review/target.json` only after
       backend, frontend, database migration and route health checks pass.
@@ -199,20 +204,23 @@ separate completion criterion. Repeat these delivery tasks for each stage.
       identifiers in `uat.md`, including repeated identical results, a referral,
       a non-conformance event, two report users and prepared queue states. Do
       not depend on browser-only test helpers.
-- [ ] T035 Run the focused Playwright acceptance files against the deployed
+      Current stage has persistent synthetic repeat/turnaround fixtures and two
+      existing report users. Referral, non-conformance and recovery fixtures
+      remain open; do not claim their planned identifiers are seeded.
+- [x] T035 Run the focused Playwright acceptance files against the deployed
       target, compare actual downloaded CSVs with the fixture oracle, and verify
       both Sample & Testing layouts, shared reuse, configured source reports and
       available queue behavior. Record failures and uncovered planned capabilities;
       they do not postpone access to other usable workflows.
-- [ ] T036 Create the `reporting` review in the central Grist document and apply
-      the currently executable stages of the four stable UAT stories from `uat.md` through the review-tooling
+- [x] T036 Create the `reporting` review in the central Grist document and apply
+      the currently executable stages of the five stable UAT stories from `uat.md` through the review-tooling
       authoring path. Read before writing, inspect computed problems and verify
       the public checklist JSON after every change.
-- [ ] T037 Inject the established review overlay into the reporting UAT host;
+- [x] T037 Inject the established review overlay into the reporting UAT host;
       configure authenticated submission against that OpenELIS backend; verify
       checklist loading, target identity, route capture, retained answers and a
       real submitted/downloaded review report.
-- [ ] T038 Record the deployed URL, exact application/review-tooling revisions,
+- [x] T038 Record the deployed URL, exact application/review-tooling revisions,
       checklist revision, automated preflight evidence and remaining human UAT
       status in `execution.md`. Hand each usable stage to reviewers with its
       actual check results and known limitations; do not wait for the full MVP.

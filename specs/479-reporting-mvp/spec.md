@@ -28,10 +28,21 @@ The product source is the
 [Custom Data Export specification](https://github.com/DIGI-UW/openelis-work/blob/5b2df7e34ff5ad1f983f24c0e9e0ba4db5e8697f/designs/reports/custom-data-export.md)
 and
 [interactive mock](https://github.com/DIGI-UW/openelis-work/blob/5b2df7e34ff5ad1f983f24c0e9e0ba4db5e8697f/designs/reports/custom-data-export.html).
-This document proposes a smaller first release within that product direction. It
-does not claim acceptance of the entire design candidate or replace its
-follow-on scope. Engineering choices are recorded separately in
-[plan.md](plan.md).
+The mock is the interface source of truth. This MVP specification scopes which
+functions are connected to real OpenELIS data first; it does not authorize a
+simplified or replacement interface. Port the supplied layout and interaction
+code directly where practical. Preserve its polished overview, staged builder,
+catalog, ordering, review, saved reports, queue and responsive presentation.
+Controls beyond the connected stage can remain visible with explicit pending
+behavior; they must not pretend to generate, save or recover real data.
+
+User decisions in this conversation govern intentional adaptations: both CSV
+layouts with spreadsheet default, every repeated result, per-test turnaround,
+instance-aware catalogs, shared definitions and reuse of existing access. These
+do not authorize replacing Add/Added controls with checkboxes, expanding the
+whole catalog, preselecting every test or flattening the design's flow.
+Use [design-parity.md](design-parity.md) for the mandatory direct comparison.
+Engineering choices are recorded separately in [plan.md](plan.md).
 
 | Product capability        | First release                                                                                                                                      | Follow-on                                                                                   |
 | ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
@@ -275,10 +286,16 @@ return visits, retry, cancellation, application restart and expiry.
   searchable groups, with a separate ordered selection, add/remove actions and
   an ordered header preview. Allow any nonempty compatible selection. Do not
   impose a fixed catalog count or show unsupported fields as working options.
+  Preserve the mock's initially collapsed groups, field-and-group search,
+  automatic expansion of matches, restoration of browsing folds after clearing
+  search, Expand all/Collapse all, group counts and Add/Added actions. Catalog
+  availability does not imply default selection of every configured test.
 - **FR-003**: Support direct reordering and accessible keyboard/button ordering,
   with named controls, retained focus and position feedback. The displayed order
   must remain authoritative through review, submission, download and
   restoration.
+  Preserve the mock's visible drag grip, insertion feedback, compact stacked
+  ordering controls, separate remove action and narrow-screen pane switching.
 - **FR-004**: Require Date From and Date To; include whole boundary dates in the
   laboratory timezone. Reject missing/reversed periods and periods exceeding the
   configured maximum, initially 90 inclusive calendar days.

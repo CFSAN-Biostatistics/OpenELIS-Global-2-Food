@@ -9,7 +9,9 @@ import {
 import { waitFor } from "@testing-library/dom";
 import { IntlProvider } from "react-intl";
 import { QueryClientProvider } from "@tanstack/react-query";
-import { MemoryRouter } from "react-router-dom";
+import { Router } from "react-router-dom";
+import { createMemoryHistory } from "history";
+import { act } from "react-dom/test-utils";
 import { vi, beforeEach, afterEach, test, expect } from "vitest";
 import messages from "../../../languages/en.json";
 import UserSessionDetailsContext from "../../../UserSessionDetailsContext";
@@ -49,6 +51,7 @@ let savedReports;
 let savedMutations;
 let failSavedUpdate;
 let deletedSaved;
+let consoleErrors;
 const json = (body, status = 200) => ({
   ok: status < 400,
   status,
@@ -57,6 +60,7 @@ const json = (body, status = 200) => ({
 });
 
 beforeEach(() => {
+  consoleErrors = vi.spyOn(console, "error");
   configuredFilters = ["labSectionIds", "testIds", "resultStatuses"];
   clearReportingDraft();
   requests = [];
@@ -77,6 +81,18 @@ beforeEach(() => {
             url.includes("layout=RESULT_LIST") ? "RESULT_LIST" : "SPREADSHEET",
           ),
         );
+      if (
+        url.includes("/saved-configs/") &&
+        (!options.method || options.method === "GET")
+      ) {
+        const id = decodeURIComponent(url.split("/saved-configs/")[1]);
+        return json(
+          savedReports.find((saved) => saved.id === id) || {
+            code: "reporting.saved.notFound",
+          },
+          savedReports.some((saved) => saved.id === id) ? 200 : 404,
+        );
+      }
       if (
         url.includes("/saved-configs") &&
         (!options.method || options.method === "GET")
@@ -136,13 +152,24 @@ beforeEach(() => {
   );
 });
 afterEach(() => {
+  const expectedErrors = new Set([
+    "reporting.jobs.limit",
+    "reporting.saved.changed",
+    "Request failed (404): /rest/reports/data-export/saved-configs/missing",
+  ]);
+  const unexpected = consoleErrors.mock.calls
+    .map(([error]) => error?.message || String(error))
+    .filter((message) => !expectedErrors.has(message));
   cleanup();
   vi.unstubAllGlobals();
+  consoleErrors.mockRestore();
+  expect(unexpected).toEqual([]);
 });
 
-function open() {
-  return render(
-    <MemoryRouter>
+function open(entry = "/CustomDataExport") {
+  const history = createMemoryHistory({ initialEntries: [entry] });
+  const rendered = render(
+    <Router history={history}>
       <QueryClientProvider client={createQueryClient()}>
         <IntlProvider locale="en" messages={messages}>
           <UserSessionDetailsContext.Provider
@@ -152,36 +179,210 @@ function open() {
           </UserSessionDetailsContext.Provider>
         </IntlProvider>
       </QueryClientProvider>
-    </MemoryRouter>,
+    </Router>,
   );
+  return { ...rendered, history };
+}
+
+test("the mock overview leads to collapsed groups and Add actions without selecting the whole test catalog", async () => {
+  open();
+  expect(
+    await screen.findByRole("heading", { name: "Create a new export" }),
+  ).toBeVisible();
+  expect(
+    screen.getByRole("heading", { name: "Use a saved report" }),
+  ).toBeVisible();
+  fireEvent.click(screen.getByRole("button", { name: "Start a new export" }));
+  fireEvent.click(
+    await screen.findByRole("radio", { name: /Sample & Testing/ }),
+  );
+  const available = await screen.findByRole("region", {
+    name: "Available fields",
+  });
+  expect(within(available).queryByRole("checkbox")).toBeNull();
+  expect(
+    within(available).getByRole("button", { name: "Configured tests" }),
+  ).toHaveAttribute("aria-expanded", "false");
+  expect(
+    within(available).queryByRole("button", { name: "Add Hemoglobin" }),
+  ).toBeNull();
+  expect(
+    screen.getByRole("heading", { name: "Your CSV columns (0)" }),
+  ).toBeVisible();
+  fireEvent.change(screen.getByRole("searchbox", { name: "Find a field" }), {
+    target: { value: "Configured tests" },
+  });
+  fireEvent.click(
+    await screen.findByRole("button", { name: "Add Hemoglobin" }),
+  );
+  expect(
+    screen.getByRole("button", { name: "Added Hemoglobin" }),
+  ).toHaveAttribute("aria-disabled", "true");
+  fireEvent.click(screen.getByRole("button", { name: "Clear search" }));
+  expect(
+    screen.getByRole("button", { name: "Configured tests" }),
+  ).toHaveAttribute("aria-expanded", "false");
+  expect(
+    screen.getByRole("button", { name: "Drag Hemoglobin to reorder" }),
+  ).toBeVisible();
+});
+
+test("the mock column picker keeps exact keyboard ordering and focus", async () => {
+  open();
+  fireEvent.click(
+    await screen.findByRole("button", { name: "Start a new export" }),
+  );
+  fireEvent.click(
+    await screen.findByRole("radio", { name: /Sample & Testing/ }),
+  );
+  fireEvent.click(await screen.findByRole("button", { name: "Expand all" }));
+  for (const label of ["Accession Number", "Hemoglobin", "White Cell Count"])
+    fireEvent.click(screen.getByRole("button", { name: `Add ${label}` }));
+  const handle = screen.getByRole("button", {
+    name: "Drag White Cell Count to reorder",
+  });
+  fireEvent.keyDown(handle, { key: "Home" });
+  expect(
+    within(screen.getByRole("region", { name: "CSV header preview" }))
+      .getAllByRole("columnheader")
+      .map((n) => n.textContent),
+  ).toEqual(["White Cell Count", "Accession Number", "Hemoglobin"]);
+  await waitFor(() =>
+    expect(
+      screen.getByRole("button", { name: "Drag White Cell Count to reorder" }),
+    ).toHaveFocus(),
+  );
+  fireEvent.keyDown(
+    screen.getByRole("button", { name: "Drag White Cell Count to reorder" }),
+    { key: "End" },
+  );
+  expect(
+    within(screen.getByRole("region", { name: "CSV header preview" }))
+      .getAllByRole("columnheader")
+      .map((n) => n.textContent),
+  ).toEqual(["Accession Number", "Hemoglobin", "White Cell Count"]);
+});
+test("browser Back returns to the source chooser and Forward restores columns without losing external query parameters", async () => {
+  const { history } = open("/CustomDataExport?uat=review");
+  fireEvent.click(
+    await screen.findByRole("button", { name: "Start a new export" }),
+  );
+  fireEvent.click(
+    await screen.findByRole("radio", { name: /Sample & Testing/ }),
+  );
+  fireEvent.click(await screen.findByRole("button", { name: "Expand all" }));
+  fireEvent.click(screen.getByRole("button", { name: "Add Hemoglobin" }));
+  act(() => history.goBack());
+  await waitFor(() =>
+    expect(
+      screen.queryByRole("region", { name: "Available fields" }),
+    ).not.toBeInTheDocument(),
+  );
+  expect(new URLSearchParams(history.location.search).get("uat")).toBe(
+    "review",
+  );
+  act(() => history.goForward());
+  expect(
+    await screen.findByRole("columnheader", { name: "Hemoglobin" }),
+  ).toBeVisible();
+});
+
+test("a review link without a draft returns to the required column selection", async () => {
+  const { history } = open(
+    "/CustomDataExport?view=builder&type=SAMPLE_TESTING&layout=SPREADSHEET&step=review",
+  );
+  await waitFor(() =>
+    expect(new URLSearchParams(history.location.search).get("step")).toBe(
+      "columns",
+    ),
+  );
+  expect(
+    screen.getByRole("heading", { name: "Your CSV columns (0)" }),
+  ).toBeVisible();
+  expect(
+    screen.queryByRole("button", { name: "Generate CSV" }),
+  ).not.toBeInTheDocument();
+  expect(requests).toHaveLength(0);
+});
+async function start(columns = ["Accession Number", "Hemoglobin"]) {
+  fireEvent.click(
+    await screen.findByRole("button", { name: "Start a new export" }),
+  );
+  fireEvent.click(
+    await screen.findByRole("radio", { name: /Sample & Testing/ }),
+  );
+  await addColumns(columns);
+}
+async function addColumns(columns) {
+  fireEvent.click(await screen.findByRole("button", { name: "Expand all" }));
+  for (const label of columns)
+    fireEvent.click(screen.getByRole("button", { name: `Add ${label}` }));
 }
 async function period() {
-  await screen.findByLabelText("Date from");
-  fireEvent.change(screen.getByLabelText("Date from"), {
+  const next = screen.queryByRole("button", { name: "Next: Set Filters" });
+  if (next) fireEvent.click(next);
+  fireEvent.change(await screen.findByLabelText("Date from"), {
     target: { value: "2026-08-01" },
   });
   fireEvent.change(screen.getByLabelText("Date to"), {
     target: { value: "2026-08-31" },
   });
 }
+function review() {
+  fireEvent.click(
+    screen.getByRole("button", { name: "Next: Review & Submit" }),
+  );
+}
+function generate() {
+  fireEvent.click(screen.getByRole("button", { name: "Generate CSV" }));
+}
+function headers() {
+  const preview = screen.queryByRole("region", { name: "CSV header preview" });
+  return preview
+    ? within(preview)
+        .getAllByRole("columnheader")
+        .map((n) => n.textContent)
+    : within(screen.getByRole("list", { name: "CSV columns in order" }))
+        .getAllByRole("listitem")
+        .map((n) => n.textContent);
+}
+function savedFixture() {
+  return {
+    id: "saved-1",
+    name: "Monthly hematology",
+    version: "old-version",
+    definition: {
+      schemaVersion: 1,
+      reportType: "SAMPLE_TESTING",
+      layout: "SPREADSHEET",
+      selectedVariables: ["accessionNumber", "test:1"],
+      filters: {
+        labSectionIds: [],
+        testIds: [],
+        resultStatuses: ["FINALIZED"],
+      },
+    },
+  };
+}
+async function useSaved() {
+  fireEvent.click(await screen.findByRole("button", { name: "Use report" }));
+  await screen.findByLabelText("Date from");
+}
 
 test("configured selection and reordered preview are submitted, then a download appears in place", async () => {
   open();
-  await period();
-  fireEvent.click(
-    screen.getByLabelText("White Cell Count", { selector: "input" }),
-  );
+  await start(["Accession Number", "Hemoglobin", "White Cell Count"]);
   fireEvent.click(
     screen.getByRole("button", { name: "Move White Cell Count up" }),
   );
-  const preview = screen.getByRole("region", { name: "CSV header preview" });
-  expect(
-    within(preview)
-      .getAllByRole("columnheader")
-      .map((cell) => cell.textContent),
-  ).toEqual(["Accession Number", "White Cell Count", "Hemoglobin"]);
-  fireEvent.click(screen.getByRole("button", { name: "Review report" }));
-  fireEvent.click(screen.getByRole("button", { name: "Generate CSV" }));
+  expect(headers()).toEqual([
+    "Accession Number",
+    "White Cell Count",
+    "Hemoglobin",
+  ]);
+  await period();
+  review();
+  generate();
   expect(
     await screen.findByRole("link", { name: "Download CSV" }),
   ).toHaveAttribute("href", expect.stringContaining("/jobs/job-1/download"));
@@ -196,12 +397,13 @@ test("configured selection and reordered preview are submitted, then a download 
 test("failed submission retains choices and retries with the same request identity", async () => {
   failSubmission = true;
   open();
+  await start();
   await period();
-  fireEvent.click(screen.getByRole("button", { name: "Review report" }));
-  fireEvent.click(screen.getByRole("button", { name: "Generate CSV" }));
+  review();
+  generate();
   await screen.findByText(messages["reporting.jobs.limit"]);
   failSubmission = false;
-  fireEvent.click(screen.getByRole("button", { name: "Generate CSV" }));
+  generate();
   await screen.findByRole("link", { name: "Download CSV" });
   expect(requests).toHaveLength(2);
   expect(requests[1]).toEqual(requests[0]);
@@ -209,9 +411,10 @@ test("failed submission retains choices and retries with the same request identi
 
 test("a rerun cannot download the prior file while submitting or after failure, and its retry keeps the request identity", async () => {
   open();
+  await start();
   await period();
-  fireEvent.click(screen.getByRole("button", { name: "Review report" }));
-  fireEvent.click(screen.getByRole("button", { name: "Generate CSV" }));
+  review();
+  generate();
   expect(
     await screen.findByRole("link", { name: "Download CSV" }),
   ).toHaveAttribute("href", expect.stringContaining("/job-1/download"));
@@ -220,14 +423,15 @@ test("a rerun cannot download the prior file while submitting or after failure, 
   fireEvent.click(
     screen.getByRole("option", { name: "Detailed list — results in rows" }),
   );
-  await screen.findByRole("columnheader", { name: "Result Value" });
+  await addColumns(["Accession Number", "Result Value"]);
   let release;
   submissionGate = new Promise((resolve) => {
     release = resolve;
   });
   failSubmission = true;
-  fireEvent.click(screen.getByRole("button", { name: "Review report" }));
-  fireEvent.click(screen.getByRole("button", { name: "Generate CSV" }));
+  await period();
+  review();
+  generate();
   await waitFor(() => expect(requests).toHaveLength(2));
   expect(
     screen.queryByRole("link", { name: "Download CSV" }),
@@ -237,12 +441,10 @@ test("a rerun cannot download the prior file while submitting or after failure, 
   expect(
     screen.queryByRole("link", { name: "Download CSV" }),
   ).not.toBeInTheDocument();
-  expect(
-    screen.getByRole("columnheader", { name: "Result Value" }),
-  ).toBeInTheDocument();
+  expect(headers()).toEqual(["Accession Number", "Result Value"]);
   submissionGate = undefined;
   failSubmission = false;
-  fireEvent.click(screen.getByRole("button", { name: "Generate CSV" }));
+  generate();
   expect(
     await screen.findByRole("link", { name: "Download CSV" }),
   ).toHaveAttribute("href", expect.stringContaining("/job-3/download"));
@@ -251,89 +453,116 @@ test("a rerun cannot download the prior file while submitting or after failure, 
   expect(requests[2].clientRequestId).not.toBe(requests[0].clientRequestId);
 });
 
-test("switching layouts and visiting the queue retains each layout's columns and the period", async () => {
-  open();
+test("switching layouts and browser navigation retain each layout's columns and the period", async () => {
+  const { history } = open();
+  await start(["Accession Number", "Hemoglobin", "White Cell Count"]);
   await period();
-  fireEvent.click(
-    screen.getByLabelText("White Cell Count", { selector: "input" }),
+  review();
+  fireEvent.click(screen.getByRole("button", { name: "My Report Queue" }));
+  expect(new URLSearchParams(history.location.search).get("view")).toBe(
+    "queue",
   );
+  act(() => history.goBack());
+  expect(
+    await screen.findByRole("button", { name: "Generate CSV" }),
+  ).toBeEnabled();
+  expect(screen.getByText(/2026-08-01 – 2026-08-31/)).toBeVisible();
+  fireEvent.click(screen.getByRole("button", { name: "Edit report" }));
   fireEvent.click(screen.getByRole("combobox", { name: "CSV layout" }));
   fireEvent.click(
     screen.getByRole("option", { name: "Detailed list — results in rows" }),
   );
-  expect(
-    await screen.findByRole("columnheader", { name: "Result Value" }),
-  ).toBeInTheDocument();
-  fireEvent.click(screen.getByRole("button", { name: "My Report Queue" }));
-  fireEvent.click(
-    screen.getByRole("button", { name: "Back to report builder" }),
+  await addColumns(["Result Value"]);
+  expect(headers()).toEqual(["Result Value"]);
+  act(() => history.goBack());
+  await waitFor(() =>
+    expect(headers()).toEqual([
+      "Accession Number",
+      "Hemoglobin",
+      "White Cell Count",
+    ]),
   );
-  expect(screen.getByLabelText("Date from")).toHaveValue("2026-08-01");
-  fireEvent.click(screen.getByRole("combobox", { name: "CSV layout" }));
-  fireEvent.click(
-    screen.getByRole("option", { name: "Spreadsheet — tests in columns" }),
-  );
-  expect(
-    await screen.findByRole("columnheader", { name: "White Cell Count" }),
-  ).toBeInTheDocument();
+  await period();
+  review();
+  generate();
+  await screen.findByRole("link", { name: "Download CSV" });
+  expect(requests[0].layout).toBe("SPREADSHEET");
+  expect(requests[0].filterSpec.dateTo).toBe("2026-08-31");
 });
 
 test("missing, reversed and excessive dates are explained before submitting", async () => {
   open();
+  await start();
+  fireEvent.click(screen.getByRole("button", { name: "Next: Set Filters" }));
   const from = await screen.findByLabelText("Date from");
   const to = screen.getByLabelText("Date to");
-  fireEvent(from, new FocusEvent("focusout", { bubbles: true }));
-  expect(screen.getByText("Choose a start date.")).toBeInTheDocument();
-  expect(screen.getByRole("button", { name: "Review report" })).toBeDisabled();
+  review();
+  expect(screen.getByText("Choose a start date.")).toBeVisible();
+  expect(
+    screen.queryByRole("button", { name: "Generate CSV" }),
+  ).not.toBeInTheDocument();
   fireEvent.change(from, { target: { value: "2026-01-01" } });
   fireEvent.change(to, { target: { value: "2025-12-31" } });
   expect(
     screen.getByText("End date must be on or after the start date."),
-  ).toBeInTheDocument();
-  expect(screen.getByRole("button", { name: "Review report" })).toBeDisabled();
+  ).toBeVisible();
+  expect(
+    screen.getByRole("button", { name: "Next: Review & Submit" }),
+  ).toBeDisabled();
   fireEvent.change(to, { target: { value: "2026-04-01" } });
   expect(
     screen.getByText(
       "Choose a period of 90 days or fewer, including both dates.",
     ),
-  ).toBeInTheDocument();
-  expect(screen.getByRole("button", { name: "Review report" })).toBeDisabled();
+  ).toBeVisible();
+  expect(
+    screen.getByRole("button", { name: "Next: Review & Submit" }),
+  ).toBeDisabled();
   fireEvent.change(to, { target: { value: "2026-03-31" } });
-  expect(screen.getByRole("button", { name: "Review report" })).toBeEnabled();
+  expect(
+    screen.getByRole("button", { name: "Next: Review & Submit" }),
+  ).toBeEnabled();
   expect(requests).toHaveLength(0);
 });
 
-test("returning to a draft restores its review step and signing out clears it", async () => {
+test("reloading a review URL restores the draft, while a cleared session returns to column selection", async () => {
   const first = open();
+  await start();
   await period();
-  fireEvent.click(screen.getByRole("button", { name: "Review report" }));
+  review();
+  const url = first.history.location.pathname + first.history.location.search;
   first.unmount();
-  const returned = open();
-  expect(
-    await screen.findByRole("button", { name: "Generate CSV" }),
-  ).toBeEnabled();
-  expect(screen.getByText("2026-08-01 – 2026-08-31")).toBeInTheDocument();
+  const returned = open(url);
+  await waitFor(() =>
+    expect(screen.getByRole("button", { name: "Generate CSV" })).toBeEnabled(),
+  );
+  expect(screen.getByText(/2026-08-01 – 2026-08-31/)).toBeVisible();
   returned.unmount();
   clearReportingDraft();
-  open();
-  expect(await screen.findByLabelText("Date from")).toHaveValue("");
-  expect(screen.getByRole("button", { name: "Review report" })).toBeDisabled();
+  const fresh = open(url);
+  await waitFor(() =>
+    expect(new URLSearchParams(fresh.history.location.search).get("step")).toBe(
+      "columns",
+    ),
+  );
+  expect(
+    screen.getByRole("heading", { name: "Your CSV columns (0)" }),
+  ).toBeVisible();
 });
 
 test("a shared report saves choices without dates and reopening requires fresh dates", async () => {
   open();
+  await start(["Accession Number", "Hemoglobin", "White Cell Count"]);
   await period();
+  review();
   fireEvent.click(
-    screen.getByLabelText("White Cell Count", { selector: "input" }),
+    screen.getByLabelText(messages["reporting.design.saveLater"]),
   );
-  fireEvent.click(screen.getByRole("button", { name: "Save report" }));
   fireEvent.change(screen.getByLabelText("Report name"), {
     target: { value: "Monthly hematology" },
   });
-  fireEvent.click(screen.getByRole("button", { name: "Save shared report" }));
-  expect(
-    await screen.findByText("Saved as Monthly hematology."),
-  ).toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "Save report settings" }));
+  expect(await screen.findByText("Saved as Monthly hematology.")).toBeVisible();
   expect(savedMutations[0].definition.selectedVariables).toEqual([
     "accessionNumber",
     "test:1",
@@ -341,92 +570,82 @@ test("a shared report saves choices without dates and reopening requires fresh d
   ]);
   expect(JSON.stringify(savedMutations[0])).not.toContain("dateFrom");
   expect(JSON.stringify(savedMutations[0])).not.toContain("dateTo");
-
-  fireEvent.click(screen.getByRole("button", { name: "Shared reports" }));
-  const card = await screen.findByRole("article", {
-    name: "Monthly hematology",
-  });
-  fireEvent.click(within(card).getByRole("button", { name: "Open" }));
-  expect(await screen.findByLabelText("Date from")).toHaveValue("");
+  fireEvent.click(screen.getByRole("button", { name: "Export overview" }));
+  await useSaved();
+  expect(screen.getByLabelText("Date from")).toHaveValue("");
   expect(screen.getByLabelText("Date to")).toHaveValue("");
   expect(
     screen.getByText("Choose fresh dates before running this saved report."),
-  ).toBeInTheDocument();
+  ).toBeVisible();
+  fireEvent.click(screen.getByRole("button", { name: "Back" }));
+  expect(headers()).toEqual([
+    "Accession Number",
+    "Hemoglobin",
+    "White Cell Count",
+  ]);
+});
+
+test("a saved-report deep link loads its server definition with fresh dates and survives reload", async () => {
+  savedReports.push(savedFixture());
+  const first = open("/CustomDataExport?view=builder&saved=saved-1");
+  expect(await screen.findByLabelText("Date from")).toHaveValue("");
+  expect(new URLSearchParams(first.history.location.search).get("type")).toBe(
+    "SAMPLE_TESTING",
+  );
+  await period();
+  review();
+  const url = first.history.location.pathname + first.history.location.search;
+  first.unmount();
+  open(url);
+  await waitFor(() =>
+    expect(screen.getByRole("button", { name: "Generate CSV" })).toBeEnabled(),
+  );
+  expect(headers()).toEqual(["Accession Number", "Hemoglobin"]);
+  expect(screen.getByText(/2026-08-01 – 2026-08-31/)).toBeVisible();
+});
+
+test("a missing saved link offers recovery without presenting another draft as that report", async () => {
+  open("/CustomDataExport?view=builder&saved=missing");
   expect(
-    screen.getByRole("columnheader", { name: "White Cell Count" }),
-  ).toBeInTheDocument();
+    await screen.findByText(messages["reporting.saved.loadError"]),
+  ).toBeVisible();
+  expect(
+    screen.queryByRole("button", { name: "Generate CSV" }),
+  ).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "Start a new export" }));
+  expect(
+    await screen.findByRole("radio", { name: /Sample & Testing/ }),
+  ).toBeVisible();
 });
 
 test("a stale shared-report update keeps the draft and explains the conflict", async () => {
-  savedReports.push({
-    id: "saved-1",
-    name: "Monthly hematology",
-    version: "old-version",
-    createdBy: "1",
-    updatedBy: "1",
-    definition: {
-      schemaVersion: 1,
-      reportType: "SAMPLE_TESTING",
-      layout: "SPREADSHEET",
-      selectedVariables: ["accessionNumber", "test:1"],
-      filters: {
-        labSectionIds: [],
-        testIds: [],
-        resultStatuses: ["FINALIZED"],
-      },
-    },
-  });
+  savedReports.push(savedFixture());
   failSavedUpdate = true;
   open();
-  fireEvent.click(
-    await screen.findByRole("button", { name: "Shared reports" }),
-  );
-  const card = await screen.findByRole("article", {
-    name: "Monthly hematology",
-  });
-  fireEvent.click(within(card).getByRole("button", { name: "Open" }));
-  fireEvent.click(
-    await screen.findByRole("button", { name: "Update shared report" }),
-  );
+  await useSaved();
+  await period();
+  review();
+  fireEvent.click(screen.getByRole("button", { name: "Update shared report" }));
   fireEvent.click(screen.getByRole("button", { name: "Update" }));
   expect(
     await screen.findByText(messages["reporting.saved.changed"]),
-  ).toBeInTheDocument();
-  expect(
-    screen.getByRole("columnheader", { name: "Hemoglobin" }),
-  ).toBeInTheDocument();
+  ).toBeVisible();
+  expect(headers()).toEqual(["Accession Number", "Hemoglobin"]);
 });
 
 test("configured filters exclude unsupported restored choices from review, save, and generation", async () => {
   configuredFilters = ["labSectionIds"];
-  savedReports.push({
-    id: "saved-1",
-    name: "Monthly hematology",
-    version: "v1",
-    definition: {
-      schemaVersion: 1,
-      reportType: "SAMPLE_TESTING",
-      layout: "SPREADSHEET",
-      selectedVariables: ["accessionNumber", "test:1"],
-      filters: {
-        labSectionIds: ["1"],
-        testIds: ["2"],
-        resultStatuses: ["CANCELED"],
-      },
-    },
-  });
+  const saved = savedFixture();
+  saved.definition.filters = {
+    labSectionIds: ["1"],
+    testIds: ["2"],
+    resultStatuses: ["CANCELED"],
+  };
+  savedReports.push(saved);
   open();
-  fireEvent.click(
-    await screen.findByRole("button", { name: "Shared reports" }),
-  );
-  const card = await screen.findByRole("article", {
-    name: "Monthly hematology",
-  });
-  fireEvent.click(within(card).getByRole("button", { name: "Open" }));
+  await useSaved();
   await period();
-  expect(
-    screen.getByRole("combobox", { name: /^Lab sections/ }),
-  ).toBeInTheDocument();
+  expect(screen.getByRole("combobox", { name: /^Lab sections/ })).toBeVisible();
   expect(
     screen.queryByRole("combobox", { name: /^Tests/ }),
   ).not.toBeInTheDocument();
@@ -434,10 +653,10 @@ test("configured filters exclude unsupported restored choices from review, save,
     screen.queryByRole("combobox", { name: /^Result statuses/ }),
   ).not.toBeInTheDocument();
   expect(
-    screen.getByText(
-      "Some previous filters are unavailable for this report. Review the current filters before generating.",
-    ),
-  ).toBeInTheDocument();
+    screen.getByText(messages["reporting.filters.unavailable"]),
+  ).toBeVisible();
+  review();
+  expect(screen.getByText("Hematology")).toBeVisible();
   fireEvent.click(screen.getByRole("button", { name: "Update shared report" }));
   fireEvent.click(screen.getByRole("button", { name: "Update" }));
   await screen.findByText("Updated Monthly hematology.");
@@ -446,13 +665,7 @@ test("configured filters exclude unsupported restored choices from review, save,
     testIds: [],
     resultStatuses: [],
   });
-  fireEvent.click(screen.getByRole("button", { name: "Review report" }));
-  expect(
-    screen.getByText("Hematology", { selector: "dd" }),
-  ).toBeInTheDocument();
-  expect(screen.getByText("All", { selector: "dd" })).toBeInTheDocument();
-  expect(screen.getByText("Finalized", { selector: "dd" })).toBeInTheDocument();
-  fireEvent.click(screen.getByRole("button", { name: "Generate CSV" }));
+  generate();
   await screen.findByRole("link", { name: "Download CSV" });
   expect(requests[0].filterSpec).toEqual({
     dateFrom: "2026-08-01",
@@ -464,24 +677,7 @@ test("configured filters exclude unsupported restored choices from review, save,
 });
 
 test("a shared report can be copied and deleted without changing generated jobs", async () => {
-  savedReports.push({
-    id: "saved-1",
-    name: "Monthly hematology",
-    version: "old-version",
-    createdBy: "1",
-    updatedBy: "1",
-    definition: {
-      schemaVersion: 1,
-      reportType: "SAMPLE_TESTING",
-      layout: "SPREADSHEET",
-      selectedVariables: ["accessionNumber", "test:1"],
-      filters: {
-        labSectionIds: [],
-        testIds: [],
-        resultStatuses: ["FINALIZED"],
-      },
-    },
-  });
+  savedReports.push(savedFixture());
   open();
   fireEvent.click(
     await screen.findByRole("button", { name: "Shared reports" }),
@@ -494,15 +690,151 @@ test("a shared report can be copied and deleted without changing generated jobs"
   fireEvent.click(screen.getByRole("button", { name: "Save shared report" }));
   expect(
     await screen.findByText("Saved as Copy of Monthly hematology."),
-  ).toBeInTheDocument();
+  ).toBeVisible();
   expect(savedMutations.at(-1).expectedVersion).toBeUndefined();
-
-  fireEvent.click(screen.getByRole("button", { name: "Shared reports" }));
+  fireEvent.click(screen.getByRole("button", { name: "Export overview" }));
+  fireEvent.click(
+    await screen.findByRole("button", { name: "Shared reports" }),
+  );
   card = await screen.findByRole("article", { name: "Monthly hematology" });
   fireEvent.click(
     within(card).getByRole("button", { name: /Delete shared report/ }),
   );
   fireEvent.click(screen.getByRole("button", { name: /Delete$/ }));
-  await vi.waitFor(() => expect(deletedSaved).toEqual(["saved-1"]));
+  await waitFor(() =>
+    expect(
+      screen.queryByRole("article", { name: "Monthly hematology" }),
+    ).not.toBeInTheDocument(),
+  );
+  expect(deletedSaved).toEqual(["saved-1"]);
+  expect(requests).toHaveLength(0);
+});
+
+test("a delayed job response does not attach its download to a new draft", async () => {
+  let release;
+  submissionGate = new Promise((resolve) => {
+    release = resolve;
+  });
+  open();
+  await start();
+  await period();
+  review();
+  generate();
+  await waitFor(() => expect(requests).toHaveLength(1));
+  fireEvent.click(screen.getByRole("button", { name: "Export overview" }));
+  await start(["White Cell Count"]);
+  await act(async () => {
+    release();
+    await submissionGate;
+  });
+  expect(
+    screen.queryByRole("region", { name: "Your current report" }),
+  ).not.toBeInTheDocument();
+  expect(headers()).toEqual(["White Cell Count"]);
+  fireEvent.click(screen.getByRole("button", { name: "My Report Queue" }));
+  expect(
+    await screen.findByRole("link", { name: "Download CSV" }),
+  ).toHaveAttribute("href", expect.stringContaining("/job-1/download"));
+});
+
+test("saved-report search is URL state without adding a history entry for every edit", async () => {
+  const { history } = open();
+  fireEvent.click(
+    await screen.findByRole("button", { name: "Shared reports" }),
+  );
+  fireEvent.change(
+    screen.getByRole("searchbox", { name: "Search shared reports" }),
+    { target: { value: "Monthly & weekly" } },
+  );
+  expect(new URLSearchParams(history.location.search).get("q")).toBe(
+    "Monthly & weekly",
+  );
+  await waitFor(() =>
+    expect(fetch).toHaveBeenCalledWith(
+      expect.stringContaining("search=Monthly%20%26%20weekly"),
+      expect.anything(),
+    ),
+  );
+  act(() => history.goBack());
+  expect(
+    await screen.findByRole("heading", { name: "Create a new export" }),
+  ).toBeVisible();
+  act(() => history.goForward());
+  expect(
+    screen.getByRole("searchbox", { name: "Search shared reports" }),
+  ).toHaveValue("Monthly & weekly");
+});
+
+test("an invalid queue page is normalized while a job link opens its frozen details", async () => {
+  job = {
+    id: "job-linked",
+    state: "READY",
+    rowCount: 2,
+    request: {
+      definition: source,
+      layout: "RESULT_LIST",
+      filterSpec: { dateFrom: "2026-05-05", dateTo: "2026-05-05" },
+      variables: [{ id: "resultValue", label: "Result Value" }],
+    },
+  };
+  const { history } = open(
+    "/CustomDataExport?view=queue&page=-2&job=job-linked&uat=review",
+  );
+  expect(
+    await screen.findByRole("link", { name: "Download CSV" }),
+  ).toHaveAttribute(
+    "href",
+    expect.stringContaining("/jobs/job-linked/download"),
+  );
+  expect(screen.getByText("Result Value")).toBeVisible();
+  expect(new URLSearchParams(history.location.search).get("page")).toBeNull();
+  expect(new URLSearchParams(history.location.search).get("uat")).toBe(
+    "review",
+  );
+  expect(fetch).toHaveBeenCalledWith(
+    expect.stringContaining("/jobs?page=0"),
+    expect.anything(),
+  );
+  fireEvent.click(screen.getByRole("button", { name: "Details" }));
+  expect(new URLSearchParams(history.location.search).get("job")).toBeNull();
+  act(() => history.goBack());
+  expect(screen.getByText("Result Value")).toBeVisible();
+  expect(requests).toHaveLength(0);
+});
+
+test("an empty queue page offers a route back to the first page", async () => {
+  const { history } = open("/CustomDataExport?view=queue&page=3");
+  fireEvent.click(
+    await screen.findByRole("button", { name: "Return to the first page" }),
+  );
+  expect(new URLSearchParams(history.location.search).get("page")).toBeNull();
+  expect(
+    await screen.findByText(messages["reporting.queueEmpty"]),
+  ).toBeVisible();
+  expect(requests).toHaveLength(0);
+});
+
+test("starting a new export resets the previous report's save controls and name", async () => {
+  open();
+  await start();
+  await period();
+  review();
+  fireEvent.click(
+    screen.getByLabelText(messages["reporting.design.saveLater"]),
+  );
+  fireEvent.change(screen.getByRole("textbox", { name: "Report name" }), {
+    target: { value: "Previous report" },
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Export overview" }));
+  await start(["White Cell Count"]);
+  await period();
+  review();
+  expect(
+    screen.getByLabelText(messages["reporting.design.saveLater"]),
+  ).not.toBeChecked();
+  fireEvent.click(
+    screen.getByLabelText(messages["reporting.design.saveLater"]),
+  );
+  expect(screen.getByRole("textbox", { name: "Report name" })).toHaveValue("");
   expect(requests).toHaveLength(0);
 });

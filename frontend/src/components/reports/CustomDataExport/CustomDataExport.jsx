@@ -1,28 +1,14 @@
 import React, { useContext, useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  Button,
-  Checkbox,
-  Column,
-  Dropdown,
-  Grid,
-  InlineLoading,
-  InlineNotification,
-  Modal,
-  MultiSelect,
-  Search,
-  TextInput,
-  Tile,
-} from "@carbon/react";
-import { ArrowUp, ArrowDown, Close, Download } from "@carbon/icons-react";
+import { InlineNotification, Modal, TextInput } from "@carbon/react";
+import ReportingView from "./ReportingView";
 import { useIntl } from "react-intl";
+import useReportingRoute from "./useReportingRoute";
 import UserSessionDetailsContext from "../../../UserSessionDetailsContext";
-import PageBreadCrumb from "../../common/PageBreadCrumb";
 import { serverQuery } from "../../utils/queryClient";
 import {
   createSavedReport,
   deleteSavedReport,
-  downloadUrl,
   reportingPath,
   submitReport,
   updateSavedReport,
@@ -41,7 +27,10 @@ export const clearReportingDraft = () => {
   }
 };
 const emptyDraft = () => ({
-  reportType: "SAMPLE_TESTING",
+  id: crypto.randomUUID(),
+  reportType: null,
+  started: false,
+  step: 1,
   layout: "SPREADSHEET",
   columns: {},
   dateFrom: "",
@@ -68,7 +57,12 @@ function readDraft(owner) {
   } catch {
     /* Use the current page's draft if storage cannot be read. */
   }
-  if (sessionDraft?.owner === owner) return sessionDraft.draft;
+  if (sessionDraft?.owner === owner)
+    return {
+      ...emptyDraft(),
+      ...sessionDraft.draft,
+      started: sessionDraft.draft.started ?? !!sessionDraft.draft.reportType,
+    };
   clearReportingDraft();
   return emptyDraft();
 }
@@ -105,22 +99,64 @@ export default function CustomDataExport() {
 function ReportingBuilder({ owner }) {
   const intl = useIntl();
   const t = (id, values) => intl.formatMessage({ id }, values);
-  const [draft, setDraft] = useState(() => readDraft(owner));
-  const review = draft.review;
+  const route = useReportingRoute();
+  const [storedDraft, setDraft] = useState(() => ({
+    ...readDraft(owner),
+    ...(route.panel === "builder" ? { started: true } : {}),
+  }));
+  const resumeRoute = useRef({
+    reportType: storedDraft.reportType,
+    layout: storedDraft.layout,
+    step: storedDraft.step,
+    started: storedDraft.started,
+  });
+  const {
+    panel,
+    step,
+    navigate,
+    page: queuePage,
+    savedId,
+    jobId: expandedJob,
+    search: savedSearch,
+  } = route;
+  // URL values drive the current screen immediately, including POP navigation.
+  // Stored navigation metadata is used only by Continue and session recovery.
+  const draft =
+    panel === "builder"
+      ? {
+          ...storedDraft,
+          reportType: route.reportType,
+          layout: route.layout,
+          step,
+          review: step === 3,
+        }
+      : storedDraft;
+  const setPanel = (next) =>
+    navigate({
+      panel: next,
+      ...resumeRoute.current,
+      page: 0,
+      jobId: null,
+      savedId: storedDraft.savedReport?.id,
+      search: "",
+    });
+  const setQueuePage = (page) =>
+    navigate({ panel: "queue", page, jobId: null });
+  const setSavedSearch = (search) => navigate({ search }, true);
+  const [searchTerm, setSearchTerm] = useState(savedSearch);
+  useEffect(() => {
+    const timer = setTimeout(() => setSearchTerm(savedSearch), 250);
+    return () => clearTimeout(timer);
+  }, [savedSearch]);
   const [datesTouched, setDatesTouched] = useState({ from: false, to: false });
-  const [search, setSearch] = useState("");
-  const [panel, setPanel] = useState("builder");
   const [saveOpen, setSaveOpen] = useState(false);
   const [saveName, setSaveName] = useState("");
-  const [savedSearch, setSavedSearch] = useState("");
   const [savedNotice, setSavedNotice] = useState("");
   const [freshDatePrompt, setFreshDatePrompt] = useState(false);
   const [deleteCandidate, setDeleteCandidate] = useState(null);
   const [updateOpen, setUpdateOpen] = useState(false);
-  const [positionMessage, setPositionMessage] = useState("");
-  const [queuePage, setQueuePage] = useState(0);
   const submitted = useRef(null);
-  const dragged = useRef(null);
+  const draftRevision = useRef(0);
   const queryClient = useQueryClient();
   const columnKey = `${draft.reportType}:${draft.layout}`;
   const types = useQuery(
@@ -131,7 +167,7 @@ function ReportingBuilder({ owner }) {
       ["reporting-catalog", owner, draft.reportType, draft.layout],
       `${reportingPath}/variables?reportType=${encodeURIComponent(draft.reportType)}&layout=${encodeURIComponent(draft.layout)}`,
     ),
-    enabled: !!draft.reportType,
+    enabled: panel === "builder" && !!draft.reportType,
   });
   const job = useQuery({
     ...serverQuery(
@@ -151,16 +187,38 @@ function ReportingBuilder({ owner }) {
   });
   const savedReports = useQuery({
     ...serverQuery(
-      ["reporting-saved", owner, savedSearch],
-      `${reportingPath}/saved-configs?page=0&size=100&search=${encodeURIComponent(savedSearch)}`,
+      ["reporting-saved", owner, panel === "saved" ? searchTerm : ""],
+      `${reportingPath}/saved-configs?page=0&size=100&search=${encodeURIComponent(panel === "saved" ? searchTerm : "")}`,
     ),
-    enabled: panel === "saved",
+    enabled: panel === "saved" || panel === "overview",
+  });
+  const linkedSaved = useQuery({
+    ...serverQuery(
+      ["reporting-saved-detail", owner, savedId],
+      `${reportingPath}/saved-configs/${encodeURIComponent(savedId || "")}`,
+    ),
+    enabled:
+      panel === "builder" &&
+      !!savedId &&
+      savedId !== storedDraft.savedReport?.id,
+    onSuccess: (saved) => {
+      if (saved.id === savedId) openSaved(saved, false, true);
+    },
+  });
+  const restoringSaved =
+    panel === "builder" && !!savedId && savedId !== storedDraft.savedReport?.id;
+  const linkedJob = useQuery({
+    ...serverQuery(
+      ["reporting-job", owner, expandedJob],
+      `${reportingPath}/jobs/${encodeURIComponent(expandedJob || "")}`,
+    ),
+    enabled: panel === "queue" && !!expandedJob,
+    refetchInterval: (data) => (active(data) ? 1500 : false),
   });
   const submission = useMutation({
-    mutationFn: submitReport,
+    mutationFn: ({ request }) => submitReport(request),
     onSuccess: (result) => {
       queryClient.setQueryData(["reporting-job", owner, result.id], result);
-      setDraft((value) => ({ ...value, jobId: result.id }));
       queryClient.invalidateQueries({ queryKey: ["reporting-queue", owner] });
     },
   });
@@ -189,19 +247,13 @@ function ReportingBuilder({ owner }) {
   });
   const createSaved = useMutation({
     mutationFn: createSavedReport,
-    onSuccess: (result) => {
-      setDraft((value) => ({ ...value, savedReport: result }));
-      setSavedNotice(t("reporting.saved.created", { name: result.name }));
-      setSaveOpen(false);
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["reporting-saved", owner] });
     },
   });
   const updateSaved = useMutation({
     mutationFn: updateSavedReport,
     onSuccess: (result) => {
-      setDraft((value) => ({ ...value, savedReport: result }));
-      setSavedNotice(t("reporting.saved.updated", { name: result.name }));
-      setUpdateOpen(false);
       queryClient.setQueriesData(
         { queryKey: ["reporting-saved", owner] },
         (page) =>
@@ -219,11 +271,7 @@ function ReportingBuilder({ owner }) {
   });
   const removeSaved = useMutation({
     mutationFn: deleteSavedReport,
-    onSuccess: () => {
-      const removedId = deleteCandidate?.id;
-      if (draft.savedReport?.id === removedId)
-        setDraft((value) => ({ ...value, savedReport: null }));
-      setDeleteCandidate(null);
+    onSuccess: (_result, { id: removedId }) => {
       queryClient.setQueriesData(
         { queryKey: ["reporting-saved", owner] },
         (page) =>
@@ -239,22 +287,30 @@ function ReportingBuilder({ owner }) {
   });
 
   useEffect(() => {
-    saveDraft(owner, draft);
-  }, [owner, draft]);
-  useEffect(() => {
-    if (catalog.data && !draft.columns[columnKey])
-      setDraft((value) => ({
-        ...value,
-        columns: { ...value.columns, [columnKey]: catalog.data.defaultColumns },
-      }));
-  }, [catalog.data, columnKey, draft.columns]);
+    if (panel === "builder")
+      resumeRoute.current = {
+        started: true,
+        step,
+        review: step === 3,
+        reportType: route.reportType,
+        layout: route.layout,
+      };
+    saveDraft(owner, { ...storedDraft, ...resumeRoute.current });
+  }, [owner, storedDraft, panel, step, route.reportType, route.layout]);
 
   const fields = catalog.data?.variables || [];
   const byId = useMemo(
-    () => new Map(fields.map((field) => [field.id, field])),
+    () =>
+      new Map(
+        (catalog.data?.variables || []).map((field) => [field.id, field]),
+      ),
     [catalog.data],
   );
-  const selected = draft.columns[columnKey] || [];
+  const selected =
+    draft.columns[columnKey] ??
+    (draft.reportType === "SAMPLE_TESTING"
+      ? []
+      : catalog.data?.defaultColumns || []);
   const stale = selected.filter((id) => !byId.has(id));
   const firstDay = calendarDay(draft.dateFrom);
   const lastDay = calendarDay(draft.dateTo);
@@ -281,27 +337,34 @@ function ReportingBuilder({ owner }) {
     Number.isFinite(periodDays) &&
     periodDays >= 1 &&
     periodDays <= catalog.data?.maxDays;
-  const groups = useMemo(() => {
-    const result = new Map();
-    fields
-      .filter((field) =>
-        field.label.toLocaleLowerCase().includes(search.toLocaleLowerCase()),
-      )
-      .forEach((field) => {
-        if (!result.has(field.group)) result.set(field.group, []);
-        result.get(field.group).push(field);
-      });
-    return Array.from(result.entries());
-  }, [catalog.data, search]);
   const update = (changes) => {
-    setDraft((value) => ({ ...value, ...changes }));
+    draftRevision.current += 1;
+    setDraft((value) => ({
+      ...value,
+      ...changes,
+      ...("reportType" in changes ? { savedReport: null } : {}),
+    }));
     submission.reset();
+    if ("reportType" in changes || "layout" in changes)
+      navigate({
+        reportType:
+          "reportType" in changes ? changes.reportType : draft.reportType,
+        layout: changes.layout || draft.layout,
+        savedId: "reportType" in changes ? null : savedId,
+        step: 1,
+      });
   };
-  const openSaved = (saved, copy = false) => {
+  const openSaved = (saved, copy = false, replace = false) => {
+    draftRevision.current += 1;
+    submitted.current = null;
+    submission.reset();
+    createSaved.reset();
+    updateSaved.reset();
     const definition = saved.definition;
     const key = `${definition.reportType}:${definition.layout}`;
     setDraft((value) => ({
       ...value,
+      id: crypto.randomUUID(),
       reportType: definition.reportType,
       layout: definition.layout,
       columns: {
@@ -315,44 +378,165 @@ function ReportingBuilder({ owner }) {
       resultStatuses: definition.filters.resultStatuses,
       jobId: null,
       review: false,
+      step: 2,
+      started: true,
       savedReport: copy ? null : saved,
     }));
     setDatesTouched({ from: false, to: false });
     setFreshDatePrompt(true);
-    setPanel("builder");
+    navigate(
+      {
+        panel: "builder",
+        step: 2,
+        reportType: definition.reportType,
+        layout: definition.layout,
+        savedId: copy ? null : saved.id,
+        page: 0,
+        jobId: null,
+      },
+      replace,
+    );
     setSavedNotice("");
     if (copy) {
-      setSaveName(t("reporting.saved.copyName", { name: saved.name }));
+      setSaveName(
+        intl.formatMessage(
+          { id: "reporting.saved.copyName" },
+          { name: saved.name },
+        ),
+      );
       setSaveOpen(true);
     }
   };
+  useEffect(() => {
+    if (panel !== "builder" || restoringSaved || !types.data) return;
+    const type = types.data.find((item) => item.id === route.reportType);
+    if (route.reportType && !type) {
+      navigate({ reportType: null, step: 1 }, true);
+      return;
+    }
+    if (type && !type.layouts.includes(route.layout)) {
+      navigate({ layout: type.layouts[0], step: 1 }, true);
+      return;
+    }
+    if (!route.reportType && step !== 1) navigate({ step: 1 }, true);
+    else if (catalog.data && step > 1 && (!selected.length || stale.length))
+      navigate({ step: 1 }, true);
+    else if (catalog.data && step === 3 && !validPeriod)
+      navigate({ step: 2 }, true);
+  }, [
+    panel,
+    restoringSaved,
+    types.data,
+    route.reportType,
+    route.layout,
+    step,
+    catalog.data,
+    selected.length,
+    stale.length,
+    validPeriod,
+    navigate,
+  ]);
   const saveCurrent = () => {
-    createSaved.mutate({ name: saveName, definition: savedDefinition() });
+    const revision = draftRevision.current;
+    createSaved.mutate(
+      { name: saveName, definition: savedDefinition() },
+      {
+        onSuccess: (result) => {
+          if (revision !== draftRevision.current) return;
+          setDraft((value) => ({ ...value, savedReport: result }));
+          navigate({ savedId: result.id }, true);
+          setSavedNotice(t("reporting.saved.created", { name: result.name }));
+          setSaveOpen(false);
+        },
+      },
+    );
   };
   const updateCurrent = () => {
     setUpdateOpen(false);
-    updateSaved.mutate({
-      id: draft.savedReport.id,
-      name: draft.savedReport.name,
-      expectedVersion: draft.savedReport.version,
-      definition: savedDefinition(),
-    });
+    const revision = draftRevision.current;
+    updateSaved.mutate(
+      {
+        id: draft.savedReport.id,
+        name: draft.savedReport.name,
+        expectedVersion: draft.savedReport.version,
+        definition: savedDefinition(),
+      },
+      {
+        onSuccess: (result) => {
+          if (revision !== draftRevision.current) return;
+          setDraft((value) => ({ ...value, savedReport: result }));
+          setSavedNotice(t("reporting.saved.updated", { name: result.name }));
+        },
+      },
+    );
   };
   const setColumns = (columns) =>
     update({ columns: { ...draft.columns, [columnKey]: columns } });
-  const move = (id, index) => {
-    const next = selected.filter((field) => field !== id);
-    next.splice(index, 0, id);
-    setColumns(next);
-    setPositionMessage(
-      t("reporting.position", {
-        field: byId.get(id)?.label || id,
-        position: index + 1,
-        count: next.length,
-      }),
+  const goStep = (step) => {
+    navigate({ panel: "builder", step });
+  };
+  const startFresh = () => {
+    draftRevision.current += 1;
+    submitted.current = null;
+    setDraft({ ...emptyDraft(), started: true });
+    navigate({
+      panel: "builder",
+      step: 1,
+      reportType: null,
+      layout: "SPREADSHEET",
+      savedId: null,
+      page: 0,
+      jobId: null,
+    });
+    setDatesTouched({ from: false, to: false });
+    setFreshDatePrompt(false);
+    setSavedNotice("");
+    setSaveName("");
+    submission.reset();
+    createSaved.reset();
+    updateSaved.reset();
+  };
+  const chooseType = (type) => {
+    draftRevision.current += 1;
+    submitted.current = null;
+    const layout = type.layouts[0];
+    const key = `${type.id}:${layout}`;
+    setDraft((value) => {
+      const columns = { ...value.columns };
+      delete columns[key];
+      return {
+        ...value,
+        reportType: type.id,
+        layout,
+        columns,
+        savedReport: null,
+        step: 1,
+        review: false,
+      };
+    });
+    navigate({
+      panel: "builder",
+      step: 1,
+      reportType: type.id,
+      layout,
+      savedId: null,
+    });
+  };
+  const saveCopy = () => {
+    setSaveName(
+      t("reporting.saved.copyName", { name: draft.savedReport.name }),
     );
+    setSaveOpen(true);
   };
   const run = () => {
+    if (
+      !selected.length ||
+      stale.length ||
+      !validPeriod ||
+      submission.isLoading ||
+      restoringSaved
+    )
+      return;
     const request = {
       schemaVersion: 1,
       reportType: draft.reportType,
@@ -375,7 +559,19 @@ function ReportingBuilder({ owner }) {
     // A new run must not expose the previous file as its current download.
     // Keep draft inputs and the request identity for a failed-submit retry.
     setDraft((value) => ({ ...value, jobId: null }));
-    submission.mutate({ ...request, clientRequestId: submitted.current.id });
+    const revision = draftRevision.current;
+    submission.mutate(
+      {
+        request: { ...request, clientRequestId: submitted.current.id },
+      },
+      {
+        onSuccess: (result) => {
+          // Per-call callbacks stop on unmount; the cache callback above still runs.
+          if (revision === draftRevision.current)
+            setDraft((value) => ({ ...value, jobId: result.id }));
+        },
+      },
+    );
   };
   const errorText = (error) =>
     intl.messages[error?.message]
@@ -388,663 +584,145 @@ function ReportingBuilder({ owner }) {
           .map((item) => item.label)
           .join(", ")
       : t("reporting.all");
-  const jobCard = (item) => (
-    <Tile key={item.id} className="reporting-job">
-      <div>
-        <strong>{item.request.definition.label}</strong>
-        <p>
-          {item.request.filterSpec.dateFrom} – {item.request.filterSpec.dateTo}
-        </p>
-        <p>
-          {t(`reporting.state.${item.state}`)}
-          {item.rowCount != null
-            ? ` · ${t("reporting.rows", { count: item.rowCount })}`
-            : ""}
-        </p>
-      </div>
-      {active(item) && (
-        <InlineLoading description={t("reporting.generating")} />
-      )}
-      {item.state === "READY" && (
-        <Button as="a" href={downloadUrl(item.id)} renderIcon={Download}>
-          {t("reporting.download")}
-        </Button>
-      )}
-      {item.state === "FAILED" && (
-        <p role="alert">{errorText({ message: item.failureCode })}</p>
-      )}
-    </Tile>
-  );
-
   return (
-    <main className="reporting-builder">
-      <PageBreadCrumb
-        breadcrumbs={[
-          { label: "home.label", link: "/" },
-          { label: "reporting.title", link: "" },
-        ]}
+    <>
+      <ReportingView
+        key={storedDraft.id}
+        {...{
+          draft,
+          panel,
+          setPanel,
+          catalog,
+          types,
+          fields,
+          selected,
+          byId,
+          stale,
+          step,
+          goStep,
+          update,
+          startFresh,
+          chooseType,
+          columnKey,
+          setColumns,
+          savedReports,
+          savedSearch,
+          setSavedSearch,
+          openSaved,
+          setDeleteCandidate,
+          queue,
+          queuePage,
+          setQueuePage,
+          submission,
+          job,
+          savedNotice,
+          freshDatePrompt,
+          unavailableFilters,
+          fromError,
+          toError,
+          setDatesTouched,
+          validPeriod,
+          periodDays,
+          supportsFilter,
+          effectiveFilters,
+          lookup,
+          run,
+          errorText,
+          saveName,
+          setSaveName,
+          saveCurrent,
+          setUpdateOpen,
+          saveCopy,
+        }}
+        linkedSavedError={restoringSaved ? linkedSaved.error : null}
+        restoringSaved={restoringSaved}
+        linkedJob={linkedJob}
+        expandedJob={expandedJob}
+        setExpandedJob={(id) => navigate({ jobId: id })}
+        savedError={createSaved.error || updateSaved.error}
+        createSavedBusy={createSaved.isLoading}
+        updateSavedBusy={updateSaved.isLoading}
       />
-      <div className="reporting-title">
-        <div>
-          <h1>{t("reporting.title")}</h1>
-          <p>{t("reporting.description")}</p>
-        </div>
-        <div className="reporting-title-actions">
-          <Button
-            kind="tertiary"
-            onClick={() => setPanel(panel === "saved" ? "builder" : "saved")}
-          >
-            {t(
-              panel === "saved"
-                ? "reporting.builder"
-                : "reporting.saved.library",
-            )}
-          </Button>
-          <Button
-            kind="tertiary"
-            onClick={() => setPanel(panel === "queue" ? "builder" : "queue")}
-          >
-            {t(panel === "queue" ? "reporting.builder" : "reporting.queue")}
-          </Button>
-        </div>
-      </div>
-      {(types.error || catalog.error) && (
-        <InlineNotification
-          kind="error"
-          title={t("reporting.loadError")}
-          subtitle={errorText(types.error || catalog.error)}
-          hideCloseButton
-        />
+      {saveOpen && (
+        <Modal
+          open={saveOpen}
+          modalHeading={t("reporting.saved.save")}
+          primaryButtonText={t("reporting.saved.confirmSave")}
+          secondaryButtonText={t("reporting.saved.cancel")}
+          primaryButtonDisabled={!saveName.trim() || createSaved.isLoading}
+          onRequestSubmit={saveCurrent}
+          onRequestClose={() => setSaveOpen(false)}
+        >
+          {createSaved.error && (
+            <InlineNotification
+              kind="error"
+              title={errorText(createSaved.error)}
+              hideCloseButton
+            />
+          )}
+          <TextInput
+            id="reporting-saved-name"
+            labelText={t("reporting.saved.name")}
+            value={saveName}
+            maxLength={200}
+            onChange={(event) => setSaveName(event.target.value)}
+          />
+        </Modal>
       )}
-      {panel === "queue" ? (
-        <section aria-label={t("reporting.queue")}>
-          <h2>{t("reporting.queue")}</h2>
-          {queue.isLoading && (
-            <InlineLoading description={t("reporting.loading")} />
-          )}
-          {queue.error && (
-            <InlineNotification
-              kind="error"
-              title={t("reporting.loadError")}
-              hideCloseButton
-            />
-          )}
-          {queue.data?.jobs.map(jobCard)}
-          {queue.data?.jobs.length === 0 && <p>{t("reporting.queueEmpty")}</p>}
-          <div className="reporting-actions">
-            <Button
-              kind="ghost"
-              disabled={!queuePage}
-              onClick={() => setQueuePage(queuePage - 1)}
-            >
-              {t("reporting.previous")}
-            </Button>
-            <Button
-              kind="ghost"
-              disabled={!queue.data?.hasMore}
-              onClick={() => setQueuePage(queuePage + 1)}
-            >
-              {t("reporting.next")}
-            </Button>
-          </div>
-        </section>
-      ) : panel === "saved" ? (
-        <section aria-label={t("reporting.saved.library")}>
-          <h2>{t("reporting.saved.library")}</h2>
-          <Search
-            id="reporting-saved-search"
-            labelText={t("reporting.saved.search")}
-            placeholder={t("reporting.saved.search")}
-            value={savedSearch}
-            onChange={(event) => setSavedSearch(event.target.value)}
-          />
-          {savedReports.isLoading && (
-            <InlineLoading description={t("reporting.saved.loading")} />
-          )}
-          {savedReports.error && (
-            <InlineNotification
-              kind="error"
-              title={t("reporting.saved.loadError")}
-              hideCloseButton
-            />
-          )}
-          {savedReports.data?.reports.length === 0 && (
-            <p>{t("reporting.saved.empty")}</p>
-          )}
-          <div className="reporting-saved-list">
-            {savedReports.data?.reports.map((saved) => (
-              <Tile role="article" aria-label={saved.name} key={saved.id}>
-                <div>
-                  <h3>{saved.name}</h3>
-                  <p>{t("reporting.saved.shared")}</p>
-                </div>
-                <div className="reporting-actions">
-                  <Button size="sm" onClick={() => openSaved(saved)}>
-                    {t("reporting.saved.open")}
-                  </Button>
-                  <Button
-                    kind="secondary"
-                    size="sm"
-                    onClick={() => openSaved(saved, true)}
-                  >
-                    {t("reporting.saved.copy")}
-                  </Button>
-                  <Button
-                    kind="danger--tertiary"
-                    size="sm"
-                    onClick={() => setDeleteCandidate(saved)}
-                  >
-                    {t("reporting.saved.delete")}
-                  </Button>
-                </div>
-              </Tile>
-            ))}
-          </div>
-        </section>
-      ) : (
-        <>
-          {catalog.isLoading && (
-            <InlineLoading description={t("reporting.loading")} />
-          )}
-          {catalog.data && (
-            <>
-              {savedNotice && (
-                <InlineNotification
-                  kind="success"
-                  title={savedNotice}
-                  hideCloseButton
-                />
-              )}
-              {freshDatePrompt && (!draft.dateFrom || !draft.dateTo) && (
-                <InlineNotification
-                  kind="info"
-                  title={t("reporting.saved.freshDates")}
-                  hideCloseButton
-                />
-              )}
-              {unavailableFilters && (
-                <InlineNotification
-                  kind="info"
-                  title={t("reporting.filters.unavailable")}
-                  hideCloseButton
-                />
-              )}
-              {(createSaved.error || updateSaved.error) && (
-                <InlineNotification
-                  kind="error"
-                  title={errorText(createSaved.error || updateSaved.error)}
-                  hideCloseButton
-                />
-              )}
-              {!review ? (
-                <>
-                  <Grid className="reporting-controls">
-                    <Column lg={8} md={4} sm={4}>
-                      <Dropdown
-                        id="reporting-source"
-                        titleText={t("reporting.reportType")}
-                        label={t("reporting.reportType")}
-                        items={types.data || []}
-                        itemToString={(item) => item?.label || ""}
-                        selectedItem={
-                          types.data?.find(
-                            (item) => item.id === draft.reportType,
-                          ) || null
-                        }
-                        onChange={({ selectedItem }) =>
-                          update({
-                            reportType: selectedItem.id,
-                            layout: selectedItem.layouts[0],
-                          })
-                        }
-                      />
-                    </Column>
-                    <Column lg={8} md={4} sm={4}>
-                      <Dropdown
-                        id="reporting-layout"
-                        titleText={t("reporting.layout")}
-                        label={t("reporting.layout")}
-                        items={catalog.data.definition.layouts}
-                        itemToString={(item) =>
-                          item ? t(`reporting.layout.${item}`) : ""
-                        }
-                        selectedItem={draft.layout}
-                        onChange={({ selectedItem }) =>
-                          update({ layout: selectedItem })
-                        }
-                      />
-                    </Column>
-                    <Column lg={8} md={4} sm={4}>
-                      <TextInput
-                        id="reporting-from"
-                        type="date"
-                        labelText={t("reporting.dateFrom")}
-                        value={draft.dateFrom}
-                        helperText={t("reporting.dates.required")}
-                        invalid={!!fromError}
-                        invalidText={fromError ? t(fromError) : ""}
-                        onBlur={() =>
-                          setDatesTouched((value) => ({ ...value, from: true }))
-                        }
-                        onChange={(event) =>
-                          update({ dateFrom: event.target.value })
-                        }
-                      />
-                    </Column>
-                    <Column lg={8} md={4} sm={4}>
-                      <TextInput
-                        id="reporting-to"
-                        type="date"
-                        labelText={t("reporting.dateTo")}
-                        value={draft.dateTo}
-                        helperText={t("reporting.dates.required")}
-                        invalid={!!toError}
-                        invalidText={
-                          toError
-                            ? t(toError, { days: catalog.data.maxDays })
-                            : ""
-                        }
-                        onBlur={() =>
-                          setDatesTouched((value) => ({ ...value, to: true }))
-                        }
-                        onChange={(event) =>
-                          update({ dateTo: event.target.value })
-                        }
-                      />
-                    </Column>
-                    {supportsFilter("labSectionIds") && (
-                      <Column lg={8} md={4} sm={4}>
-                        <MultiSelect
-                          id="reporting-sections"
-                          titleText={t("reporting.labSections")}
-                          label={t("reporting.allAccessibleSections")}
-                          items={catalog.data.labSections}
-                          itemToString={(item) => item?.label || ""}
-                          selectedItems={catalog.data.labSections.filter(
-                            (item) => draft.labSectionIds.includes(item.id),
-                          )}
-                          onChange={({ selectedItems }) =>
-                            update({
-                              labSectionIds: selectedItems.map(
-                                (item) => item.id,
-                              ),
-                            })
-                          }
-                        />
-                      </Column>
-                    )}
-                    {supportsFilter("testIds") && (
-                      <Column lg={8} md={4} sm={4}>
-                        <MultiSelect
-                          id="reporting-tests"
-                          titleText={t("reporting.tests")}
-                          label={t("reporting.allTests")}
-                          items={catalog.data.tests}
-                          itemToString={(item) => item?.label || ""}
-                          selectedItems={catalog.data.tests.filter((item) =>
-                            draft.testIds.includes(item.id),
-                          )}
-                          onChange={({ selectedItems }) =>
-                            update({
-                              testIds: selectedItems.map((item) => item.id),
-                            })
-                          }
-                        />
-                      </Column>
-                    )}
-                    {supportsFilter("resultStatuses") && (
-                      <Column lg={8} md={4} sm={4}>
-                        <MultiSelect
-                          id="reporting-statuses"
-                          titleText={t("reporting.resultStatuses")}
-                          label={t("reporting.finalized")}
-                          items={catalog.data.statuses}
-                          itemToString={(item) => item?.label || ""}
-                          selectedItems={catalog.data.statuses.filter((item) =>
-                            draft.resultStatuses.includes(item.id),
-                          )}
-                          onChange={({ selectedItems }) =>
-                            update({
-                              resultStatuses: selectedItems.map(
-                                (item) => item.id,
-                              ),
-                            })
-                          }
-                        />
-                      </Column>
-                    )}
-                  </Grid>
-                  <p className="reporting-help">
-                    {t("reporting.periodHelp", {
-                      days: catalog.data.maxDays,
-                      timezone: catalog.data.timezone,
-                    })}
-                  </p>
-                  <p className="reporting-help">
-                    {t(`reporting.meaning.${draft.layout}`)}
-                  </p>
-                  <Grid>
-                    <Column lg={8} md={4} sm={4}>
-                      <section aria-label={t("reporting.available")}>
-                        <h2>{t("reporting.available")}</h2>
-                        <Search
-                          id="reporting-search"
-                          labelText={t("reporting.search")}
-                          placeholder={t("reporting.search")}
-                          value={search}
-                          onChange={(event) => setSearch(event.target.value)}
-                        />
-                        <div className="reporting-field-list">
-                          {groups.map(([group, choices]) => (
-                            <fieldset key={group}>
-                              <legend>{t(`reporting.group.${group}`)}</legend>
-                              {choices.map((field) => (
-                                <Checkbox
-                                  id={`reporting-field-${field.id}`}
-                                  key={field.id}
-                                  labelText={field.label}
-                                  checked={selected.includes(field.id)}
-                                  onChange={(_, { checked }) =>
-                                    setColumns(
-                                      checked
-                                        ? [...selected, field.id]
-                                        : selected.filter(
-                                            (id) => id !== field.id,
-                                          ),
-                                    )
-                                  }
-                                />
-                              ))}
-                            </fieldset>
-                          ))}
-                        </div>
-                      </section>
-                    </Column>
-                    <Column lg={8} md={4} sm={4}>
-                      <section aria-label={t("reporting.selected")}>
-                        <h2>
-                          {t("reporting.selectedCount", {
-                            count: selected.length,
-                          })}
-                        </h2>
-                        <div
-                          aria-live="polite"
-                          className="reporting-announcement"
-                        >
-                          {positionMessage}
-                        </div>
-                        <ol className="reporting-selected">
-                          {selected.map((id, index) => (
-                            <li
-                              key={id}
-                              draggable
-                              onDragStart={() => {
-                                dragged.current = id;
-                              }}
-                              onDragOver={(event) => event.preventDefault()}
-                              onDrop={(event) => {
-                                event.preventDefault();
-                                if (dragged.current)
-                                  move(dragged.current, index);
-                                dragged.current = null;
-                              }}
-                            >
-                              <span>{byId.get(id)?.label || id}</span>
-                              <div>
-                                <Button
-                                  kind="ghost"
-                                  size="sm"
-                                  hasIconOnly
-                                  renderIcon={ArrowUp}
-                                  iconDescription={t("reporting.moveUp", {
-                                    field: byId.get(id)?.label || id,
-                                  })}
-                                  disabled={index === 0}
-                                  onClick={() => move(id, index - 1)}
-                                />
-                                <Button
-                                  kind="ghost"
-                                  size="sm"
-                                  hasIconOnly
-                                  renderIcon={ArrowDown}
-                                  iconDescription={t("reporting.moveDown", {
-                                    field: byId.get(id)?.label || id,
-                                  })}
-                                  disabled={index === selected.length - 1}
-                                  onClick={() => move(id, index + 1)}
-                                />
-                                <Button
-                                  kind="ghost"
-                                  size="sm"
-                                  hasIconOnly
-                                  renderIcon={Close}
-                                  iconDescription={t("reporting.remove", {
-                                    field: byId.get(id)?.label || id,
-                                  })}
-                                  onClick={() =>
-                                    setColumns(
-                                      selected.filter((value) => value !== id),
-                                    )
-                                  }
-                                />
-                              </div>
-                            </li>
-                          ))}
-                        </ol>
-                      </section>
-                    </Column>
-                  </Grid>
-                </>
-              ) : (
-                <Tile>
-                  <h2>{t("reporting.review")}</h2>
-                  <p>
-                    {catalog.data.definition.label} ·{" "}
-                    {t(`reporting.layout.${draft.layout}`)}
-                  </p>
-                  <p>
-                    {draft.dateFrom} – {draft.dateTo}
-                  </p>
-                  <p>{t(`reporting.meaning.${draft.layout}`)}</p>
-                  <dl>
-                    <dt>{t("reporting.labSections")}</dt>
-                    <dd>
-                      {lookup(
-                        catalog.data.labSections,
-                        effectiveFilters.labSectionIds,
-                      )}
-                    </dd>
-                    <dt>{t("reporting.tests")}</dt>
-                    <dd>
-                      {lookup(catalog.data.tests, effectiveFilters.testIds)}
-                    </dd>
-                    <dt>{t("reporting.resultStatuses")}</dt>
-                    <dd>
-                      {effectiveFilters.resultStatuses.length
-                        ? lookup(
-                            catalog.data.statuses,
-                            effectiveFilters.resultStatuses,
-                          )
-                        : t("reporting.finalized")}
-                    </dd>
-                  </dl>
-                </Tile>
-              )}
-              {stale.length > 0 && (
-                <InlineNotification
-                  kind="warning"
-                  title={t("reporting.columns.stale")}
-                  hideCloseButton
-                />
-              )}
-              <section
-                className="reporting-preview"
-                aria-label={t("reporting.headerPreview")}
-              >
-                <h3>{t("reporting.headerPreview")}</h3>
-                <div>
-                  <table>
-                    <thead>
-                      <tr>
-                        {selected.map((id) => (
-                          <th key={id}>{byId.get(id)?.label || id}</th>
-                        ))}
-                      </tr>
-                    </thead>
-                  </table>
-                </div>
-              </section>
-              {submission.error && (
-                <InlineNotification
-                  kind="error"
-                  title={t("reporting.submitError")}
-                  subtitle={errorText(submission.error)}
-                  hideCloseButton
-                />
-              )}
-              <div className="reporting-actions">
-                <div className="reporting-saved-actions">
-                  {draft.savedReport ? (
-                    <>
-                      <Button
-                        kind="tertiary"
-                        disabled={
-                          !selected.length ||
-                          stale.length > 0 ||
-                          updateSaved.isLoading
-                        }
-                        onClick={() => setUpdateOpen(true)}
-                      >
-                        {t("reporting.saved.update")}
-                      </Button>
-                      <Button
-                        kind="ghost"
-                        onClick={() => {
-                          setSaveName(
-                            t("reporting.saved.copyName", {
-                              name: draft.savedReport.name,
-                            }),
-                          );
-                          setSaveOpen(true);
-                        }}
-                      >
-                        {t("reporting.saved.copy")}
-                      </Button>
-                    </>
-                  ) : (
-                    <Button
-                      kind="tertiary"
-                      disabled={!selected.length || stale.length > 0}
-                      onClick={() => {
-                        setSaveName("");
-                        setSaveOpen(true);
-                      }}
-                    >
-                      {t("reporting.saved.save")}
-                    </Button>
-                  )}
-                </div>
-                {review && (
-                  <Button
-                    kind="secondary"
-                    onClick={() => update({ review: false })}
-                  >
-                    {t("reporting.edit")}
-                  </Button>
-                )}
-                <Button
-                  disabled={
-                    !selected.length ||
-                    stale.length > 0 ||
-                    !validPeriod ||
-                    submission.isLoading ||
-                    active(job.data)
-                  }
-                  onClick={() => (review ? run() : update({ review: true }))}
-                >
-                  {t(review ? "reporting.generate" : "reporting.review")}
-                </Button>
-              </div>
-              {submission.isLoading && (
-                <InlineLoading description={t("reporting.submitting")} />
-              )}
-            </>
-          )}
-          {job.data && (
-            <section aria-label={t("reporting.currentReport")}>
-              {jobCard(job.data)}
-            </section>
-          )}
-          {job.error && (
-            <InlineNotification
-              kind="error"
-              title={t("reporting.loadError")}
-              hideCloseButton
-            />
-          )}
-        </>
+      {updateOpen && (
+        <Modal
+          open={updateOpen}
+          modalHeading={t("reporting.saved.update")}
+          primaryButtonText={t("reporting.saved.confirmUpdate")}
+          secondaryButtonText={t("reporting.saved.cancel")}
+          onRequestSubmit={updateCurrent}
+          onRequestClose={() => setUpdateOpen(false)}
+        >
+          <p>
+            {t("reporting.saved.updateHelp", { name: draft.savedReport?.name })}
+          </p>
+        </Modal>
       )}
-      <Modal
-        open={saveOpen}
-        modalHeading={t("reporting.saved.save")}
-        primaryButtonText={t("reporting.saved.confirmSave")}
-        secondaryButtonText={t("reporting.saved.cancel")}
-        primaryButtonDisabled={!saveName.trim() || createSaved.isLoading}
-        onRequestSubmit={saveCurrent}
-        onRequestClose={() => setSaveOpen(false)}
-      >
-        {createSaved.error && (
-          <InlineNotification
-            kind="error"
-            title={errorText(createSaved.error)}
-            hideCloseButton
-          />
-        )}
-        <TextInput
-          id="reporting-saved-name"
-          labelText={t("reporting.saved.name")}
-          value={saveName}
-          maxLength={200}
-          onChange={(event) => setSaveName(event.target.value)}
-        />
-      </Modal>
-      <Modal
-        open={updateOpen}
-        modalHeading={t("reporting.saved.update")}
-        primaryButtonText={t("reporting.saved.confirmUpdate")}
-        secondaryButtonText={t("reporting.saved.cancel")}
-        onRequestSubmit={updateCurrent}
-        onRequestClose={() => setUpdateOpen(false)}
-      >
-        <p>
-          {t("reporting.saved.updateHelp", { name: draft.savedReport?.name })}
-        </p>
-      </Modal>
-      <Modal
-        danger
-        open={!!deleteCandidate}
-        modalHeading={t("reporting.saved.delete")}
-        primaryButtonText={t("reporting.saved.confirmDelete")}
-        secondaryButtonText={t("reporting.saved.cancel")}
-        onRequestSubmit={() =>
-          removeSaved.mutate({
-            id: deleteCandidate.id,
-            expectedVersion: deleteCandidate.version,
-          })
-        }
-        onRequestClose={() => setDeleteCandidate(null)}
-      >
-        {removeSaved.error && (
-          <InlineNotification
-            kind="error"
-            title={errorText(removeSaved.error)}
-            hideCloseButton
-          />
-        )}
-        <p>
-          {t("reporting.saved.deleteHelp", { name: deleteCandidate?.name })}
-        </p>
-      </Modal>
-    </main>
+      {!!deleteCandidate && (
+        <Modal
+          danger
+          open={!!deleteCandidate}
+          modalHeading={t("reporting.saved.delete")}
+          primaryButtonText={t("reporting.saved.confirmDelete")}
+          secondaryButtonText={t("reporting.saved.cancel")}
+          primaryButtonDisabled={removeSaved.isLoading}
+          onRequestSubmit={() =>
+            removeSaved.mutate(
+              {
+                id: deleteCandidate.id,
+                expectedVersion: deleteCandidate.version,
+              },
+              {
+                onSuccess: (_result, { id }) => {
+                  setDraft((value) =>
+                    value.savedReport?.id === id
+                      ? { ...value, savedReport: null }
+                      : value,
+                  );
+                  setDeleteCandidate(null);
+                },
+              },
+            )
+          }
+          onRequestClose={() => setDeleteCandidate(null)}
+        >
+          {removeSaved.error && (
+            <InlineNotification
+              kind="error"
+              title={errorText(removeSaved.error)}
+              hideCloseButton
+            />
+          )}
+          <p>
+            {t("reporting.saved.deleteHelp", { name: deleteCandidate?.name })}
+          </p>
+        </Modal>
+      )}
+    </>
   );
 }

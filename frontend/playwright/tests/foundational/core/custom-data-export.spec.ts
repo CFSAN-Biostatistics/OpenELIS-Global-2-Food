@@ -1,9 +1,18 @@
 import { test, expect } from "../../../helpers/test-base";
-import type { Page } from "@playwright/test";
+import AxeBuilder from "@axe-core/playwright";
+import type { Page, TestInfo } from "@playwright/test";
 
 // src/test/resources/fixtures/reporting-repeated-results.sql is loaded by the
 // shared fixture loader. Its two equal readings have distinct result identities.
 const accession = "REPORTING-MVP-REPEAT";
+let browserErrors: string[];
+test.beforeEach(async ({ page }) => {
+  browserErrors = [];
+  page.on("pageerror", (error) => browserErrors.push(error.message));
+});
+test.afterEach(() => {
+  expect(browserErrors).toEqual([]);
+});
 
 async function createReportUsers(page: Page, usernames: string[]) {
   await page.goto("/");
@@ -102,21 +111,60 @@ function parseCsv(text: string): string[][] {
   return rows;
 }
 
-async function openBuilder(page: Page, date = "2026-05-05") {
-  await page.goto("/CustomDataExport");
+async function addField(page: Page, label: string) {
+  const search = page.getByRole("searchbox", {
+    name: "Find a field",
+    exact: true,
+  });
+  await search.fill(label);
+  await page.getByRole("button", { name: `Add ${label}`, exact: true }).click();
   await expect(
-    page.getByRole("heading", { name: "Custom Data Export", exact: true }),
-  ).toBeVisible();
+    page.getByRole("button", { name: `Added ${label}`, exact: true }),
+  ).toHaveAttribute("aria-disabled", "true");
+  await page.getByRole("button", { name: "Clear search", exact: true }).click();
+}
+async function startReport(page: Page) {
+  await page
+    .getByRole("button", { name: "Start a new export", exact: true })
+    .click();
+  await page.getByRole("radio", { name: /^Sample & Testing/ }).click();
+}
+async function setPeriod(page: Page, date = "2026-05-05") {
   await page.getByLabel("Date from", { exact: true }).fill(date);
   await page.getByLabel("Date to", { exact: true }).fill(date);
 }
-
-async function downloadReport(page: Page, count: number) {
-  const preview = page.getByRole("region", { name: "CSV header preview" });
-  const headers = await preview.getByRole("columnheader").allTextContents();
+async function openBuilder(page: Page, date = "2026-05-05") {
+  await page.goto("/CustomDataExport");
+  await startReport(page);
+  for (const label of ["Accession Number", "Specimen ID", "Viral Load"])
+    await addField(page, label);
   await page
-    .getByRole("button", { name: "Review report", exact: true })
+    .getByRole("button", { name: "Next: Set Filters", exact: true })
     .click();
+  await setPeriod(page, date);
+  await page.getByRole("button", { name: "Back", exact: true }).click();
+}
+async function reviewReport(page: Page) {
+  const columnsNext = page.getByRole("button", {
+    name: "Next: Set Filters",
+    exact: true,
+  });
+  if (await columnsNext.isVisible()) await columnsNext.click();
+  const filtersNext = page.getByRole("button", {
+    name: "Next: Review & Submit",
+    exact: true,
+  });
+  if (await filtersNext.isVisible()) await filtersNext.click();
+  await expect(
+    page.getByRole("button", { name: "Generate CSV", exact: true }),
+  ).toBeEnabled();
+}
+async function downloadReport(page: Page, count: number) {
+  await reviewReport(page);
+  const headers = await page
+    .getByRole("list", { name: "CSV columns in order" })
+    .getByRole("listitem")
+    .allTextContents();
   await page.getByRole("button", { name: "Generate CSV", exact: true }).click();
   const current = page.getByRole("region", { name: "Your current report" });
   const link = current.getByRole("link", { name: "Download CSV" });
@@ -137,12 +185,57 @@ async function downloadReport(page: Page, count: number) {
   await test
     .info()
     .attach("download.csv", { body: bytes, contentType: "text/csv" });
-  await page.evaluate(() => window.scrollTo(0, 0));
   await page.screenshot({
     path: test.info().outputPath("report-ready.png"),
     fullPage: true,
   });
   return { headers, records: rows.slice(1) };
+}
+async function detailedLayout(page: Page) {
+  await page.getByRole("combobox", { name: "CSV layout" }).click();
+  await page
+    .getByRole("option", {
+      name: "Detailed list — results in rows",
+      exact: true,
+    })
+    .click();
+  for (const label of ["Accession Number", "Result Value", "Result ID"])
+    await addField(page, label);
+}
+async function configuredReport(page: Page, name: string) {
+  await page
+    .getByRole("button", { name: "Change type and clear fields", exact: true })
+    .click();
+  await page.getByRole("combobox", { name: "Configured reports" }).click();
+  await page.getByRole("option", { name, exact: true }).click();
+}
+async function savedLibrary(page: Page) {
+  await page
+    .getByRole("button", { name: "Export overview", exact: true })
+    .click();
+  await page
+    .getByRole("button", { name: "Shared reports", exact: true })
+    .click();
+}
+async function saveReport(page: Page, name: string) {
+  await reviewReport(page);
+  await expect(
+    page.getByRole("checkbox", {
+      name: "Save these report settings for later",
+      exact: true,
+    }),
+  ).not.toBeChecked();
+  // Carbon delegates the hidden input's pointer interaction to its visible label.
+  await page.locator('label[for="reporting-save-later"]').click();
+  await page
+    .getByRole("textbox", { name: "Report name", exact: true })
+    .fill(name);
+  await page
+    .getByRole("button", { name: "Save report settings", exact: true })
+    .click();
+  await expect(
+    page.getByText(`Saved as ${name}.`, { exact: true }),
+  ).toBeVisible();
 }
 
 test("spreadsheet preserves both identical readings in an instance-configured test column", async ({
@@ -156,8 +249,7 @@ test("spreadsheet preserves both identical readings in an instance-configured te
     .getByRole("button", { name: "Move Specimen ID up", exact: true })
     .click();
   const { headers, records } = await downloadReport(page, 2);
-  expect(headers.slice(0, 2)).toEqual(["Specimen ID", "Accession Number"]);
-  expect(headers).toContain("Viral Load");
+  expect(headers).toEqual(["Specimen ID", "Accession Number", "Viral Load"]);
   expect(
     records.map((row) => row[headers.indexOf("Accession Number")]),
   ).toEqual([accession, accession]);
@@ -173,16 +265,7 @@ test("turnaround beside a test preserves each repeated result's own duration", a
 }) => {
   await openBuilder(page, "2026-05-06");
   const duration = "Viral Load — Resulted to Validated (min)";
-  await page.getByText(duration, { exact: true }).click();
-  const preview = page.getByRole("region", { name: "CSV header preview" });
-  const initial = await preview.getByRole("columnheader").allTextContents();
-  // Exercise the user's ordering controls and compare actual downloaded cells.
-  const moves = initial.indexOf(duration) - initial.indexOf("Viral Load") - 1;
-  expect(moves).toBeGreaterThanOrEqual(0);
-  for (let index = 0; index < moves; index++)
-    await page
-      .getByRole("button", { name: `Move ${duration} up`, exact: true })
-      .click();
+  await addField(page, duration);
   const { headers, records } = await downloadReport(page, 2);
   const testColumn = headers.indexOf("Viral Load");
   expect(headers[testColumn + 1]).toBe(duration);
@@ -197,14 +280,8 @@ test("turnaround beside a test preserves each repeated result's own duration", a
     ["REPORTING-MVP-TURNAROUND", "450", "90"],
   ]);
   await page.getByRole("button", { name: "Edit report", exact: true }).click();
-  await page.getByRole("combobox", { name: "CSV layout" }).click();
-  await page
-    .getByRole("option", {
-      name: "Detailed list — results in rows",
-      exact: true,
-    })
-    .click();
-  await page.getByText("Resulted to Validated (min)", { exact: true }).click();
+  await detailedLayout(page);
+  await addField(page, "Resulted to Validated (min)");
   const detail = await downloadReport(page, 2);
   expect(
     detail.records.map((row) => [
@@ -221,15 +298,10 @@ test("detailed layout exports both result identities and keeps the chosen period
   page,
 }) => {
   await openBuilder(page);
-  await page.getByRole("combobox", { name: "CSV layout" }).click();
+  await detailedLayout(page);
   await page
-    .getByRole("option", {
-      name: "Detailed list — results in rows",
-      exact: true,
-    })
+    .getByRole("button", { name: "Next: Set Filters", exact: true })
     .click();
-  // Carbon hides the checkbox input; the associated visible label is its action target.
-  await page.locator('label[for="reporting-field-resultId"]').click();
   await expect(page.getByLabel("Date from", { exact: true })).toHaveValue(
     "2026-05-05",
   );
@@ -250,26 +322,19 @@ test("another configured report uses its own defaults and the same builder and q
   page,
 }) => {
   await openBuilder(page);
-  await page.getByRole("combobox", { name: "Report type" }).click();
-  await page
-    .getByRole("option", { name: "Sample summary", exact: true })
-    .click();
+  await configuredReport(page, "Sample summary");
   const preview = page.getByRole("region", { name: "CSV header preview" });
   await expect(preview.getByRole("columnheader")).toHaveText([
     "Specimen ID",
     "Accession Number",
   ]);
-  await expect(
-    page.getByRole("checkbox", { name: "Patient Name", exact: true }),
-  ).toHaveCount(0);
-  await expect(
-    page.getByRole("checkbox", { name: "Viral Load", exact: true }),
-  ).not.toBeChecked();
-  // Add an instance-configured test that is available but deliberately not a default.
   await page
-    .locator("label")
-    .filter({ hasText: /^Viral Load$/ })
-    .click();
+    .getByRole("searchbox", { name: "Find a field", exact: true })
+    .fill("Patient Name");
+  await expect(
+    page.getByRole("button", { name: "Add Patient Name", exact: true }),
+  ).toHaveCount(0);
+  await addField(page, "Viral Load");
   const { headers, records } = await downloadReport(page, 2);
   expect(headers).toEqual(["Specimen ID", "Accession Number", "Viral Load"]);
   expect(records.map((row) => row.slice(1))).toEqual([
@@ -299,41 +364,34 @@ test("switching to a report without optional filters cannot retain a hidden test
   page,
 }) => {
   await openBuilder(page);
-  const response = await page.request.get(
-    "/api/OpenELIS-Global/rest/reports/data-export/variables?reportType=SAMPLE_TESTING&layout=SPREADSHEET",
-  );
-  expect(response.status()).toBe(200);
-  const catalog = await response.json();
-  // Any other configured test excludes this fixture's Viral Load records.
-  const excluded = catalog.tests.find(
-    (item: { label: string }) => item.label !== "Viral Load",
-  );
-  expect(excluded).toBeTruthy();
+  await page
+    .getByRole("button", { name: "Next: Set Filters", exact: true })
+    .click();
   const tests = page.getByRole("combobox", { name: /^Tests/ });
   await tests.click();
-  await page.getByRole("option", { name: excluded.label, exact: true }).click();
+  const testOptions = page
+    .getByRole("listbox", { name: "Tests", exact: true })
+    .getByRole("option");
+  const excluded = (await testOptions.allTextContents())
+    .map((label) => label.trim())
+    .find((label) => label && label !== "Viral Load");
+  expect(excluded).toBeTruthy();
+  await testOptions.filter({ hasText: excluded! }).click();
   await tests.press("Escape");
-  await page.getByRole("combobox", { name: "Report type" }).click();
+  await page.getByRole("button", { name: "Back", exact: true }).click();
+  await configuredReport(page, "Finalized sample summary");
+  await addField(page, "Viral Load");
   await page
-    .getByRole("option", { name: "Finalized sample summary", exact: true })
+    .getByRole("button", { name: "Next: Set Filters", exact: true })
     .click();
-  await expect(
-    page.getByRole("combobox", { name: /^Lab sections/ }),
-  ).toHaveCount(0);
-  await expect(page.getByRole("combobox", { name: /^Tests/ })).toHaveCount(0);
-  await expect(
-    page.getByRole("combobox", { name: /^Result statuses/ }),
-  ).toHaveCount(0);
+  for (const name of [/^Lab sections/, /^Tests/, /^Result statuses/])
+    await expect(page.getByRole("combobox", { name })).toHaveCount(0);
   await expect(
     page.getByText(
       "Some previous filters are unavailable for this report. Review the current filters before generating.",
       { exact: true },
     ),
   ).toBeVisible();
-  await page
-    .locator("label")
-    .filter({ hasText: /^Viral Load$/ })
-    .click();
   const { headers, records } = await downloadReport(page, 2);
   expect(headers).toEqual(["Specimen ID", "Accession Number", "Viral Load"]);
   expect(records.map((row) => row.slice(1))).toEqual([
@@ -341,33 +399,44 @@ test("switching to a report without optional filters cannot retain a hidden test
     [accession, "450"],
   ]);
   await page.getByRole("button", { name: "Edit report", exact: true }).click();
-  await page.getByRole("combobox", { name: "Report type" }).click();
   await page
-    .getByRole("option", { name: "Sample & Testing", exact: true })
+    .getByRole("button", { name: "Change type and clear fields", exact: true })
+    .click();
+  await page.getByRole("radio", { name: /^Sample & Testing/ }).click();
+  await addField(page, "Accession Number");
+  await page
+    .getByRole("button", { name: "Next: Set Filters", exact: true })
     .click();
   await tests.click();
   await expect(
-    page.getByRole("option", { name: excluded.label, exact: true }),
+    page.getByRole("option", { name: excluded!, exact: true }),
   ).toHaveAttribute("aria-selected", "true");
 });
 
-test("Reports entry explains invalid periods and restores a reviewed draft after navigation", async ({
+test("Reports entry explains invalid periods and restores a reviewed draft with Back, Forward and reload", async ({
   page,
 }, testInfo) => {
-  testInfo.setTimeout(60_000); // Includes entering Reports and a full page reload.
+  testInfo.setTimeout(60_000);
   await page.goto("/");
   await page.getByRole("button", { name: "Reports", exact: true }).click();
   await page
     .getByRole("link", { name: "Custom Data Export", exact: true })
     .click();
+  await startReport(page);
+  await addField(page, "Accession Number");
+  await page
+    .getByRole("button", { name: "Next: Set Filters", exact: true })
+    .click();
   const from = page.getByLabel("Date from", { exact: true });
   const to = page.getByLabel("Date to", { exact: true });
   const review = page.getByRole("button", {
-    name: "Review report",
+    name: "Next: Review & Submit",
     exact: true,
   });
-  await expect(from).toBeVisible();
-  await expect(review).toBeDisabled();
+  await review.click();
+  await expect(
+    page.getByText("Choose a start date.", { exact: true }),
+  ).toBeVisible();
   await from.fill("2026-01-01");
   await to.fill("2025-12-31");
   await expect(
@@ -386,47 +455,37 @@ test("Reports entry explains invalid periods and restores a reviewed draft after
   await expect(review).toBeDisabled();
   await to.fill("2026-03-31");
   await expect(review).toBeEnabled();
-  await from.fill("2026-05-05");
-  await to.fill("2026-05-05");
-  await page.screenshot({
-    path: testInfo.outputPath("report-builder.png"),
-    fullPage: true,
-  });
+  await setPeriod(page);
   await review.click();
+  await expect(page).toHaveURL(/step=review/);
   const headers = await page
-    .getByRole("region", { name: "CSV header preview" })
-    .getByRole("columnheader")
+    .getByRole("list", { name: "CSV columns in order" })
+    .getByRole("listitem")
     .allTextContents();
-  const queueLoaded = page.waitForResponse((response) =>
-    response.url().includes("/rest/reports/data-export/jobs?page=0"),
-  );
   await page
     .getByRole("button", { name: "My Report Queue", exact: true })
     .click();
-  await expect(
-    page.getByRole("heading", { name: "My Report Queue", exact: true }),
-  ).toBeVisible();
-  await queueLoaded;
-  await expect(
-    page.getByText("Loading report options…", { exact: true }),
-  ).toBeHidden();
-  await page
-    .getByRole("button", { name: "Back to report builder", exact: true })
-    .click();
+  await expect(page).toHaveURL(/view=queue/);
+  await page.goBack();
   await expect(
     page.getByRole("button", { name: "Generate CSV", exact: true }),
   ).toBeEnabled();
+  await page.goForward();
+  await expect(
+    page.getByRole("heading", { name: "My Report Queue", exact: true }),
+  ).toBeVisible();
+  await page
+    .getByRole("button", { name: "Continue current export", exact: true })
+    .click();
   await page.reload();
   await expect(
     page.getByRole("button", { name: "Generate CSV", exact: true }),
   ).toBeEnabled();
-  await expect(
-    page.getByText("2026-05-05 – 2026-05-05", { exact: true }),
-  ).toBeVisible();
+  await expect(page.getByText(/2026-05-05 – 2026-05-05/)).toBeVisible();
   await expect(
     page
-      .getByRole("region", { name: "CSV header preview" })
-      .getByRole("columnheader"),
+      .getByRole("list", { name: "CSV columns in order" })
+      .getByRole("listitem"),
   ).toHaveText(headers);
 });
 
@@ -434,28 +493,18 @@ test("a shared report reopens with fresh dates and supports confirmed update, co
   page,
 }, testInfo) => {
   testInfo.setTimeout(60_000);
-  const reportName = `Reporting UAT ${Date.now()}`;
-  const copyName = `${reportName} copy`;
-
+  const reportName = `Reporting UAT ${Date.now()}`,
+    copyName = `${reportName} copy`;
   await openBuilder(page);
-  await page.getByRole("button", { name: "Save report", exact: true }).click();
-  await page.getByLabel("Report name", { exact: true }).fill(reportName);
-  await page
-    .getByRole("button", { name: "Save shared report", exact: true })
-    .click();
-  await expect(
-    page.getByText(`Saved as ${reportName}.`, { exact: true }),
-  ).toBeVisible();
-
-  await page
-    .getByRole("button", { name: "Shared reports", exact: true })
-    .click();
-  await page
-    .getByRole("searchbox", { name: "Search shared reports", exact: true })
-    .fill(reportName);
+  await saveReport(page, reportName);
+  await savedLibrary(page);
+  const search = page.getByRole("searchbox", {
+    name: "Search shared reports",
+    exact: true,
+  });
+  await search.fill(reportName);
   let card = page.getByRole("article", { name: reportName, exact: true });
-  await expect(card).toBeVisible();
-  await card.getByRole("button", { name: "Open", exact: true }).click();
+  await card.getByRole("button", { name: "Use report", exact: true }).click();
   await expect(page.getByLabel("Date from", { exact: true })).toHaveValue("");
   await expect(page.getByLabel("Date to", { exact: true })).toHaveValue("");
   await expect(
@@ -463,8 +512,13 @@ test("a shared report reopens with fresh dates and supports confirmed update, co
       exact: true,
     }),
   ).toBeVisible();
-
-  await page.locator('label[for="reporting-field-patientName"]').click();
+  await page.getByRole("button", { name: "Back", exact: true }).click();
+  await addField(page, "Patient Name");
+  await page
+    .getByRole("button", { name: "Next: Set Filters", exact: true })
+    .click();
+  await setPeriod(page);
+  await reviewReport(page);
   await page
     .getByRole("button", { name: "Update shared report", exact: true })
     .click();
@@ -472,64 +526,47 @@ test("a shared report reopens with fresh dates and supports confirmed update, co
   await expect(
     page.getByText(`Updated ${reportName}.`, { exact: true }),
   ).toBeVisible();
-
   await page.getByRole("button", { name: "Save a copy", exact: true }).click();
-  await page.getByLabel("Report name", { exact: true }).fill(copyName);
+  await page
+    .getByRole("textbox", { name: "Report name", exact: true })
+    .fill(copyName);
   await page
     .getByRole("button", { name: "Save shared report", exact: true })
     .click();
   await expect(
     page.getByText(`Saved as ${copyName}.`, { exact: true }),
   ).toBeVisible();
-
   for (const name of [reportName, copyName]) {
-    await page
-      .getByRole("button", { name: "Shared reports", exact: true })
-      .click();
-    await page
-      .getByRole("searchbox", { name: "Search shared reports", exact: true })
-      .fill(name);
+    await savedLibrary(page);
+    await search.fill(name);
     card = page.getByRole("article", { name, exact: true });
     await expect(card).toBeVisible();
     await card.getByRole("button", { name: /Delete shared report/ }).click();
-    await page.getByRole("button", { name: /Delete$/, exact: false }).click();
+    await page.getByRole("button", { name: /Delete$/ }).click();
     await expect(card).toBeHidden();
-    if (name === reportName)
-      await page
-        .getByRole("button", { name: "Back to report builder", exact: true })
-        .click();
   }
 });
 
 test("ordinary report users share a definition and independently download its repeated results", async ({
   page,
 }, testInfo) => {
-  testInfo.setTimeout(90_000); // Two real sign-ins, persisted jobs and downloads.
+  testInfo.setTimeout(90_000);
   const run = Date.now();
-  // The instance's configured username alphabet excludes digits.
   const suffix = String(run).replace(/\d/g, (digit) =>
     String.fromCharCode(97 + Number(digit)),
   );
-  const firstUser = `reporting${suffix}a`;
-  const secondUser = `reporting${suffix}b`;
+  const firstUser = process.env.REPORTING_TEST_USER_A || `reporting${suffix}a`;
+  const secondUser = process.env.REPORTING_TEST_USER_B || `reporting${suffix}b`;
+  if (!process.env.REPORTING_TEST_USER_A && !process.env.REPORTING_TEST_USER_B)
+    await createReportUsers(page, [firstUser, secondUser]);
   const reportName = `Shared reporting ${run}`;
-  await createReportUsers(page, [firstUser, secondUser]);
-
   await signInAsReportUser(page, firstUser);
-  await page.getByLabel("Date from", { exact: true }).fill("2026-05-05");
-  await page.getByLabel("Date to", { exact: true }).fill("2026-05-05");
-  await page.locator('label[for="reporting-field-patientName"]').click();
+  await openBuilder(page);
+  await addField(page, "Patient Name");
   await page
     .getByRole("button", { name: "Move Specimen ID up", exact: true })
     .click();
-  await page.getByRole("button", { name: "Save report", exact: true }).click();
-  await page.getByLabel("Report name", { exact: true }).fill(reportName);
-  await page
-    .getByRole("button", { name: "Save shared report", exact: true })
-    .click();
-  await expect(
-    page.getByText(`Saved as ${reportName}.`, { exact: true }),
-  ).toBeVisible();
+  await saveReport(page, reportName);
   const original = await downloadReport(page, 2);
   expect(original.headers.slice(0, 2)).toEqual([
     "Specimen ID",
@@ -543,7 +580,6 @@ test("ordinary report users share a definition and independently download its re
   expect(
     original.records.map((row) => row[original.headers.indexOf("Viral Load")]),
   ).toEqual(["450", "450"]);
-
   await signInAsReportUser(page, secondUser);
   await page
     .getByRole("button", { name: "Shared reports", exact: true })
@@ -554,26 +590,225 @@ test("ordinary report users share a definition and independently download its re
   });
   await search.fill(reportName);
   const card = page.getByRole("article", { name: reportName, exact: true });
-  await expect(card).toBeVisible();
-  await card.getByRole("button", { name: "Open", exact: true }).click();
+  await card.getByRole("button", { name: "Use report", exact: true }).click();
   await expect(page.getByLabel("Date from", { exact: true })).toHaveValue("");
   await expect(page.getByLabel("Date to", { exact: true })).toHaveValue("");
-  await expect(
-    page.getByText("Choose fresh dates before running this saved report.", {
-      exact: true,
-    }),
-  ).toBeVisible();
-  await page.getByLabel("Date from", { exact: true }).fill("2026-05-05");
-  await page.getByLabel("Date to", { exact: true }).fill("2026-05-05");
+  await setPeriod(page);
   const reused = await downloadReport(page, 2);
   expect(reused).toEqual(original);
-
-  await page
-    .getByRole("button", { name: "Shared reports", exact: true })
-    .click();
+  await savedLibrary(page);
   await search.fill(reportName);
-  await expect(card).toBeVisible();
   await card.getByRole("button", { name: /Delete shared report/ }).click();
-  await page.getByRole("button", { name: /Delete$/, exact: false }).click();
+  await page.getByRole("button", { name: /Delete$/ }).click();
   await expect(card).toBeHidden();
+});
+
+test("the mock column interactions work at desktop and narrow widths without losing selection", async ({
+  page,
+}, testInfo) => {
+  testInfo.setTimeout(60_000);
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto("/CustomDataExport");
+  await startReport(page);
+  const available = page.getByRole("region", {
+    name: "Available fields",
+    exact: true,
+  });
+  await expect(available.getByRole("checkbox")).toHaveCount(0);
+  await expect(
+    available.getByRole("button", { name: "Configured tests", exact: true }),
+  ).toHaveAttribute("aria-expanded", "false");
+  await page.screenshot({
+    path: testInfo.outputPath("app-desktop-collapsed.png"),
+    fullPage: true,
+  });
+  await page
+    .getByRole("searchbox", { name: "Find a field", exact: true })
+    .fill("Configured tests");
+  await expect(
+    page.getByRole("button", { name: "Add Viral Load", exact: true }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Clear search", exact: true }).click();
+  await expect(
+    available.getByRole("button", { name: "Configured tests", exact: true }),
+  ).toHaveAttribute("aria-expanded", "false");
+  for (const label of ["Accession Number", "Specimen ID", "Viral Load"])
+    await addField(page, label);
+  const grip = page.getByRole("button", {
+    name: "Drag Viral Load to reorder",
+    exact: true,
+  });
+  await grip.press("Home");
+  await expect(grip).toBeFocused();
+  const preview = page.getByRole("region", { name: "CSV header preview" });
+  await expect(preview.getByRole("columnheader")).toHaveText([
+    "Viral Load",
+    "Accession Number",
+    "Specimen ID",
+  ]);
+  const accessionColumn = page
+    .getByRole("button", {
+      name: "Drag Accession Number to reorder",
+      exact: true,
+    })
+    .locator("..");
+  const viralColumn = grip.locator("..");
+  await viralColumn.dragTo(accessionColumn, {
+    targetPosition: { x: 100, y: 45 },
+  });
+  await expect(preview.getByRole("columnheader")).toHaveText([
+    "Accession Number",
+    "Viral Load",
+    "Specimen ID",
+  ]);
+  await grip.press("Home");
+  await page.screenshot({
+    path: testInfo.outputPath("app-desktop-selected.png"),
+    fullPage: true,
+  });
+  const accessibility = await new AxeBuilder({ page })
+    .include(".reporting-design")
+    .analyze();
+  expect(accessibility.violations).toEqual([]);
+  await page.setViewportSize({ width: 390, height: 844 });
+  const panes = page.getByRole("group", { name: "Column builder views" });
+  await panes.getByRole("button", { name: /Your columns/ }).click();
+  await expect(grip).toBeVisible();
+  await grip.press("End");
+  await expect(grip).toBeFocused();
+  await expect(preview.getByRole("columnheader")).toHaveText([
+    "Accession Number",
+    "Specimen ID",
+    "Viral Load",
+  ]);
+  await page.screenshot({
+    path: testInfo.outputPath("app-narrow-selected.png"),
+    fullPage: true,
+  });
+  await panes
+    .getByRole("button", { name: "Available fields", exact: true })
+    .click();
+  await expect(available).toBeVisible();
+  await expect(
+    page.getByRole("region", { name: "Selected columns", exact: true }),
+  ).toBeHidden();
+  await page.screenshot({
+    path: testInfo.outputPath("app-narrow-collapsed.png"),
+    fullPage: true,
+  });
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBe(true);
+  await page
+    .getByRole("button", { name: "Next: Set Filters", exact: true })
+    .click();
+  await setPeriod(page);
+  await captureWidths(page, testInfo, "app-filters", true);
+  await page
+    .getByRole("button", { name: "Show more filters", exact: true })
+    .click();
+  await captureWidths(page, testInfo, "app-more-filters", true);
+  await reviewReport(page);
+  await captureWidths(page, testInfo, "app-review", true);
+  await page
+    .getByRole("button", { name: "My Report Queue", exact: true })
+    .click();
+  await captureWidths(page, testInfo, "app-queue", true);
+});
+
+async function captureWidths(
+  page: Page,
+  testInfo: TestInfo,
+  state: string,
+  audit: boolean,
+) {
+  for (const [name, width, height] of [
+    ["desktop", 1280, 900],
+    ["narrow", 390, 844],
+  ] as const) {
+    await page.setViewportSize({ width, height });
+    await page.getByRole("heading", { level: 1 }).scrollIntoViewIfNeeded();
+    await page.screenshot({
+      path: testInfo.outputPath(`${state}-${name}.png`),
+      fullPage: state.includes("queue") ? false : true,
+    });
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= innerWidth,
+      ),
+    ).toBe(true);
+    if (audit)
+      expect(
+        (await new AxeBuilder({ page }).include(".reporting-design").analyze())
+          .violations,
+      ).toEqual([]);
+    if (state.includes("review")) {
+      await page.locator(".save-config-panel").scrollIntoViewIfNeeded();
+      await page.screenshot({
+        path: testInfo.outputPath(`${state}-${name}-save.png`),
+      });
+    }
+  }
+}
+
+// Capture the same supplied design states when running the local parity gate.
+// Runtime workflow tests above remain independent of the mock's fictional data.
+test("capture the canonical mock at the application validation widths", async ({
+  page,
+}, testInfo) => {
+  testInfo.setTimeout(60_000);
+  test.skip(
+    !process.env.REPORTING_MOCK_URL,
+    "Set the pinned mock URL for the design comparison run.",
+  );
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto(process.env.REPORTING_MOCK_URL!);
+  await page
+    .getByRole("button", { name: "Start a new export", exact: true })
+    .click();
+  await page.getByRole("radio", { name: /^Sample & Testing/ }).click();
+  const search = page.getByRole("searchbox", {
+    name: "Find a field",
+    exact: true,
+  });
+  await expect(search).toBeVisible();
+  await page.screenshot({
+    path: testInfo.outputPath("mock-desktop-collapsed.png"),
+    fullPage: true,
+  });
+  for (const label of ["Accession Number", "Sample Type", "Test Name"])
+    await addField(page, label);
+  await page.screenshot({
+    path: testInfo.outputPath("mock-desktop-selected.png"),
+    fullPage: true,
+  });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page
+    .getByRole("button", { name: "Your columns (3)", exact: true })
+    .click();
+  await page.screenshot({
+    path: testInfo.outputPath("mock-narrow-selected.png"),
+    fullPage: true,
+  });
+  await page
+    .getByRole("button", { name: "Available fields", exact: true })
+    .click();
+  await page.screenshot({
+    path: testInfo.outputPath("mock-narrow-collapsed.png"),
+    fullPage: true,
+  });
+  await page.getByRole("button", { name: /^Next: Set Filters/ }).click();
+  await page.getByLabel("Date From *", { exact: true }).fill("2026-05-05");
+  await page.getByLabel("Date To *", { exact: true }).fill("2026-05-05");
+  await captureWidths(page, testInfo, "mock-filters", false);
+  await page
+    .getByRole("button", { name: "Show more filters", exact: true })
+    .click();
+  await captureWidths(page, testInfo, "mock-more-filters", false);
+  await page.getByRole("button", { name: /^Next: Review & Submit/ }).click();
+  await captureWidths(page, testInfo, "mock-review", false);
+  await page.getByRole("button", { name: /My Report Queue/ }).click();
+  await captureWidths(page, testInfo, "mock-queue", false);
 });

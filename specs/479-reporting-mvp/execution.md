@@ -2,7 +2,112 @@
 
 The user authorized implementing the complete agreed MVP and deploying an
 OpenELIS instance on the Catalyst server. Both milestones remain in scope.
-Application implementation is in progress; deployment has not started.
+The Sample & Testing stage is publicly deployed and testable as of 2026-09-14.
+The full MVP remains in progress. The current deployment receipt below
+supersedes earlier point-in-time deployment observations in this history.
+
+## Frontend Repair — Candidate Qualified, Publication Pending
+
+The canonical mock is pinned at `5b2df7e34ff5ad1f983f24c0e9e0ba4db5e8697f`.
+The repair restores overview cards, the three-stage builder, collapsed catalogs,
+field/group search, explicit Add/Added selection, pointer and keyboard ordering,
+mobile panes, structured review and the queue table. Route state is owned by
+React Router query parameters; owner-scoped session drafts hold unsaved inputs;
+TanStack Query manages server records and mutation invalidation. Loading a saved
+report starts with fresh dates; reload and Back/Forward preserve an active draft.
+Delayed submission responses cannot attach to a different new draft.
+
+The local 21-case component suite, frontend lint (including hook dependencies),
+frontend production build, Java 21 packaging and Spotless checks passed. Direct
+1280×900 and 390×844 mock comparisons found and corrected mobile wrapping,
+review hierarchy, pending-help contrast and mobile queue action placement.
+Pointer/keyboard order, both repeated readings, per-test 30/90-minute turnaround
+and independent downloads by two report users were verified against actual CSVs.
+The corrected queue and review were also compared at both widths, including the
+review/save controls below the fold. A local preview against the unchanged public
+backend passed the full-screen accessibility and navigation check plus the pinned
+mock capture (three checks including login). Final public verification follows
+the frontend-only deployment; preview evidence does not establish deployment.
+
+The required clean packaging build invalidated the local server's directly bound
+`target/OpenELIS-Global.war`; two subsequent browser invocations stopped in login
+setup and did not execute their product checks. The local app alone was recreated
+to load the new WAR; database and report volumes were retained. Do not repeat a
+clean build against a directly bound build artifact. Use a separate build output
+or a versioned runtime artifact for future backend packaging checks.
+
+The final candidate passed eight reporting browser workflows against the stable
+public backend through a loopback frontend preview, plus the separate pinned-mock
+capture. The earlier local turnaround and two-user checks also passed. One
+candidate test initially read an HTML redirect using a separate API client;
+it now selects the comparison test through the visible Tests listbox. A subsequent
+selector error included the language menu; scoping to the Tests listbox resolved
+it. The unchanged hidden-filter and CSV expectations pass on the final test.
+No remaining product failures were observed in these checks. This remains a
+stage qualification, not the full-MVP acceptance or a new exact-head CI result.
+
+Public deployment remains at the receipt below until the frontend-only candidate
+passes verification. Publish only the web artifact, retain the existing backend
+revision, record both revisions, and update the Grist prose to the new flow.
+
+## Current Public Stage — 2026-09-14
+
+- Application: [Reporting UAT](https://reporting.catalyst.openelis-global.org/CustomDataExport),
+  revision `ebc6983898c833ed40fe43003192c4079e4bab73`.
+- Deployment: `20260914T065024Z-ebc6983898c8`; review tooling
+  `7356f1d32cfbdea346f200b5f3b2bf05a48610b9`. The public
+  [target identity](https://reporting.catalyst.openelis-global.org/__review/target.json)
+  records stage scope and pending human acceptance.
+- Nine public browser checks passed in 2.7 minutes, asserting actual downloaded
+  CSV headers, repeated results, detailed identities and per-test turnaround.
+  The public run uses a 60-second overall case budget; the existing 20-second
+  download-readiness assertions and CSV expectations were unchanged. An earlier
+  30-second case timeout was reproduced and diagnosed before this passing run.
+- All 13 PR checks passed for that application revision. Earlier local evidence
+  remains separate: 60 distinct focused backend checks, 10 component checks,
+  10 browser checks, Java 21 and frontend production builds.
+- Existing report user A saved a report in the public browser. Existing user B
+  found and opened it in the public browser with blank dates and the fresh-date
+  prompt. User B's API-generated CSV preserved the reordered headers and both
+  independent Viral Load values of 450. This supplements the nine public browser
+  checks; it is not counted as a tenth browser check. No accounts were created.
+- The live [Grist checklist](https://grist.openelis-global.org/uat/reporting.json)
+  has five independently selectable stories and 11 required steps, with no
+  computed authoring problems. Checklist revision:
+  `fdaaab0e4cfa622719cb450ee9579e887d4834b2f788896f0643daa6701939c8`.
+- A real authenticated browser submission was read back from Grist: submission
+  33, answer 118, `RPT-200` marked Fail for the observed missing Referrals and
+  Non-Conformance choices. Reviewer name is explicitly `Codex preflight`;
+  this is a known development gap, not human acceptance. The downloaded review
+  report was inspected and matches the deployment, application, tooling,
+  checklist and actual page. The answer survived a page reload.
+
+Public synthetic fixtures cover May 5 repeats and May 6 turnaround of 30 and
+90 minutes. Reports, database data and configuration checksums are persistent.
+The isolated `reporting-uat` deployment is under `/home/ubuntu/reporting-uat` on
+Catalyst. Versioned release artifacts sit under `releases/<application SHA>`;
+`compose.json` selects the release, and `runtime/identity/target.json` records
+the qualified deployment. Subsequent updates must preserve these volumes and
+must not reseed the database. Existing Catalyst and CSiM stacks were preserved.
+
+Delivery friction is still open: the observed cold start took about 18.5 minutes
+with an emulated backend image and two application contexts. This does not
+prevent current UAT, but native runtime and single-context deployment need a
+bounded follow-up. No automatic deployment-on-push workflow is established yet.
+Publish each usable application checkpoint and rerun these same workflow checks;
+do not wait for the whole MVP.
+
+Remaining acceptance: M1 qualification (including 74.4% backend instruction
+coverage against the >80% target), Referrals, Non-Conformance and queue recovery.
+The exact human walkthrough remains open, including native date entry: the
+in-app agent's date-input interaction was inconclusive, while the ordinary
+Playwright workflow succeeded. This is not evidence of a product date defect.
+No claim of full MVP or human acceptance follows from this deployment.
+
+Evidence is retained in the task artifacts as `reporting-public-validation.log`,
+`reporting-public-ci.json`, `reporting-existing-users-validation.json`,
+`reporting-shared-public.csv`, `reporting-public-target.json`,
+`reporting-public-checklist.json` and `reporting-public-review-preflight.md`.
 
 ## Acceptance-driven Iteration 1
 
@@ -374,32 +479,30 @@ end-to-end validation and human UAT use the same workflows, fixtures and
 expected results. Waiting for the full MVP before publishing was a planning
 error; the plan, tasks, quickstart and UAT contract now remove that dependency.
 
-The next action is to publish this working Sample & Testing stage at the stable
-Catalyst reporting hostname with its actual scope and known gaps, then update
-that same target at subsequent checkpoints. Full MVP criteria remain intact.
-Current server inspection confirms capacity and an unused isolated reporting
-path; no reporting application has yet been deployed publicly at this point.
+The working stage was subsequently published at the stable Catalyst reporting
+hostname; see the current receipt above. Update that same target at subsequent
+usable checkpoints. Full MVP criteria remain intact.
 
 ## M1 Acceptance Checkpoint
 
 The implementation is reviewable as a foundation, but M1 is not complete. The
 following ledger is the gate for continued work:
 
-| Capability                                             | Current evidence                                                                                                                                                                               | State                                                              |
-| ------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
-| Native Reports entry                                   | Menu migration plus browser navigation                                                                                                                                                         | Proven locally                                                     |
-| Instance-derived tests/components/questions            | Database checks add/rename a question and configure/export a second component arrangement without reporting-code changes                                                                       | Proven locally at source level; deployed configuration UAT remains |
-| Additional report configuration                        | Initializer loads versioned definitions; browser verifies fields/defaults, filter subsets, repeat downloads and the same queue                                                                 | Proven locally; deployed configuration UAT remains open            |
-| Spreadsheet download                                   | Browser compares downloaded bytes with two independent identical fixture readings                                                                                                              | Proven locally for current fixture                                 |
-| Detailed-list download                                 | Browser compares two distinct result identities and values                                                                                                                                     | Proven locally for current fixture                                 |
-| CSV contract and streaming                             | Nine focused writer checks include BOM, escaping, nulls, ordering, zero rows, repeats and 50,000 streamed records                                                                              | Proven at formatter level; database workload remains open          |
-| Date validation and retained draft                     | Component and browser checks cover the inclusive limit, invalid ranges, queue visit and reload                                                                                                 | Proven locally                                                     |
-| Immutable jobs and owner submission identity           | Persistence/service checks plus simultaneous database transactions cover idempotency, conflicts, configured limits, ownership and current scope; two ordinary users complete real browser jobs | Proven locally; deployed ordinary-user UAT remains                 |
-| Shared saved reports                                   | Service, component and real-browser create/reopen/update/copy/delete checks; second report user reopens with fresh dates and downloads identical output                                        | Proven locally; second-user deployed UAT remains open              |
-| Wider Sample & Testing fields and additional questions | Database checks cover linked common/patient fields, received time/count, five turnaround measures, corrected results and configured literal/dictionary/key/multiple answers                    | Proven at mapping level; browser comparison remains open           |
-| Queue lifecycle and recovery                           | Submit, generate, poll and download work                                                                                                                                                       | Open; retry, cancel, recovery, expiry and audit remain M2          |
-| Referral and Non-Conformance definitions               | Not implemented                                                                                                                                                                                | Open in M2                                                         |
-| Catalyst deployment                                    | Server inspected only                                                                                                                                                                          | Open                                                               |
+| Capability                                             | Current evidence                                                                                                                                                                               | State                                                                 |
+| ------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| Native Reports entry                                   | Menu migration plus browser navigation                                                                                                                                                         | Proven locally and in public browser checks                           |
+| Instance-derived tests/components/questions            | Database checks add/rename a question and configure/export a second component arrangement without reporting-code changes                                                                       | Proven locally at source level; deployed configuration UAT remains    |
+| Additional report configuration                        | Initializer loads versioned definitions; browser verifies fields/defaults, filter subsets, repeat downloads and the same queue                                                                 | Public configured-source browser checks pass; human review open       |
+| Spreadsheet download                                   | Browser compares downloaded bytes with two independent identical fixture readings                                                                                                              | Proven locally and publicly for the current fixture                   |
+| Detailed-list download                                 | Browser compares two distinct result identities and values                                                                                                                                     | Proven locally and publicly for the current fixture                   |
+| CSV contract and streaming                             | Nine focused writer checks include BOM, escaping, nulls, ordering, zero rows, repeats and 50,000 streamed records                                                                              | Proven at formatter level; database workload remains open             |
+| Date validation and retained draft                     | Component and browser checks cover the inclusive limit, invalid ranges, queue visit and reload                                                                                                 | Proven locally and in public browser checks                           |
+| Immutable jobs and owner submission identity           | Persistence/service checks plus simultaneous database transactions cover idempotency, conflicts, configured limits, ownership and current scope; two ordinary users complete real browser jobs | Public existing-user flow and API reuse pass; human review open       |
+| Shared saved reports                                   | Service, component and real-browser create/reopen/update/copy/delete checks; second report user reopens with fresh dates and downloads identical output                                        | Public two-user browser reopen and API export pass; human review open |
+| Wider Sample & Testing fields and additional questions | Database checks cover linked common/patient fields, received time/count, five turnaround measures, corrected results and configured literal/dictionary/key/multiple answers                    | Proven at mapping level; browser comparison remains open              |
+| Queue lifecycle and recovery                           | Submit, generate, poll and download work                                                                                                                                                       | Open; retry, cancel, recovery, expiry and audit remain M2             |
+| Referral and Non-Conformance definitions               | Not implemented                                                                                                                                                                                | Open in M2                                                            |
+| Catalyst deployment                                    | Exact application revision deployed; nine public browser checks, authenticated review submission and downloaded review report verified                                                         | Current stage live; full MVP and human acceptance open                |
 
 Do not expand to M2 or describe M1 as complete until the M1-open rows required
 by T002, T004-T006 and T008-T017 have passed. A draft M1 PR is the
@@ -454,7 +557,7 @@ completion gate.
   consumer selects `PATIENT` explicitly. Two initially drafted new definition
   entities were removed before any migration or commit.
 
-## Validation Recorded So Far
+## Historical Validation Checkpoints
 
 | Check                         | Observed result                                                                                                                                                                                                             |
 | ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -515,7 +618,7 @@ run the focused backend, component, build and browser checks, review the whole
 change and publish a draft M1 PR before implementation continues. The accepted
 scope remains intact. Specification PR checks do not validate this code.
 
-## Server Inspection
+## Server Inspection — Before Reporting Deployment
 
 Read-only inspection on 2026-09-13 confirmed SSH access to
 `catalyst.openelis-global.org`. The host runs existing Catalyst, OpenELIS, HAPI
@@ -530,32 +633,21 @@ backend port `127.0.0.1:28443`; its database is
 `catalyst-demo-caddy-1`, configured by
 `/home/ubuntu/catalyst-demo/targets/catalyst/Caddyfile`.
 
-The inspected public routes currently serve Catalyst and dashboards; no public
-OpenELIS route was found. The final OpenELIS URL and deployment arrangement must
-be verified against the actual frontend/proxy configuration. Existing demo data,
-services and unrelated CSiM deployments must be preserved.
+At that inspection the public routes served Catalyst and dashboards; no public
+OpenELIS route was found. The reporting route has since been added and verified
+as recorded above, preserving the existing services.
 
-## UAT Readiness Check
+## UAT Readiness — Current Stage
 
-The MVP is not yet deployed for UAT. On 2026-09-13,
-`reporting.catalyst.openelis-global.org` resolved to the Catalyst host through
-the existing wildcard DNS, but the public Caddy configuration had no OpenELIS
-reporting route. The existing OpenELIS backend remained internal on
-`127.0.0.1:28443` and its database was part of the Catalyst stack.
+The stage is available at the public reporting URL. The Grist `reporting`
+checklist, five-story picker, authenticated submission, retained answer and
+version-bound downloaded review have all been verified. Full MVP and human
+acceptance remain open. The current receipt above supersedes the initial
+2026-09-13 observations of missing routes and checklist/backend mappings.
 
-The established `DIGI-UW/openelis-review-tooling` service is reachable and its
-server-side Grist authoring identity owns the `UAT Checklists` document. Neither
-`reporting` nor `catalyst` existed as a public checklist slug: both returned
-404 from the live read service. The review repository supports integration with
-an existing deployment, stable story/step keys, verified target metadata and
-authenticated submissions. It currently has no `reporting` backend mapping.
-
-FR-023, SC-010, T032–T038 and `uat.md` now make the actual delivery gate
-explicit: complete the MVP, deploy an exact qualified revision at the reporting
-hostname, seed stable public synthetic fixtures, pass deployed browser/CSV
-preflight, author the four critical stories in Grist, inject the overlay and
-verify a revision-bound review handoff. Human acceptance remains pending until
-a reviewer returns a report.
+FR-023, SC-010 and T032–T038 apply at each usable stage. They do not create a
+wait-for-full-MVP dependency. M1 and M2 acceptance still require their complete
+functional and qualification evidence.
 
 ## Remaining Delivery Work
 
@@ -565,12 +657,11 @@ a reviewer returns a report.
 - Complete M2 through the same engine: referral/non-conformance mappings and
   definitions, retry/cancel/restart/expiry, full source/recovery/workload tests
   and the second milestone PR.
-- D001: Choose and validate the public OpenELIS route; prepare an isolated or
-  safely upgradeable deployment using actual server configuration and capacity.
-- D002: Build reproducible backend/frontend artifacts from the tested revisions;
-  prepare persistent storage, configuration, backups and rollback procedure.
-- D003: Deploy the requested OpenELIS instance without disturbing existing data
-  and services; verify backend readiness and browser sign-in.
+- D001 and D003 are complete for the current stage: isolated reporting stack,
+  public route, backend readiness and browser sign-in verified.
+- D002: The current release artifacts and persistent state are installed. Keep
+  versioned releases for subsequent stages; improve the update/startup path and
+  exercise rollback before claiming repeatable recovery.
 - D004: Run all three reporting types, both Sample & Testing layouts, shared
   report reuse and queue/recovery checks against actual records on the deployed
   instance; compare downloaded CSV contents and record the final URL/revisions.
