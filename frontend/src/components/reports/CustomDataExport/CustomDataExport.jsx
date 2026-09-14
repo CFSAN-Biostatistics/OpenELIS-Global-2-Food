@@ -276,7 +276,7 @@ function ReportingBuilder({ owner }) {
   const effectiveFilters = Object.fromEntries(
     filterNames.map((name) => [name, supportsFilter(name) ? draft[name] : []]),
   );
-  const unavailableFilters = filterNames.some(
+  const unavailableFilters = !!catalog.data && filterNames.some(
     (name) =>
       !supportsFilter(name) &&
       draft[name].length > 0 &&
@@ -359,7 +359,7 @@ function ReportingBuilder({ owner }) {
     (draft.reportType === "SAMPLE_TESTING"
       ? []
       : catalog.data?.defaultColumns || []);
-  const stale = selected.filter((id) => !byId.has(id));
+  const stale = catalog.data ? selected.filter((id) => !byId.has(id)) : [];
   const firstDay = calendarDay(draft.dateFrom);
   const lastDay = calendarDay(draft.dateTo);
   const periodDays = (lastDay - firstDay) / 86400000 + 1;

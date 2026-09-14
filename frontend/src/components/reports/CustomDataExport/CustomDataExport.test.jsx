@@ -46,6 +46,7 @@ const catalog = (layout) => ({
 let requests;
 let failSubmission;
 let submissionGate;
+let catalogGate;
 let job;
 let savedReports;
 let savedMutations;
@@ -68,6 +69,7 @@ beforeEach(() => {
   requests = [];
   failSubmission = false;
   submissionGate = undefined;
+  catalogGate = undefined;
   failSavedUpdate = false;
   job = undefined;
   savedReports = [];
@@ -79,12 +81,14 @@ beforeEach(() => {
     "fetch",
     vi.fn(async (url, options = {}) => {
       if (url.includes("/report-types")) return json([source]);
-      if (url.includes("/variables"))
+      if (url.includes("/variables")) {
+        if (catalogGate) await catalogGate;
         return json(
           catalog(
             url.includes("layout=RESULT_LIST") ? "RESULT_LIST" : "SPREADSHEET",
           ),
         );
+      }
       if (
         url.includes("/saved-configs/") &&
         (!options.method || options.method === "GET")
@@ -293,6 +297,46 @@ test("expired rerun restores frozen ordered fields and filters but requires fres
   });
   expect(removeButtons[0]).toHaveAccessibleName("Remove Hemoglobin");
   expect(removeButtons[1]).toHaveAccessibleName("Remove Accession Number");
+  expect(requests).toEqual([]);
+});
+
+test("rerun waits for its catalog without reporting valid fields or filters as unavailable", async () => {
+  let resolveCatalog;
+  catalogGate = new Promise((resolve) => {
+    resolveCatalog = resolve;
+  });
+  job = recoverableJob("EXPIRED");
+  open("/CustomDataExport?view=queue");
+  fireEvent.click(
+    await screen.findByRole("button", { name: "Re-run", exact: true }),
+  );
+  await waitFor(() =>
+    expect(fetch.mock.calls.some(([url]) => url.includes("/variables"))).toBe(true),
+  );
+  expect(screen.queryByText(messages["reporting.filters.unavailable"])).toBeNull();
+  expect(screen.queryByText(messages["reporting.columns.stale"])).toBeNull();
+  expect(screen.getByText(messages["reporting.loading"])).toBeVisible();
+  expect(screen.queryByLabelText("Date from")).toBeNull();
+  await act(async () => resolveCatalog());
+  expect(await screen.findByLabelText("Date from")).toHaveValue("");
+  expect(screen.getByRole("combobox", { name: /^Tests / })).toHaveAccessibleName(
+    /Total items selected: 1/,
+  );
+  expect(screen.queryByText(messages["reporting.filters.unavailable"])).toBeNull();
+  expect(screen.queryByText(messages["reporting.columns.stale"])).toBeNull();
+  expect(requests).toEqual([]);
+});
+
+test("rerun preserves a removed field and requires correction after its catalog loads", async () => {
+  job = recoverableJob("EXPIRED");
+  job.request.variables.push(field("test:removed", "Removed test", "tests"));
+  open("/CustomDataExport?view=queue");
+  fireEvent.click(
+    await screen.findByRole("button", { name: "Re-run", exact: true }),
+  );
+  expect(await screen.findByText(messages["reporting.columns.stale"])).toBeVisible();
+  expect(await screen.findByRole("button", { name: "Remove test:removed" })).toBeVisible();
+  expect(screen.getByRole("button", { name: messages["reporting.design.nextFilters"] })).toBeDisabled();
   expect(requests).toEqual([]);
 });
 

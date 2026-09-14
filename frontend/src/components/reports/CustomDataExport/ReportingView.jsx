@@ -582,6 +582,9 @@ export default function ReportingView(p) {
             {p.unavailableFilters &&
               notification("info", t("reporting.filters.unavailable"))}
             {p.savedError && notification("error", p.errorText(p.savedError))}
+            {catalog.isLoading && draft.reportType && (
+              <InlineLoading description={t("reporting.loading")} />
+            )}
             {step === 1 && (
               <>
                 {!selected.length && (
@@ -730,15 +733,13 @@ export default function ReportingView(p) {
                     />
                     {preview}
                   </>
-                ) : catalog.isLoading && draft.reportType ? (
-                  <InlineLoading description={t("reporting.loading")} />
-                ) : (
+                ) : !draft.reportType ? (
                   notification("info", t("reporting.design.chooseType"))
-                )}
+                ) : null}
                 <div className="action-bar">
                   <Button
                     size="md"
-                    disabled={!selected.length || stale.length > 0}
+                    disabled={!data || !selected.length || stale.length > 0}
                     renderIcon={ArrowRight}
                     onClick={() => goStep(2)}
                   >
