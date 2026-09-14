@@ -28,8 +28,12 @@ import org.openelisglobal.reportdefinition.service.ReportDefinitionService;
 import org.openelisglobal.reportdefinition.valueholder.ReportDefinition;
 import org.openelisglobal.reports.dataexport.form.ExportFilter;
 import org.openelisglobal.reports.dataexport.form.ExportSnapshot;
+import org.openelisglobal.reports.dataexport.form.ExportSubmission;
 import org.openelisglobal.reports.dataexport.form.ReportingVariable;
+import org.openelisglobal.reports.dataexport.form.SavedReportDefinition;
+import org.openelisglobal.reports.dataexport.form.SavedReportFilters;
 import org.openelisglobal.reports.dataexport.service.ReportingCatalogService;
+import org.openelisglobal.reports.dataexport.service.ReportingException;
 import org.openelisglobal.result.service.ResultService;
 import org.openelisglobal.result.valueholder.Result;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -203,5 +207,27 @@ public class ReportingSourceConfigurationIntegrationTest extends BaseWebContextS
                 assertThrows(IllegalArgumentException.class, () -> apply(json)).getMessage());
         assertEquals("Existing patient report", definitions.get("SAMPLE_SUMMARY").getName());
         assertEquals("PATIENT", definitions.get("SAMPLE_SUMMARY").getReportType());
+    }
+
+    @Test
+    public void requestsAndSavedReportsCannotApplyFiltersOmittedByTheSourceDefinition() throws Exception {
+        apply(json.replace("[\"labSectionIds\", \"testIds\", \"resultStatuses\"]", "[]"));
+        for (var filters : List.of(new SavedReportFilters(List.of("1"), List.of(), List.of()),
+                new SavedReportFilters(List.of(), List.of("1"), List.of()),
+                new SavedReportFilters(List.of(), List.of(), List.of("CANCELED")))) {
+            var request = new ExportSubmission(1, "SAMPLE_SUMMARY", "SPREADSHEET", "unsupported-filter",
+                    List.of("accessionNumber"), new ExportFilter("2023-11-15", "2023-11-15", filters.labSectionIds(),
+                            filters.testIds(), filters.resultStatuses()));
+            var saved = new SavedReportDefinition(1, "SAMPLE_SUMMARY", "SPREADSHEET", List.of("accessionNumber"),
+                    filters);
+            var generationFailure = assertThrows(ReportingException.class,
+                    () -> catalog.freeze(request, TEST_SYS_USER_ID));
+            assertEquals(422, generationFailure.status());
+            assertEquals("reporting.filters.unsupported", generationFailure.getMessage());
+            var saveFailure = assertThrows(ReportingException.class,
+                    () -> catalog.validateSaved(TEST_SYS_USER_ID, saved));
+            assertEquals(422, saveFailure.status());
+            assertEquals("reporting.filters.unsupported", saveFailure.getMessage());
+        }
     }
 }

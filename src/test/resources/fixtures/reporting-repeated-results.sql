@@ -111,4 +111,24 @@ VALUES ('SAMPLE_SUMMARY', 'Sample summary', 'Data export', $config$
 }
 $config$, 'CSV_SOURCE', true, true, '1', now(), now())
 ON CONFLICT (id) DO NOTHING;
+
+-- Persisted form of reporting-sources/finalized-sample-summary.json. This
+-- preset offers only the period and columns; the source's finalized/all-tests
+-- defaults apply even after the user selected filters in another report.
+INSERT INTO report_definition
+  (id, name, category, definition_json, report_type, is_active, is_public, created_by, created_date, lastupdated)
+VALUES ('FINALIZED_SAMPLE_SUMMARY', 'Finalized sample summary', 'Data export', $config$
+{
+  "id": "FINALIZED_SAMPLE_SUMMARY", "version": 1, "label": "Finalized sample summary",
+  "source": "SAMPLE_TESTING", "dateAnchor": "collectionDate",
+  "layouts": ["SPREADSHEET", "RESULT_LIST"],
+  "attributes": ["specimenId", "accessionNumber", "resultValue"],
+  "catalogs": ["tests"], "filters": [],
+  "defaultColumns": {
+    "SPREADSHEET": ["specimenId", "accessionNumber"],
+    "RESULT_LIST": ["accessionNumber", "resultValue"]
+  }
+}
+$config$, 'CSV_SOURCE', true, true, '1', now(), now())
+ON CONFLICT (id) DO NOTHING;
 COMMIT;

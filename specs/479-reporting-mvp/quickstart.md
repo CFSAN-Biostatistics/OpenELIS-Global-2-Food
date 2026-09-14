@@ -108,6 +108,16 @@ identities. Exposing a catalog does not automatically select it: the sample
 summary exposes tests while initially selecting only specimen and accession.
 The built-in Sample & Testing definition explicitly defaults to the tests group.
 
+The definition's `filters` list controls the optional filter controls. For example,
+[finalized-sample-summary.json](../../src/test/resources/fixtures/reporting-sources/finalized-sample-summary.json)
+uses `filters: []`: users choose dates and columns, while the Sample & Testing
+mapping keeps its finalized-result default across all tests and accessible
+sections. Previously selected unsupported filters are excluded from review,
+saving and generation, with a notice before the user reviews the effective
+request. Direct requests containing unsupported non-default filter values are
+rejected. Supported choices remain available when returning to the original
+report draft.
+
 Successful loads persist the definition by its stable ID in the existing
 `report_definition` table with report type `CSV_SOURCE`. Repeating an identical
 definition is idempotent. Changes require a higher `version`; invalid mappings,
@@ -121,6 +131,12 @@ Existing submitted jobs retain their captured definition. A changed definition
 does not alter a completed file; a still-queued request that no longer matches
 fails through the existing changed-definition check. Verify a fresh submission
 after configuration changes.
+
+For this reporting component, run the normal frontend formatter and also format
+the changed component files explicitly with `--ignore-path /dev/null`. The
+current `frontend/.prettierignore` entry `reports/` otherwise skips this source
+directory as well as generated reports. Limit that explicit command to the
+changed reporting source/test files.
 
 ## Browser Flow Inventory
 

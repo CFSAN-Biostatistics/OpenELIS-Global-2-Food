@@ -149,6 +149,7 @@ public class ReportingCatalogService {
         }
         var definition = definition(request.reportType());
         var filter = request.filterSpec();
+        validateRequestedFilters(definition, filter.labSectionIds(), filter.testIds(), filter.resultStatuses());
         ExportDateRange.of(filter.dateFrom(), filter.dateTo(), settings.zone(), settings.maxDays());
         var available = variables(definition, request.layout()).stream()
                 .collect(Collectors.toMap(ReportingVariable::id, Function.identity()));
@@ -194,6 +195,8 @@ public class ReportingCatalogService {
             throw new ReportingException(422, "reporting.saved.invalid");
         }
         var definition = definition(request.reportType());
+        validateRequestedFilters(definition, request.filters().labSectionIds(), request.filters().testIds(),
+                request.filters().resultStatuses());
         var available = variables(definition, request.layout()).stream()
                 .collect(Collectors.toMap(ReportingVariable::id, Function.identity()));
         if (!available.keySet().containsAll(request.selectedVariables()))
@@ -228,6 +231,17 @@ public class ReportingCatalogService {
             if (!available.containsKey(field.id()) || !available.get(field.id()).type().equals(field.type())) {
                 throw new ReportingException(409, "reporting.columns.stale");
             }
+        }
+    }
+
+    private void validateRequestedFilters(ReportSourceConfig definition, List<String> sections, List<String> tests,
+            List<String> requestedStatuses) {
+        // Saved definitions may already contain the source's normalized default.
+        boolean defaultStatus = requestedStatuses.isEmpty() || requestedStatuses.equals(List.of("FINALIZED"));
+        if (!definition.filters().contains("labSectionIds") && !sections.isEmpty()
+                || !definition.filters().contains("testIds") && !tests.isEmpty()
+                || !definition.filters().contains("resultStatuses") && !defaultStatus) {
+            throw new ReportingException(422, "reporting.filters.unsupported");
         }
     }
 

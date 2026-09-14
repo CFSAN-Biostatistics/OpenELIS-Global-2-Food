@@ -260,6 +260,54 @@ filter subsets in the builder/request path. T010/T011 remain open for the
 turnaround decision. Remaining M1 qualification, M2, deployment and human UAT
 are unchanged.
 
+## Acceptance-driven Iteration 8
+
+Outcome: optional filters follow the report configuration. Previous choices from
+another report or saved definition cannot silently restrict its output.
+
+Current evidence on 2026-09-13:
+
+- The builder shows configured filter controls only. Unsupported prior choices
+  are omitted from saving and generation, with a notice before review. Review
+  shows the effective filters; returning to the original report restores its
+  supported prior choice. Empty optional-filter configuration retains mandatory
+  dates and Sample & Testing's finalized/all-tests defaults.
+- Real stored-configuration tests verify that generation and shared-definition
+  requests reject unsupported lab-section, test and status values. These checks
+  and the component regression failed before the implementation.
+- All 54 focused backend tests, all nine component tests, Java 21 build/install
+  and the production frontend build pass. All nine real-browser checks passed
+  in 1.4 minutes against the updated isolated application.
+- The new browser case selects a non-Viral-Load test, switches to the loaded
+  Finalized sample summary, verifies optional controls are absent and the notice
+  appears, and downloads both independent Viral Load readings of 450. Returning
+  to Sample & Testing verifies that the previous test is still selected. CSV
+  bytes and screenshot were inspected.
+- The full browser run also rechecks both layouts, empty output, dates/navigation,
+  shared CRUD and independent reuse by two ordinary users. No page exceptions
+  were logged. Known local certificate/service-worker warnings and request
+  cancellations remain; the three deletions associated with cancellation logs
+  were independently confirmed inactive in the database.
+- The normal formatter skips directories named `reports`, including this
+  component. The two changed component files were explicitly formatted and
+  checked with `--ignore-path /dev/null`; their nine tests and production build
+  then passed again. The normal formatter, 44-file reporting Spotless check,
+  browser lint, registration and edited local links pass. Reporting instruction
+  coverage is 4,204/5,836 (72.0%), still below the feature goal.
+
+Evidence: `/private/tmp/reporting-config-filters-component-red-2.log`,
+`/private/tmp/reporting-config-filters-backend-red.log`,
+`/private/tmp/reporting-config-filters-backend-green.log`,
+`/private/tmp/reporting-config-filters-component-final.log`,
+`/private/tmp/reporting-config-filters-build.log`,
+`/private/tmp/reporting-config-filters-frontend-build-final.log` and
+`/private/tmp/reporting-config-filters-browser.log`.
+
+Together with Iteration 7 and the instance-field mapping evidence, this closes
+T009. Turnaround, the remaining M1 qualification, M2, deployment and human UAT
+remain open. The turnaround decision was resurfaced in the question tool;
+affected work remains paused until answered.
+
 ## M1 Acceptance Checkpoint
 
 The implementation is reviewable as a foundation, but M1 is not complete. The
@@ -269,7 +317,7 @@ following ledger is the gate for continued work:
 | ------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
 | Native Reports entry                                   | Menu migration plus browser navigation                                                                                                                                                         | Proven locally                                                     |
 | Instance-derived tests/components/questions            | Database checks add/rename a question and configure/export a second component arrangement without reporting-code changes                                                                       | Proven locally at source level; deployed configuration UAT remains |
-| Additional report configuration                        | Existing initializer loads a versioned definition; real browser uses its allowed fields/defaults, downloads both repeats and finds the report in the same queue                                | Proven locally for fields/defaults; filter subsets remain open     |
+| Additional report configuration                        | Initializer loads versioned definitions; browser verifies fields/defaults, filter subsets, repeat downloads and the same queue                                                                 | Proven locally; deployed configuration UAT remains open            |
 | Spreadsheet download                                   | Browser compares downloaded bytes with two independent identical fixture readings                                                                                                              | Proven locally for current fixture                                 |
 | Detailed-list download                                 | Browser compares two distinct result identities and values                                                                                                                                     | Proven locally for current fixture                                 |
 | CSV contract and streaming                             | Nine focused writer checks include BOM, escaping, nulls, ordering, zero rows, repeats and 50,000 streamed records                                                                              | Proven at formatter level; database workload remains open          |

@@ -164,16 +164,28 @@ function ReportingBuilder({ owner }) {
       queryClient.invalidateQueries({ queryKey: ["reporting-queue", owner] });
     },
   });
+  const supportsFilter = (name) =>
+    catalog.data?.definition.filters?.includes(name);
+  const filterNames = ["labSectionIds", "testIds", "resultStatuses"];
+  const effectiveFilters = Object.fromEntries(
+    filterNames.map((name) => [name, supportsFilter(name) ? draft[name] : []]),
+  );
+  const unavailableFilters = filterNames.some(
+    (name) =>
+      !supportsFilter(name) &&
+      draft[name].length > 0 &&
+      !(
+        name === "resultStatuses" &&
+        draft[name].length === 1 &&
+        draft[name][0] === "FINALIZED"
+      ),
+  );
   const savedDefinition = () => ({
     schemaVersion: 1,
     reportType: draft.reportType,
     layout: draft.layout,
     selectedVariables: selected,
-    filters: {
-      labSectionIds: draft.labSectionIds,
-      testIds: draft.testIds,
-      resultStatuses: draft.resultStatuses,
-    },
+    filters: effectiveFilters,
   });
   const createSaved = useMutation({
     mutationFn: createSavedReport,
@@ -218,9 +230,7 @@ function ReportingBuilder({ owner }) {
           page?.reports
             ? {
                 ...page,
-                reports: page.reports.filter(
-                  (saved) => saved.id !== removedId,
-                ),
+                reports: page.reports.filter((saved) => saved.id !== removedId),
               }
             : page,
       );
@@ -351,9 +361,7 @@ function ReportingBuilder({ owner }) {
       filterSpec: {
         dateFrom: draft.dateFrom,
         dateTo: draft.dateTo,
-        labSectionIds: draft.labSectionIds,
-        testIds: draft.testIds,
-        resultStatuses: draft.resultStatuses,
+        ...effectiveFilters,
       },
     };
     const fingerprint = JSON.stringify(request);
@@ -423,7 +431,11 @@ function ReportingBuilder({ owner }) {
             kind="tertiary"
             onClick={() => setPanel(panel === "saved" ? "builder" : "saved")}
           >
-            {t(panel === "saved" ? "reporting.builder" : "reporting.saved.library")}
+            {t(
+              panel === "saved"
+                ? "reporting.builder"
+                : "reporting.saved.library",
+            )}
           </Button>
           <Button
             kind="tertiary"
@@ -507,10 +519,18 @@ function ReportingBuilder({ owner }) {
                   <Button size="sm" onClick={() => openSaved(saved)}>
                     {t("reporting.saved.open")}
                   </Button>
-                  <Button kind="secondary" size="sm" onClick={() => openSaved(saved, true)}>
+                  <Button
+                    kind="secondary"
+                    size="sm"
+                    onClick={() => openSaved(saved, true)}
+                  >
                     {t("reporting.saved.copy")}
                   </Button>
-                  <Button kind="danger--tertiary" size="sm" onClick={() => setDeleteCandidate(saved)}>
+                  <Button
+                    kind="danger--tertiary"
+                    size="sm"
+                    onClick={() => setDeleteCandidate(saved)}
+                  >
                     {t("reporting.saved.delete")}
                   </Button>
                 </div>
@@ -536,6 +556,13 @@ function ReportingBuilder({ owner }) {
                 <InlineNotification
                   kind="info"
                   title={t("reporting.saved.freshDates")}
+                  hideCloseButton
+                />
+              )}
+              {unavailableFilters && (
+                <InlineNotification
+                  kind="info"
+                  title={t("reporting.filters.unavailable")}
                   hideCloseButton
                 />
               )}
@@ -622,59 +649,67 @@ function ReportingBuilder({ owner }) {
                         }
                       />
                     </Column>
-                    <Column lg={8} md={4} sm={4}>
-                      <MultiSelect
-                        id="reporting-sections"
-                        titleText={t("reporting.labSections")}
-                        label={t("reporting.allAccessibleSections")}
-                        items={catalog.data.labSections}
-                        itemToString={(item) => item?.label || ""}
-                        selectedItems={catalog.data.labSections.filter((item) =>
-                          draft.labSectionIds.includes(item.id),
-                        )}
-                        onChange={({ selectedItems }) =>
-                          update({
-                            labSectionIds: selectedItems.map((item) => item.id),
-                          })
-                        }
-                      />
-                    </Column>
-                    <Column lg={8} md={4} sm={4}>
-                      <MultiSelect
-                        id="reporting-tests"
-                        titleText={t("reporting.tests")}
-                        label={t("reporting.allTests")}
-                        items={catalog.data.tests}
-                        itemToString={(item) => item?.label || ""}
-                        selectedItems={catalog.data.tests.filter((item) =>
-                          draft.testIds.includes(item.id),
-                        )}
-                        onChange={({ selectedItems }) =>
-                          update({
-                            testIds: selectedItems.map((item) => item.id),
-                          })
-                        }
-                      />
-                    </Column>
-                    <Column lg={8} md={4} sm={4}>
-                      <MultiSelect
-                        id="reporting-statuses"
-                        titleText={t("reporting.resultStatuses")}
-                        label={t("reporting.finalized")}
-                        items={catalog.data.statuses}
-                        itemToString={(item) => item?.label || ""}
-                        selectedItems={catalog.data.statuses.filter((item) =>
-                          draft.resultStatuses.includes(item.id),
-                        )}
-                        onChange={({ selectedItems }) =>
-                          update({
-                            resultStatuses: selectedItems.map(
-                              (item) => item.id,
-                            ),
-                          })
-                        }
-                      />
-                    </Column>
+                    {supportsFilter("labSectionIds") && (
+                      <Column lg={8} md={4} sm={4}>
+                        <MultiSelect
+                          id="reporting-sections"
+                          titleText={t("reporting.labSections")}
+                          label={t("reporting.allAccessibleSections")}
+                          items={catalog.data.labSections}
+                          itemToString={(item) => item?.label || ""}
+                          selectedItems={catalog.data.labSections.filter(
+                            (item) => draft.labSectionIds.includes(item.id),
+                          )}
+                          onChange={({ selectedItems }) =>
+                            update({
+                              labSectionIds: selectedItems.map(
+                                (item) => item.id,
+                              ),
+                            })
+                          }
+                        />
+                      </Column>
+                    )}
+                    {supportsFilter("testIds") && (
+                      <Column lg={8} md={4} sm={4}>
+                        <MultiSelect
+                          id="reporting-tests"
+                          titleText={t("reporting.tests")}
+                          label={t("reporting.allTests")}
+                          items={catalog.data.tests}
+                          itemToString={(item) => item?.label || ""}
+                          selectedItems={catalog.data.tests.filter((item) =>
+                            draft.testIds.includes(item.id),
+                          )}
+                          onChange={({ selectedItems }) =>
+                            update({
+                              testIds: selectedItems.map((item) => item.id),
+                            })
+                          }
+                        />
+                      </Column>
+                    )}
+                    {supportsFilter("resultStatuses") && (
+                      <Column lg={8} md={4} sm={4}>
+                        <MultiSelect
+                          id="reporting-statuses"
+                          titleText={t("reporting.resultStatuses")}
+                          label={t("reporting.finalized")}
+                          items={catalog.data.statuses}
+                          itemToString={(item) => item?.label || ""}
+                          selectedItems={catalog.data.statuses.filter((item) =>
+                            draft.resultStatuses.includes(item.id),
+                          )}
+                          onChange={({ selectedItems }) =>
+                            update({
+                              resultStatuses: selectedItems.map(
+                                (item) => item.id,
+                              ),
+                            })
+                          }
+                        />
+                      </Column>
+                    )}
                   </Grid>
                   <p className="reporting-help">
                     {t("reporting.periodHelp", {
@@ -811,14 +846,22 @@ function ReportingBuilder({ owner }) {
                   <dl>
                     <dt>{t("reporting.labSections")}</dt>
                     <dd>
-                      {lookup(catalog.data.labSections, draft.labSectionIds)}
+                      {lookup(
+                        catalog.data.labSections,
+                        effectiveFilters.labSectionIds,
+                      )}
                     </dd>
                     <dt>{t("reporting.tests")}</dt>
-                    <dd>{lookup(catalog.data.tests, draft.testIds)}</dd>
+                    <dd>
+                      {lookup(catalog.data.tests, effectiveFilters.testIds)}
+                    </dd>
                     <dt>{t("reporting.resultStatuses")}</dt>
                     <dd>
-                      {draft.resultStatuses.length
-                        ? lookup(catalog.data.statuses, draft.resultStatuses)
+                      {effectiveFilters.resultStatuses.length
+                        ? lookup(
+                            catalog.data.statuses,
+                            effectiveFilters.resultStatuses,
+                          )
                         : t("reporting.finalized")}
                     </dd>
                   </dl>
@@ -862,7 +905,11 @@ function ReportingBuilder({ owner }) {
                     <>
                       <Button
                         kind="tertiary"
-                        disabled={!selected.length || stale.length > 0 || updateSaved.isLoading}
+                        disabled={
+                          !selected.length ||
+                          stale.length > 0 ||
+                          updateSaved.isLoading
+                        }
                         onClick={() => setUpdateOpen(true)}
                       >
                         {t("reporting.saved.update")}
@@ -870,7 +917,11 @@ function ReportingBuilder({ owner }) {
                       <Button
                         kind="ghost"
                         onClick={() => {
-                          setSaveName(t("reporting.saved.copyName", { name: draft.savedReport.name }));
+                          setSaveName(
+                            t("reporting.saved.copyName", {
+                              name: draft.savedReport.name,
+                            }),
+                          );
                           setSaveOpen(true);
                         }}
                       >
@@ -962,7 +1013,9 @@ function ReportingBuilder({ owner }) {
         onRequestSubmit={updateCurrent}
         onRequestClose={() => setUpdateOpen(false)}
       >
-        <p>{t("reporting.saved.updateHelp", { name: draft.savedReport?.name })}</p>
+        <p>
+          {t("reporting.saved.updateHelp", { name: draft.savedReport?.name })}
+        </p>
       </Modal>
       <Modal
         danger
@@ -985,7 +1038,9 @@ function ReportingBuilder({ owner }) {
             hideCloseButton
           />
         )}
-        <p>{t("reporting.saved.deleteHelp", { name: deleteCandidate?.name })}</p>
+        <p>
+          {t("reporting.saved.deleteHelp", { name: deleteCandidate?.name })}
+        </p>
       </Modal>
     </main>
   );

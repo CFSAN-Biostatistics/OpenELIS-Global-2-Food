@@ -76,6 +76,8 @@
   "reporting.definition.unavailable": "This report type is no longer available.",
   "reporting.tests.stale": "Some selected tests are no longer available. Review your test selection.",
   "reporting.status.invalid": "Choose an available result status.",
+  "reporting.filters.unsupported": "Some requested filters are unavailable for this report. Review the current report options.",
+  "reporting.filters.unavailable": "Some previous filters are unavailable for this report. Review the current filters before generating.",
   "reporting.job.generationFailed": "The CSV could not be generated. Your report request has been retained.",
   "reporting.job.expired": "This file has expired. Run the report again with a new reporting period.",
   "reporting.job.notReady": "This report is not ready to download yet.",

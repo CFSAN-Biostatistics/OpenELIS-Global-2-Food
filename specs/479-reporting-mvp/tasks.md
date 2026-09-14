@@ -3,7 +3,7 @@
 **Inputs**: [spec.md](spec.md), [plan.md](plan.md),
 [data-model.md](data-model.md), [contract](contracts/export-api.md),
 [acceptance plan](quickstart.md), [UAT contract](uat.md).
-**Status**: M1 implementation in progress. T001–T003, T005 and T007 are
+**Status**: M1 implementation in progress. T001–T003, T005, T007 and T009 are
 complete; other tasks remain open until their full acceptance conditions pass. See
 [execution.md](execution.md) for current evidence and the subsequently authorized
 Catalyst deployment tasks.
@@ -60,7 +60,7 @@ completes the other mock source definitions and operational qualification.
       `src/main/java/org/openelisglobal/reports/dataexport/valueholder/` and
       `dao/`, with registered Liquibase migration and rollback under
       `src/main/resources/liquibase/3.6.x.x/`, making T004 pass.
-- [ ] T009 [US1] Implement validated report-source configuration and the common
+- [x] T009 [US1] Implement validated report-source configuration and the common
       catalog under
       `src/main/java/org/openelisglobal/reports/dataexport/service/` using
       current configuration-loading conventions; load instance tests/components
@@ -68,8 +68,10 @@ completes the other mock source definitions and operational qualification.
       or report-specific frontend list.
       The existing initializer now loads versioned `reporting-sources/*.json`
       into `CSV_SOURCE` definitions. Explicit defaults, dynamic group expansion
-      and invalid-update preservation pass database tests. Full source/catalog
-      qualification remains open with the rest of M1.
+      and invalid-update preservation pass database tests. Iteration 8 verifies
+      filter subsets in the builder, review, save and request paths, including
+      real output after switching reports. Broader field and access-negative
+      qualification remains in T016.
 - [ ] T010 [US1] Implement the Sample & Testing source mapping and bounded
       parameterized queries under
       `src/main/java/org/openelisglobal/reports/dataexport/dao/` and `service/`,

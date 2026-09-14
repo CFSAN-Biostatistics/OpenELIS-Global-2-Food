@@ -246,6 +246,62 @@ test("an empty period produces a header-only download and an explicit zero-row r
   expect(records).toEqual([]);
 });
 
+test("switching to a report without optional filters cannot retain a hidden test restriction", async ({
+  page,
+}) => {
+  await openBuilder(page);
+  const response = await page.request.get(
+    "/api/OpenELIS-Global/rest/reports/data-export/variables?reportType=SAMPLE_TESTING&layout=SPREADSHEET",
+  );
+  expect(response.status()).toBe(200);
+  const catalog = await response.json();
+  // Any other configured test excludes this fixture's Viral Load records.
+  const excluded = catalog.tests.find(
+    (item: { label: string }) => item.label !== "Viral Load",
+  );
+  expect(excluded).toBeTruthy();
+  const tests = page.getByRole("combobox", { name: /^Tests/ });
+  await tests.click();
+  await page.getByRole("option", { name: excluded.label, exact: true }).click();
+  await tests.press("Escape");
+  await page.getByRole("combobox", { name: "Report type" }).click();
+  await page
+    .getByRole("option", { name: "Finalized sample summary", exact: true })
+    .click();
+  await expect(
+    page.getByRole("combobox", { name: /^Lab sections/ }),
+  ).toHaveCount(0);
+  await expect(page.getByRole("combobox", { name: /^Tests/ })).toHaveCount(0);
+  await expect(
+    page.getByRole("combobox", { name: /^Result statuses/ }),
+  ).toHaveCount(0);
+  await expect(
+    page.getByText(
+      "Some previous filters are unavailable for this report. Review the current filters before generating.",
+      { exact: true },
+    ),
+  ).toBeVisible();
+  await page
+    .locator("label")
+    .filter({ hasText: /^Viral Load$/ })
+    .click();
+  const { headers, records } = await downloadReport(page, 2);
+  expect(headers).toEqual(["Specimen ID", "Accession Number", "Viral Load"]);
+  expect(records.map((row) => row.slice(1))).toEqual([
+    [accession, "450"],
+    [accession, "450"],
+  ]);
+  await page.getByRole("button", { name: "Edit report", exact: true }).click();
+  await page.getByRole("combobox", { name: "Report type" }).click();
+  await page
+    .getByRole("option", { name: "Sample & Testing", exact: true })
+    .click();
+  await tests.click();
+  await expect(
+    page.getByRole("option", { name: excluded.label, exact: true }),
+  ).toHaveAttribute("aria-selected", "true");
+});
+
 test("Reports entry explains invalid periods and restores a reviewed draft after navigation", async ({
   page,
 }, testInfo) => {

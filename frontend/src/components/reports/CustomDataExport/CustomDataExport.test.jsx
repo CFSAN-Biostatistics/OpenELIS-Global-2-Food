@@ -20,9 +20,10 @@ const source = {
   label: "Sample & Testing",
   layouts: ["SPREADSHEET", "RESULT_LIST"],
 };
+let configuredFilters;
 const field = (id, label, group = "sample") => ({ id, label, group });
 const catalog = (layout) => ({
-  definition: source,
+  definition: { ...source, filters: configuredFilters },
   variables: [
     field("accessionNumber", "Accession Number"),
     field("test:1", "Hemoglobin", "tests"),
@@ -54,6 +55,7 @@ const json = (body, status = 200) => ({
 });
 
 beforeEach(() => {
+  configuredFilters = ["labSectionIds", "testIds", "resultStatuses"];
   clearReportingDraft();
   requests = [];
   failSubmission = false;
@@ -72,7 +74,10 @@ beforeEach(() => {
             url.includes("layout=RESULT_LIST") ? "RESULT_LIST" : "SPREADSHEET",
           ),
         );
-      if (url.includes("/saved-configs") && (!options.method || options.method === "GET"))
+      if (
+        url.includes("/saved-configs") &&
+        (!options.method || options.method === "GET")
+      )
         return json({ reports: savedReports, hasMore: false, page: 0 });
       if (url.includes("/saved-configs") && options.method === "POST") {
         const body = JSON.parse(options.body);
@@ -93,12 +98,18 @@ beforeEach(() => {
         savedMutations.push(body);
         if (failSavedUpdate)
           return json({ code: "reporting.saved.changed" }, 409);
-        const updated = { ...savedReports[0], ...body, version: "next-version" };
+        const updated = {
+          ...savedReports[0],
+          ...body,
+          version: "next-version",
+        };
         savedReports[0] = updated;
         return json(updated);
       }
       if (url.includes("/saved-configs/") && options.method === "DELETE") {
-        const id = decodeURIComponent(url.split("/saved-configs/")[1].split("?")[0]);
+        const id = decodeURIComponent(
+          url.split("/saved-configs/")[1].split("?")[0],
+        );
         deletedSaved.push(id);
         savedReports = savedReports.filter((saved) => saved.id !== id);
         return json({}, 204);
@@ -272,7 +283,9 @@ test("a shared report saves choices without dates and reopening requires fresh d
     target: { value: "Monthly hematology" },
   });
   fireEvent.click(screen.getByRole("button", { name: "Save shared report" }));
-  expect(await screen.findByText("Saved as Monthly hematology.")).toBeInTheDocument();
+  expect(
+    await screen.findByText("Saved as Monthly hematology."),
+  ).toBeInTheDocument();
   expect(savedMutations[0].definition.selectedVariables).toEqual([
     "accessionNumber",
     "test:1",
@@ -288,7 +301,9 @@ test("a shared report saves choices without dates and reopening requires fresh d
   fireEvent.click(within(card).getByRole("button", { name: "Open" }));
   expect(await screen.findByLabelText("Date from")).toHaveValue("");
   expect(screen.getByLabelText("Date to")).toHaveValue("");
-  expect(screen.getByText("Choose fresh dates before running this saved report.")).toBeInTheDocument();
+  expect(
+    screen.getByText("Choose fresh dates before running this saved report."),
+  ).toBeInTheDocument();
   expect(
     screen.getByRole("columnheader", { name: "White Cell Count" }),
   ).toBeInTheDocument();
@@ -306,18 +321,98 @@ test("a stale shared-report update keeps the draft and explains the conflict", a
       reportType: "SAMPLE_TESTING",
       layout: "SPREADSHEET",
       selectedVariables: ["accessionNumber", "test:1"],
-      filters: { labSectionIds: [], testIds: [], resultStatuses: ["FINALIZED"] },
+      filters: {
+        labSectionIds: [],
+        testIds: [],
+        resultStatuses: ["FINALIZED"],
+      },
     },
   });
   failSavedUpdate = true;
   open();
-  fireEvent.click(await screen.findByRole("button", { name: "Shared reports" }));
-  const card = await screen.findByRole("article", { name: "Monthly hematology" });
+  fireEvent.click(
+    await screen.findByRole("button", { name: "Shared reports" }),
+  );
+  const card = await screen.findByRole("article", {
+    name: "Monthly hematology",
+  });
   fireEvent.click(within(card).getByRole("button", { name: "Open" }));
-  fireEvent.click(await screen.findByRole("button", { name: "Update shared report" }));
+  fireEvent.click(
+    await screen.findByRole("button", { name: "Update shared report" }),
+  );
   fireEvent.click(screen.getByRole("button", { name: "Update" }));
-  expect(await screen.findByText(messages["reporting.saved.changed"])).toBeInTheDocument();
-  expect(screen.getByRole("columnheader", { name: "Hemoglobin" })).toBeInTheDocument();
+  expect(
+    await screen.findByText(messages["reporting.saved.changed"]),
+  ).toBeInTheDocument();
+  expect(
+    screen.getByRole("columnheader", { name: "Hemoglobin" }),
+  ).toBeInTheDocument();
+});
+
+test("configured filters exclude unsupported restored choices from review, save, and generation", async () => {
+  configuredFilters = ["labSectionIds"];
+  savedReports.push({
+    id: "saved-1",
+    name: "Monthly hematology",
+    version: "v1",
+    definition: {
+      schemaVersion: 1,
+      reportType: "SAMPLE_TESTING",
+      layout: "SPREADSHEET",
+      selectedVariables: ["accessionNumber", "test:1"],
+      filters: {
+        labSectionIds: ["1"],
+        testIds: ["2"],
+        resultStatuses: ["CANCELED"],
+      },
+    },
+  });
+  open();
+  fireEvent.click(
+    await screen.findByRole("button", { name: "Shared reports" }),
+  );
+  const card = await screen.findByRole("article", {
+    name: "Monthly hematology",
+  });
+  fireEvent.click(within(card).getByRole("button", { name: "Open" }));
+  await period();
+  expect(
+    screen.getByRole("combobox", { name: /^Lab sections/ }),
+  ).toBeInTheDocument();
+  expect(
+    screen.queryByRole("combobox", { name: /^Tests/ }),
+  ).not.toBeInTheDocument();
+  expect(
+    screen.queryByRole("combobox", { name: /^Result statuses/ }),
+  ).not.toBeInTheDocument();
+  expect(
+    screen.getByText(
+      "Some previous filters are unavailable for this report. Review the current filters before generating.",
+    ),
+  ).toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "Update shared report" }));
+  fireEvent.click(screen.getByRole("button", { name: "Update" }));
+  await screen.findByText("Updated Monthly hematology.");
+  expect(savedMutations.at(-1).definition.filters).toEqual({
+    labSectionIds: ["1"],
+    testIds: [],
+    resultStatuses: [],
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Review report" }));
+  expect(
+    screen.getByText("Hematology", { selector: "dd" }),
+  ).toBeInTheDocument();
+  expect(screen.getByText("All", { selector: "dd" })).toBeInTheDocument();
+  expect(screen.getByText("Finalized", { selector: "dd" })).toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "Generate CSV" }));
+  await screen.findByRole("link", { name: "Download CSV" });
+  expect(requests[0].filterSpec).toEqual({
+    dateFrom: "2026-08-01",
+    dateTo: "2026-08-31",
+    labSectionIds: ["1"],
+    testIds: [],
+    resultStatuses: [],
+  });
 });
 
 test("a shared report can be copied and deleted without changing generated jobs", async () => {
@@ -332,21 +427,33 @@ test("a shared report can be copied and deleted without changing generated jobs"
       reportType: "SAMPLE_TESTING",
       layout: "SPREADSHEET",
       selectedVariables: ["accessionNumber", "test:1"],
-      filters: { labSectionIds: [], testIds: [], resultStatuses: ["FINALIZED"] },
+      filters: {
+        labSectionIds: [],
+        testIds: [],
+        resultStatuses: ["FINALIZED"],
+      },
     },
   });
   open();
-  fireEvent.click(await screen.findByRole("button", { name: "Shared reports" }));
+  fireEvent.click(
+    await screen.findByRole("button", { name: "Shared reports" }),
+  );
   let card = await screen.findByRole("article", { name: "Monthly hematology" });
   fireEvent.click(within(card).getByRole("button", { name: "Save a copy" }));
-  expect(screen.getByLabelText("Report name")).toHaveValue("Copy of Monthly hematology");
+  expect(screen.getByLabelText("Report name")).toHaveValue(
+    "Copy of Monthly hematology",
+  );
   fireEvent.click(screen.getByRole("button", { name: "Save shared report" }));
-  expect(await screen.findByText("Saved as Copy of Monthly hematology.")).toBeInTheDocument();
+  expect(
+    await screen.findByText("Saved as Copy of Monthly hematology."),
+  ).toBeInTheDocument();
   expect(savedMutations.at(-1).expectedVersion).toBeUndefined();
 
   fireEvent.click(screen.getByRole("button", { name: "Shared reports" }));
   card = await screen.findByRole("article", { name: "Monthly hematology" });
-  fireEvent.click(within(card).getByRole("button", { name: /Delete shared report/ }));
+  fireEvent.click(
+    within(card).getByRole("button", { name: /Delete shared report/ }),
+  );
   fireEvent.click(screen.getByRole("button", { name: /Delete$/ }));
   await vi.waitFor(() => expect(deletedSaved).toEqual(["saved-1"]));
   expect(requests).toHaveLength(0);
