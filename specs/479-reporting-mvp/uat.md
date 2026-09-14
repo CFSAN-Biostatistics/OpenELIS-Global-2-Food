@@ -168,6 +168,12 @@ turnaround in the same exported report.
 
 ## RPT-S06 — Navigate and Configure Reports Without Losing Work
 
+Publication status on September 14: RPT-501 through RPT-503 remain live. RPT-504
+below is prepared and its application workflow passes publicly at `22e3a66b6175`,
+but the Grist authoring connection timed out. Keep the existing 17 live steps
+unchanged until this addition is applied; see `execution.md` for the separate
+review-picker recheck.
+
 **User story**: As a report user, I can find routine workflows in a clear sidebar and move between a report and its queue without losing my draft. Sign in as admin using the supplied demo login and start from Home. The report steps change your browser draft. The final administration step changes one menu icon and restores its original value; it does not edit laboratory records. Check the sidebar, reporting address, retained draft, keyboard navigation and phone layout against the linked mock. Other reports and More tools intentionally retain older destinations.
 
 1. `RPT-501` required — Start at Home in a desktop-width browser. Inspect Main Menu, Patient & Orders, Reports and Administration in the sidebar. Open Reports, then Other reports; close Other reports again. Open More tools and locate Alerts, then close More tools. Under Reports choose Custom Data Export.

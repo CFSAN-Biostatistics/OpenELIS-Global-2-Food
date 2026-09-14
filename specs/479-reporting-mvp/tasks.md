@@ -3,15 +3,17 @@
 **Inputs**: [spec.md](spec.md), [plan.md](plan.md),
 [data-model.md](data-model.md), [contract](contracts/export-api.md),
 [acceptance plan](quickstart.md), [UAT contract](uat.md).
-**Status**: Sample & Testing, queue recovery and configured navigation are
-publicly testable at frontend/backend/instance configuration `65f96697e428`.
-Nine distinct public workflows pass; the initial post-startup spreadsheet test
-timeout and successful unchanged repeat are recorded in [execution.md](execution.md).
-Runtime configuration `7780ee2cd9` removes duplicate application startup. The
-live UAT checklist has six stories and 17 steps. Section/icon metadata currently
-comes from JSON in that public release. Database persistence and administration
-now pass local checks in T039/T040; publication and remaining runtime qualification
-are tracked by T041.
+**Status**: Sample & Testing, queue recovery and configurable navigation are
+publicly testable at frontend/backend/instance configuration `22e3a66b6175`.
+Database section/icon editing and instance override protection are deployed.
+All 10 public browser checks pass, including eight application workflows and
+actual CSV downloads. Local restart/two-profile qualification passes with the
+original values restored. Runtime configuration `7780ee2cd9` retains one
+application context. T041 remains open for RPT-504 publication and review-picker
+rechecking: authoring SSH timed out and the in-app review refresh did not settle.
+The current live checklist still has six stories and 17 steps. The exact
+application revision passes frontend/backend/translation CI; human acceptance
+remains pending.
 See the current receipt and remaining qualification in `execution.md`.
 T027 now passes against the disposable local stack: both 50,000-result layouts,
 bounded fetches, one worker, the five-job limit, ordinary reads and desktop/phone
@@ -293,6 +295,10 @@ reporting scope while completing the navigation contract in `plan.md`.
       exercise route/history/draft behavior, and publish the working increment
       through T032–T038. Record database/editor support separately from the
       already published JSON presentation support.
+      Application publication, all 10 public browser checks and actual local
+      restart/two-profile/default-restoration checks now pass at `22e3a66b6175`.
+      Only RPT-504 authoring and the current review-picker recheck remain open;
+      see the concrete connection/browser evidence in `execution.md`.
 
 ## Dependencies
 

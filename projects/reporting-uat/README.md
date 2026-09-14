@@ -59,6 +59,18 @@ the configured icon. The editor explains that distinction. The instance profile
 continues to own this deployment's sections, hierarchy and destinations.
 Publication of this increment is recorded separately in `execution.md`.
 
+For persistence/profile qualification on the disposable local stack, save an
+existing database menu's icon and `presentationStyle` through the administrative
+API, preserving its original values. Restart the same application container with
+the database retained, then sign in again and verify both values. Apply a second
+profile that explicitly overrides those fields and rebuild the menu cache with
+an empty administrative save. Verify its effective values and configuration
+provenance. Save that effective entry, remove the two overrides, rebuild again
+and confirm that the original saved database values return. Finally restore the
+initial values and exact profile bytes. No frontend change or rebuild is needed.
+The September 14 run passed every step with the same application/database
+containers; its receipt is recorded in `execution.md`.
+
 The profile follows the pinned openelis-work mock: Main Menu, Patient & Orders,
 Reports and Administration, with Carbon icons inheriting the active OpenELIS
 theme. Routine report destinations are direct entries. Other reports and More

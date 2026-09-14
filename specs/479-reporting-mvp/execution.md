@@ -5,7 +5,7 @@ usable stage to Reporting UAT. Both milestones remain in scope. The canonical
 mock defines the interface; MVP scope determines which functions are connected.
 Public availability, automated qualification and human acceptance are separate.
 
-## Local Candidate — Database Menu Presentation, 2026-09-14
+## Current Public Stage — Database Menu Presentation, 2026-09-14
 
 The navigation follow-through now persists optional section/icon metadata in the
 existing menu table and edits it through Global Menu Configuration. Server-owned
@@ -31,16 +31,64 @@ accordion styles leaking into this page. The grid now uses explicit Carbon
 breakpoints, the old styles are scoped to order entry, and the corrected editor
 uses 342 of the 390 phone pixels. The affected browser check passes again.
 
-Reporting spreadsheet CSV, column interactions, configured sidebar/history and
-admin typography pass locally with desktop/narrow captures compared directly
-with the pinned mock. The candidate is not yet the public deployment below.
-T041 still requires publication and broader restart/two-profile runtime evidence.
+The [public application](https://reporting.catalyst.openelis-global.org/reports/custom-data-export)
+now serves frontend/backend/instance configuration
+`22e3a66b6175f793103fe9c729ff4e02339dc7de`, deployment
+`20260914T165120Z-22e3a66b6175`. Its
+[live identity](https://reporting.catalyst.openelis-global.org/__review/target.json)
+records the exact revision and verification. The database, report volume and
+persistent logs were retained, with a pre-migration database backup and previous
+artifacts/compose/identity preserved. All 209 artifact hashes were verified;
+served HTML/assets match. Migration `479-005-menu-presentation` completed once.
+The application became ready about 484 seconds after its single replacement;
+one application context is active and the duplicate API context returns 404.
+
+All 10 public browser checks passed in 2.5 minutes: login, pinned-mock capture
+and eight application workflows. They cover spreadsheet repeats, detailed result
+identities, per-test turnaround, shared report create/use/update/copy/delete,
+desktop/phone column interactions, sidebar/history/query context and retained
+drafts, administration typography, and menu icon save/reload/restore with
+instance-controlled fields. Actual CSV contents were checked. Desktop and phone
+captures were directly inspected against the pinned mock at widths 1280 and 390;
+the native OpenELIS theme, real configured catalog, two-layout controls and
+unconnected source labels retain the previously recorded functional differences.
+The menu editor fits both widths without overlap. Seventy component checks,
+required formatting and application builds also pass for this increment.
+
+Actual local restart/two-profile qualification now passes. The Alerts menu's
+saved `patient` icon and `section` presentation survived restarting application
+`6d7d3d387b8b` with database `f4572a3f704c` retained. A second profile changed its
+effective icon to `reports` and presentation to a menu item. Saving the overlaid
+entry did not change the database defaults; removing those two overrides
+restored `patient`/`section`. The original menu values and exact profile bytes
+were restored afterward, with no frontend changes. Receipt:
+`/private/tmp/reporting-menu-profile-qualification/verification.json`.
+
+T041 remains open only for the review-tooling follow-through. RPT-504 is prepared
+but not published: direct authoring SSH and a relay through the deployment host
+both timed out. No Grist rows or human answers were changed. The public checklist
+and same-origin catalog still provide six stories and 17 steps at revision
+`14333b9e6281374aac57eeb38177a7fca0bba1ff340f380457261af19e3b3481`.
+The review panel shows the new application revision, but its refresh did not
+settle in the in-app browser and the story picker needs rechecking. The exact
+same-origin checklist/catalog endpoints returned HTTP 200 in under 0.3 seconds;
+that browser behavior is not evidence of a server-side checklist outage.
+Do not claim RPT-504 or the current picker check complete. The exact application
+revision passes frontend, backend and translation CI. Human acceptance remains
+pending.
+
 Logs and screenshots: `/private/tmp/reporting-menu-final-backend.log`,
 `/private/tmp/reporting-menu-responsive-browser/`,
-`/private/tmp/reporting-menu-local-parity/`. RPT-504 has a prepared UAT step for
-menu save/reload/restore; apply it to Grist with the usable public increment.
+`/private/tmp/reporting-menu-local-parity/`,
+`/private/tmp/reporting-menu-public-browser/`,
+`/private/tmp/reporting-menu-public-deployment.log`. The server retains deployment
+and public-verification receipts under `releases/22e3a66b6175f793103fe9c729ff4e02339dc7de`.
+The manifest SHA-256 is
+`7be02c33a7805fe03a058e9bd081d12c6b6b0546a6f60a542474ed9f51e79b0c`.
+The menu profile remains
+`35c3995db966ef8c1d4897b430cb317b33cb2021422ac16d8a61dfb08302e93e`.
 
-## Current Public Stage — Configured Navigation and Audit, 2026-09-14
+## Previous Public Stage — Configured Navigation and Audit, 2026-09-14
 
 The published stage consolidates the sidebar renderer and its shared Carbon
 typography, removing 535 lines of conflicting old sidebar rules. The Reporting
