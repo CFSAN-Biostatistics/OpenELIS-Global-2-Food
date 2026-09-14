@@ -7,8 +7,10 @@
 complete; other tasks remain open until their full acceptance conditions pass. See
 [execution.md](execution.md) for current evidence and the subsequently authorized
 Catalyst deployment tasks. The Sample & Testing stage is publicly testable;
-T032, T033 and T035–T038 are complete for application `ebc6983898` and repeat
-for each later usable stage. T034 remains partial until the remaining workflow
+T032, T033 and T035–T038 are complete for frontend `1f2093054e` with retained
+backend `ebc6983898`, and repeat for each later usable stage. The current public
+receipt includes ten reporting workflows and five UAT stories with 12 steps.
+T034 remains partial until the remaining workflow
 fixtures are available. Public availability does not close M1 or M2 qualification.
 
 Use one engine and configured source definitions. Complete useful functionality

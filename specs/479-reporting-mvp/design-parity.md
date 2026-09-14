@@ -83,7 +83,7 @@ ambiguity and does not require another approval to port.
       and explicitly configured useful defaults without hardcoded field counts.
 - [x] Replace checkbox-shaped test assumptions with assertions for the mock's
       actual interactions, preserving all existing record/CSV correctness checks.
-- [ ] Perform direct desktop/narrow comparison, publish the corrected stage and
+- [x] Perform direct desktop/narrow comparison, publish the corrected stage and
       verify the same interactions and downloaded CSVs on public UAT.
 
 These are repairs to M1 (T006, T014–T017), not a new feature or separate redesign.
@@ -107,5 +107,9 @@ fictional rows or permission simulation is represented as current capability.
 Browser checks exercise pointer and keyboard ordering, retained focus, search
 fold restoration, both mobile panes, navigation and zero horizontal page
 overflow. Automated accessibility checks cover the connected reporting screens.
-The final stage still needs public verification; check off deployment only after
-the published frontend and actual downloaded CSVs are verified.
+The public frontend at `1f2093054e574fec8344443b75530cc7a687e58a` passed the same
+responsive/keyboard/accessibility workflow and actual CSV download checks.
+Deployment `20260914T084139Z-1f2093054e57` retains backend `ebc6983898`.
+The live checklist now includes RPT-005 for narrow layout, ordering and retained
+navigation, and every story links to the pinned mock. See `execution.md` for the
+separate deployed-stage evidence and remaining functional/human acceptance gaps.

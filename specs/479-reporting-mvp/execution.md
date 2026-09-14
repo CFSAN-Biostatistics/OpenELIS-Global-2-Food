@@ -6,7 +6,55 @@ The Sample & Testing stage is publicly deployed and testable as of 2026-09-14.
 The full MVP remains in progress. The current deployment receipt below
 supersedes earlier point-in-time deployment observations in this history.
 
-## Frontend Repair — Candidate Qualified, Publication Pending
+## Current Public Stage — Canonical Frontend, 2026-09-14
+
+- Application: [Reporting UAT](https://reporting.catalyst.openelis-global.org/CustomDataExport).
+  Frontend `1f2093054e574fec8344443b75530cc7a687e58a`; retained backend
+  `ebc6983898c833ed40fe43003192c4079e4bab73`.
+- Deployment `20260914T084139Z-1f2093054e57`; review tooling
+  `7356f1d32cfbdea346f200b5f3b2bf05a48610b9`. The public
+  [target identity](https://reporting.catalyst.openelis-global.org/__review/target.json)
+  records both application revisions, frontend-only scope and pending human acceptance.
+- Ten distinct public reporting workflows passed across focused browser runs:
+  both actual CSV layouts, repeated identities, 30/90-minute turnaround,
+  configured sources, empty output, filter switching, native Reports navigation,
+  shared report management, independent downloads by two existing report users,
+  and responsive/keyboard/accessibility behavior. The navigation check also passed
+  with native keyboard entry in both date controls, then Back/Forward and reload.
+  Authentication setup checks are excluded from this ten-workflow count.
+- The two-user test initially stopped in setup because a fresh page had no origin
+  for clearing storage. Establishing the origin with the static manifest fixed
+  setup; the final public rerun passed without the earlier dashboard teardown
+  console errors. CSV and shared-definition expectations were preserved.
+- The live [Grist checklist](https://grist.openelis-global.org/uat/reporting.json)
+  now has five stories and 12 required steps, with zero authoring problems.
+  Revision `0d4c0ae0f5fdff079ff70da4e0c31f33b04991d82eeb15bc6e502079c2439525`.
+  Existing stable keys are preserved; RPT-005 adds narrow-layout and navigation
+  review. Every story links to the pinned canonical mock. The live overlay loaded
+  the new instructions, five-story picker and deployment revision.
+- Publication verified all frontend artifact hashes, served HTML/assets and
+  backend session health. Only the web container changed. Backend/database
+  container identities and persistent data were retained; no reseeding occurred.
+  An initial readiness check raced web startup and rolled back successfully;
+  bounded readiness retries then qualified the published release.
+- Local qualification: 21 component tests, frontend/hook lint, frontend production
+  build, Java 21 packaging and Spotless passed. Backend tests were not rerun for
+  this frontend-only change. Prior backend evidence remains below. Frontend CI
+  and end-to-end CI passed at this revision; backend CI was still running at
+  the latest recorded snapshot and must be reported separately.
+
+Human acceptance remains pending. The in-app agent's date-control interaction
+remained inconclusive; both ordinary Playwright filling and native keyboard entry
+passed with both dates retained. This is not a confirmed product date defect or
+a completed human walkthrough. Referrals, Non-Conformance, queue recovery and
+remaining M1 qualification (including backend coverage) remain open.
+
+The task's `reporting-frontend-repair` artifacts retain public data/experience,
+two-user and keyboard logs, matched mock/application screenshots, target identity,
+deployment receipt and the published checklist. Subsequent test/document-only
+commits do not change the application bytes deployed at `1f2093054e`.
+
+## Frontend Repair — Qualified and Published
 
 The canonical mock is pinned at `5b2df7e34ff5ad1f983f24c0e9e0ba4db5e8697f`.
 The repair restores overview cards, the three-stage builder, collapsed catalogs,
@@ -26,8 +74,8 @@ and independent downloads by two report users were verified against actual CSVs.
 The corrected queue and review were also compared at both widths, including the
 review/save controls below the fold. A local preview against the unchanged public
 backend passed the full-screen accessibility and navigation check plus the pinned
-mock capture (three checks including login). Final public verification follows
-the frontend-only deployment; preview evidence does not establish deployment.
+mock capture (three checks including login). The public verification receipt
+above establishes deployment separately from this preview evidence.
 
 The required clean packaging build invalidated the local server's directly bound
 `target/OpenELIS-Global.war`; two subsequent browser invocations stopped in login
@@ -46,11 +94,10 @@ it. The unchanged hidden-filter and CSV expectations pass on the final test.
 No remaining product failures were observed in these checks. This remains a
 stage qualification, not the full-MVP acceptance or a new exact-head CI result.
 
-Public deployment remains at the receipt below until the frontend-only candidate
-passes verification. Publish only the web artifact, retain the existing backend
-revision, record both revisions, and update the Grist prose to the new flow.
+The frontend-only publication and Grist instruction update are complete at the
+current receipt above; the previous deployment below is retained as history.
 
-## Current Public Stage — 2026-09-14
+## Previous Public Stage — 2026-09-14, Before Frontend Repair
 
 - Application: [Reporting UAT](https://reporting.catalyst.openelis-global.org/CustomDataExport),
   revision `ebc6983898c833ed40fe43003192c4079e4bab73`.

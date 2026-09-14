@@ -12,7 +12,7 @@ withhold the public target until the complete MVP passes.
 
 The deployment receipt in `execution.md` identifies the currently public stage.
 The frontend repair restores the canonical overview and three-stage builder.
-Grist instructions must be updated with that deployment: start at the overview,
+Grist instructions were updated with that deployment: start at the overview,
 choose Sample & Testing, explicitly Add fields, then continue through Set Filters
 and Review & Submit. A new export starts with no selected fields. Existing shared
 reports retain their saved selections. The remaining steps below retain the full
@@ -61,6 +61,12 @@ Sample & Testing report in either layout without losing repeated results.
    through filters with the same period, review, generate and download.
    Expect the same two results once each, with distinct Result IDs and the value
    `450` for both.
+5. `RPT-005` required — Compare the builder directly with the linked canonical
+   mock at desktop and phone widths. Search for a field, clear the search, switch
+   Available/Selected panes and reorder selected fields with the arrows or grip.
+   Open My Report Queue, continue the draft, use browser Back/Forward and reload.
+   Expect the mock's layout and controls, restored group folds, retained field
+   order and dates, no horizontal page overflow and usable keyboard focus.
 
 ## RPT-S02 — Reuse a Shared Report
 

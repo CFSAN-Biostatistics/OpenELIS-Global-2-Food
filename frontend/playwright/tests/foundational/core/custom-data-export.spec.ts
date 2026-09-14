@@ -60,6 +60,8 @@ async function createReportUsers(page: Page, usernames: string[]) {
 async function signInAsReportUser(page: Page, username: string) {
   // A clean browser state proves shared definitions come from the server,
   // rather than the previous user's locally retained draft.
+  // Establish the origin without starting dashboard requests during teardown.
+  await page.goto("/manifest.json");
   await page.evaluate(() => {
     localStorage.clear();
     sessionStorage.clear();
@@ -437,6 +439,18 @@ test("Reports entry explains invalid periods and restores a reviewed draft with 
   await expect(
     page.getByText("Choose a start date.", { exact: true }),
   ).toBeVisible();
+  // Exercise native keyboard entry as well as programmatic fill: committing
+  // either date must preserve the other controlled input.
+  for (const input of [from, to]) {
+    await input.focus();
+    await input.press("ArrowLeft");
+    await input.press("ArrowLeft");
+    await input.press("ArrowLeft");
+    await input.pressSequentially("05052026");
+    await input.press("Tab");
+  }
+  await expect(from).toHaveValue("2026-05-05");
+  await expect(to).toHaveValue("2026-05-05");
   await from.fill("2026-01-01");
   await to.fill("2025-12-31");
   await expect(
