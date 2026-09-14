@@ -1,0 +1,15 @@
+{
+  "id": "SAMPLE_TESTING",
+  "version": 1,
+  "label": "Sample & Testing",
+  "source": "SAMPLE_TESTING",
+  "dateAnchor": "collectionDate",
+  "layouts": ["SPREADSHEET", "RESULT_LIST"],
+  "attributes": ["accessionNumber", "specimenId", "collectionDate", "collectionTime", "receivedDate", "orderDate", "sampleType", "sampleStatus", "priority", "patientName", "dateOfBirth", "sex", "nationalId", "phoneNumber", "address", "resultId", "testName", "component", "loincCode", "resultValue", "resultUnit", "resultStatus", "dateResulted", "validationDate", "labSection"],
+  "catalogs": ["tests", "components"],
+  "filters": ["labSectionIds", "testIds", "resultStatuses"],
+  "defaultColumns": {
+    "SPREADSHEET": ["accessionNumber", "specimenId", "collectionDate", "sampleType"],
+    "RESULT_LIST": ["accessionNumber", "specimenId", "collectionDate", "testName", "component", "resultValue", "resultUnit", "resultStatus"]
+  }
+}

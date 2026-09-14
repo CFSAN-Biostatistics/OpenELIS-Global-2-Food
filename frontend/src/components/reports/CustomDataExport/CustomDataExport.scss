@@ -1,0 +1,87 @@
+@use "@carbon/styles/scss/spacing";
+@use "@carbon/styles/scss/type";
+
+.reporting-builder {
+  padding: spacing.$spacing-06;
+  max-width: 100rem;
+  margin: auto;
+  h1 {
+    @include type.type-style("heading-04");
+  }
+  h2 {
+    @include type.type-style("heading-03");
+    margin-block: spacing.$spacing-05;
+  }
+  h3 {
+    @include type.type-style("heading-02");
+    margin-block: spacing.$spacing-04;
+  }
+  .reporting-title,
+  .reporting-job,
+  .reporting-actions {
+    display: flex;
+    gap: spacing.$spacing-05;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-block: spacing.$spacing-06;
+  }
+  .reporting-controls > div {
+    margin-bottom: spacing.$spacing-05;
+  }
+  .reporting-help {
+    margin-block: spacing.$spacing-04;
+    color: var(--cds-text-secondary);
+  }
+  .reporting-field-list,
+  .reporting-selected {
+    max-height: 32rem;
+    overflow: auto;
+    margin-top: spacing.$spacing-04;
+  }
+  fieldset {
+    border: 0;
+    padding-block: spacing.$spacing-04;
+  }
+  legend {
+    font-weight: 600;
+    padding-block: spacing.$spacing-03;
+  }
+  .reporting-selected {
+    padding: 0;
+    list-style-position: inside;
+  }
+  .reporting-selected li {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--cds-border-subtle);
+    min-height: 3rem;
+    gap: spacing.$spacing-03;
+  }
+  .reporting-selected li > div {
+    display: flex;
+    flex-shrink: 0;
+  }
+  .reporting-preview > div {
+    overflow-x: auto;
+  }
+  th {
+    white-space: nowrap;
+    text-align: left;
+    background: var(--cds-layer);
+    border: 1px solid var(--cds-border-subtle);
+    padding: spacing.$spacing-04;
+  }
+  dl {
+    margin-top: spacing.$spacing-05;
+  }
+  dt {
+    font-weight: 600;
+    margin-top: spacing.$spacing-04;
+  }
+  .reporting-announcement {
+    color: var(--cds-text-secondary);
+    font-size: var(--cds-body-compact-01-font-size);
+  }
+}

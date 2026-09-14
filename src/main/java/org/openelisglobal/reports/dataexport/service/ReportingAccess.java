@@ -1,0 +1,53 @@
+package org.openelisglobal.reports.dataexport.service;
+
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
+import org.openelisglobal.common.constants.Constants;
+import org.openelisglobal.common.util.IdValuePair;
+import org.openelisglobal.systemuser.controller.UnifiedSystemUserController;
+import org.openelisglobal.systemuser.service.SystemUserService;
+import org.openelisglobal.systemuser.service.UserService;
+import org.openelisglobal.userrole.service.UserRoleService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+@Service
+@Transactional(readOnly = true)
+public class ReportingAccess {
+    @Autowired
+    private UserRoleService roles;
+    @Autowired
+    private SystemUserService users;
+    @Autowired
+    private UserService userService;
+
+    public void requireReports(String owner) {
+        var user = users.get(owner);
+        if (!"Y".equals(user.getIsActive())
+                || !roles.userInRole(owner, List.of(Constants.ROLE_GLOBAL_ADMIN, Constants.ROLE_REPORTS))) {
+            throw new ReportingException(403, "reporting.access.denied");
+        }
+    }
+
+    public List<IdValuePair> requestSections(String owner) {
+        requireReports(owner);
+        return userService.getUserTestSections(owner, null);
+    }
+
+    public void requireScope(String owner, List<String> requested) {
+        requireReports(owner);
+        if (requested.isEmpty())
+            throw new ReportingException(403, "reporting.access.noSections");
+        if (roles.userInRole(owner, Constants.ROLE_GLOBAL_ADMIN))
+            return;
+        var mapping = roles.getUserLabUnitRoles(owner);
+        Set<String> allowed = mapping == null ? Set.of()
+                : mapping.getLabUnitRoleMap().stream().filter(m -> !m.getRoles().isEmpty()).map(m -> m.getLabUnit())
+                        .collect(Collectors.toSet());
+        if (!allowed.contains(UnifiedSystemUserController.ALL_LAB_UNITS) && !allowed.containsAll(requested)) {
+            throw new ReportingException(403, "reporting.access.scopeChanged");
+        }
+    }
+}

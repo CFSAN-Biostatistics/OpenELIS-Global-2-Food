@@ -1,0 +1,253 @@
+package org.openelisglobal.reports.dataexport.service;
+
+import java.io.IOException;
+import java.io.Writer;
+import java.sql.Timestamp;
+import java.time.ZoneId;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.NoSuchElementException;
+import java.util.Objects;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import org.openelisglobal.common.services.IStatusService;
+import org.openelisglobal.patient.valueholder.Patient;
+import org.openelisglobal.reports.dataexport.dao.SampleTestingExportDAO;
+import org.openelisglobal.reports.dataexport.form.ExportRecord;
+import org.openelisglobal.reports.dataexport.form.ExportSnapshot;
+import org.openelisglobal.reports.dataexport.form.ReportingVariable;
+import org.openelisglobal.result.valueholder.Result;
+import org.openelisglobal.testresultcomponent.valueholder.TestResultComponent;
+import org.openelisglobal.typeoftestresult.service.TypeOfTestResultServiceImpl.ResultType;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+@Service
+@Transactional(readOnly = true)
+public class SampleTestingSource implements ReportingSource {
+    private static final List<String> BOTH = List.of("SPREADSHEET", "RESULT_LIST");
+    private static final List<String> DETAIL = List.of("RESULT_LIST");
+    @Autowired
+    private SampleTestingExportDAO dao;
+    @Autowired
+    private ReportingCsvWriter csv;
+    @Autowired
+    private IStatusService statuses;
+
+    @Override
+    public String id() {
+        return "SAMPLE_TESTING";
+    }
+
+    @Override
+    public List<ReportingVariable> catalog() {
+        List<ReportingVariable> fields = new ArrayList<>();
+        common(fields, "accessionNumber", "Accession Number", "text", "sample", BOTH);
+        common(fields, "specimenId", "Specimen ID", "text", "sample", BOTH);
+        common(fields, "collectionDate", "Collection Date", "date", "sample", BOTH);
+        common(fields, "collectionTime", "Collection Time", "time", "sample", BOTH);
+        common(fields, "receivedDate", "Received Date", "date", "sample", BOTH);
+        common(fields, "orderDate", "Order Date", "date", "sample", BOTH);
+        common(fields, "sampleType", "Sample Type", "text", "sample", BOTH);
+        common(fields, "sampleStatus", "Sample Status", "text", "sample", BOTH);
+        common(fields, "priority", "Priority", "text", "sample", BOTH);
+        common(fields, "patientName", "Patient Name", "text", "patient", BOTH);
+        common(fields, "dateOfBirth", "Date of Birth", "date", "patient", BOTH);
+        common(fields, "sex", "Sex", "text", "patient", BOTH);
+        common(fields, "nationalId", "National ID", "text", "patient", BOTH);
+        common(fields, "phoneNumber", "Phone Number", "text", "patient", BOTH);
+        common(fields, "address", "Address", "text", "patient", BOTH);
+        common(fields, "resultId", "Result ID", "text", "result", DETAIL);
+        common(fields, "testName", "Test Name", "text", "result", DETAIL);
+        common(fields, "component", "Component", "text", "result", DETAIL);
+        common(fields, "loincCode", "LOINC Code", "text", "result", DETAIL);
+        common(fields, "resultValue", "Result Value", "text", "result", DETAIL);
+        common(fields, "resultUnit", "Result Unit", "text", "result", DETAIL);
+        common(fields, "resultStatus", "Result Status", "text", "result", DETAIL);
+        common(fields, "dateResulted", "Date Resulted", "datetime", "result", DETAIL);
+        common(fields, "validationDate", "Validation Date", "datetime", "result", DETAIL);
+        common(fields, "labSection", "Lab Section", "text", "result", DETAIL);
+        var tests = dao.tests();
+        var names = tests.stream().collect(Collectors.toMap(t -> t.getId(), t -> t.getDescription()));
+        tests.forEach(t -> fields
+                .add(new ReportingVariable("test:" + t.getId(), t.getDescription(), "result", "tests", true, BOTH)));
+        dao.components().stream().filter(c -> names.containsKey(c.getTestId()))
+                .forEach(c -> fields.add(new ReportingVariable("component:" + c.getId(),
+                        names.get(c.getTestId()) + " — " + c.getLabel(), c.getResultType(), "components", true, BOTH)));
+        return fields;
+    }
+
+    private static void common(List<ReportingVariable> fields, String id, String label, String type, String group,
+            List<String> layouts) {
+        fields.add(new ReportingVariable(id, label, type, group, false, layouts));
+    }
+
+    @Override
+    public long write(Writer output, ExportSnapshot request) throws IOException {
+        var components = dao.components().stream()
+                .collect(Collectors.toMap(TestResultComponent::getId, Function.identity()));
+        ZoneId zone = ZoneId.of(request.timezone());
+        try (var stream = dao.stream(request)) {
+            Iterator<Result> input = stream.iterator();
+            Iterator<ExportRecord> records = new Iterator<>() {
+                private Normalized pending;
+                private int count;
+                private String specimenId;
+                private Map<String, String> patientFields = Map.of();
+
+                private Normalized read() {
+                    while (input.hasNext()) {
+                        Result result = input.next();
+                        if (isQualifier(result))
+                            continue;
+                        var specimen = result.getAnalysis().getSampleItem();
+                        if (!Objects.equals(specimenId, specimen.getId())) {
+                            specimenId = specimen.getId();
+                            patientFields = patientFields(dao.patient(specimen.getSample().getId()), zone);
+                        }
+                        Normalized value = normalize(result, request, components, patientFields, zone);
+                        if (++count % 250 == 0)
+                            dao.clearReadBatch();
+                        return value;
+                    }
+                    return null;
+                }
+
+                @Override
+                public boolean hasNext() {
+                    if (pending == null)
+                        pending = read();
+                    return pending != null;
+                }
+
+                @Override
+                public ExportRecord next() {
+                    if (!hasNext())
+                        throw new NoSuchElementException();
+                    Normalized first = pending;
+                    pending = null;
+                    StringBuilder value = new StringBuilder(first.value() == null ? "" : first.value());
+                    if (first.multiKey() != null) {
+                        while ((pending = read()) != null && first.multiKey().equals(pending.multiKey())) {
+                            value.append("; ").append(pending.value() == null ? "" : pending.value());
+                        }
+                    }
+                    Map<String, String> attributes = new LinkedHashMap<>(first.attributes());
+                    attributes.put("resultValue", value.toString());
+                    Map<String, String> measurements = new LinkedHashMap<>();
+                    for (String id : first.measurementIds())
+                        measurements.put(id, value.toString());
+                    return new ExportRecord(first.id(), first.specimen(), null, attributes, measurements);
+                }
+            };
+            return csv.write(output, ReportingCsvWriter.Layout.valueOf(request.layout()),
+                    request.variables().stream().map(ReportingVariable::exportField).toList(), records);
+        }
+    }
+
+    private boolean isQualifier(Result result) {
+        return "A".equals(result.getResultType()) && result.getTestResult() == null && result.getParentResult() != null
+                && ResultType.isDictionaryVariant(result.getParentResult().getResultType());
+    }
+
+    private Normalized normalize(Result r, ExportSnapshot request, Map<String, TestResultComponent> components,
+            Map<String, String> patientFields, ZoneId zone) {
+        var analysis = r.getAnalysis();
+        var specimen = analysis.getSampleItem();
+        var sample = specimen.getSample();
+        var test = analysis.getTest();
+        String componentId = r.getTestResult() == null ? null : r.getTestResult().getComponentId();
+        TestResultComponent component = components.get(componentId);
+        Map<String, String> a = new LinkedHashMap<>(patientFields);
+        a.put("accessionNumber", sample.getAccessionNumber());
+        a.put("specimenId", specimen.getId());
+        a.put("collectionDate", date(specimen.getCollectionDate(), zone));
+        a.put("collectionTime", specimen.getCollectionDate() == null ? null
+                : specimen.getCollectionDate().toInstant().atZone(zone).toLocalTime().toString());
+        a.put("receivedDate", date(specimen.getReceivedDate(), zone));
+        a.put("orderDate", sample.getEnteredDate() == null ? null : sample.getEnteredDate().toLocalDate().toString());
+        a.put("sampleType", specimen.getTypeOfSample() == null ? null : specimen.getTypeOfSample().getDescription());
+        a.put("sampleStatus", statuses.getStatusNameFromId(specimen.getStatusId()));
+        a.put("priority", sample.getPriority() == null ? null : sample.getPriority().toString());
+        a.put("resultId", r.getId());
+        a.put("testName", test.getDescription());
+        a.put("component", component == null ? null : component.getLabel());
+        a.put("loincCode", test.getLoinc());
+        a.put("resultUnit", test.getUnitOfMeasure() == null ? null : test.getUnitOfMeasure().getUnitOfMeasureName());
+        a.put("resultStatus", statuses.getStatusNameFromId(analysis.getStatusId()));
+        a.put("dateResulted", timestamp(analysis.getCompletedDate(), zone));
+        a.put("validationDate", timestamp(analysis.getReleasedDate(), zone));
+        a.put("labSection", analysis.getTestSection() == null ? null : analysis.getTestSection().getTestSectionName());
+        List<String> fields = new ArrayList<>();
+        if (componentId == null || component == null || component.getIsPrimary())
+            fields.add("test:" + test.getId());
+        if (componentId != null)
+            fields.add("component:" + componentId);
+        String value = formatValue(r);
+        String multiKey = ResultType.isMultiSelectVariant(r.getResultType())
+                ? analysis.getId() + ":" + componentId + ":" + r.getGrouping() + ":" + r.getResultType()
+                : null;
+        return new Normalized(r.getId(), specimen.getId(), a, fields, value, multiKey);
+    }
+
+    private String formatValue(Result result) {
+        String value = result.getValue();
+        if (value == null || value.isBlank())
+            return value;
+        if (ResultType.isDictionaryVariant(result.getResultType())) {
+            value = dao.dictionary(value);
+            var qualifiers = dao.qualifiers(result.getId());
+            if (!qualifiers.isEmpty())
+                value += " (" + String.join("; ", qualifiers) + ")";
+        } else if ("N".equals(result.getResultType()) && result.getSignificantDigits() >= 0) {
+            int digits = result.getSignificantDigits();
+            // Match stored reporting precision without rounding or HTML formatting.
+            if (digits == 0)
+                return value.split("\\.")[0];
+            int places = value.contains(".") ? value.length() - value.lastIndexOf('.') - 1 : 0;
+            if (!value.contains("."))
+                value += ".";
+            if (places < digits)
+                value += "0".repeat(digits - places);
+        }
+        return value;
+    }
+
+    private static Map<String, String> patientFields(Patient patient, ZoneId zone) {
+        Map<String, String> fields = new LinkedHashMap<>();
+        if (patient == null)
+            return fields;
+        fields.put("dateOfBirth", date(patient.getBirthDate(), zone));
+        fields.put("sex", patient.getGender());
+        fields.put("nationalId", patient.getNationalId());
+        var person = patient.getPerson();
+        if (person != null) {
+            fields.put("patientName", join(" ", person.getFirstName(), person.getMiddleName(), person.getLastName()));
+            fields.put("phoneNumber", person.getPrimaryPhone());
+            fields.put("address",
+                    join(", ", person.getStreetAddress(), person.getCity(), person.getState(), person.getCountry()));
+        }
+        return fields;
+    }
+
+    private static String join(String separator, String... values) {
+        return java.util.Arrays.stream(values).filter(v -> v != null && !v.isBlank())
+                .collect(Collectors.joining(separator));
+    }
+
+    private static String date(Timestamp value, ZoneId zone) {
+        return value == null ? null : value.toInstant().atZone(zone).toLocalDate().toString();
+    }
+
+    private static String timestamp(Timestamp value, ZoneId zone) {
+        return value == null ? null : value.toInstant().atZone(zone).toOffsetDateTime().toString();
+    }
+
+    private record Normalized(String id, String specimen, Map<String, String> attributes, List<String> measurementIds,
+            String value, String multiKey) {
+    }
+}

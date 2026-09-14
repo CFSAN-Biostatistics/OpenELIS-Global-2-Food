@@ -2,8 +2,9 @@
 
 **Branch**: `spec/479-ogc-479-reporting-mvp`  
 **Date**: 2026-09-13  
-**Status**: Reconciled with the specification and clarification checkpoint;
-application implementation not started  
+**Status**: M1 implementation in progress; full MVP and deployment remain
+pending
+
 **Specification**: [spec.md](spec.md)  
 **Inspected code baseline**: `e57a53399c2134fe3ff58009119cc05906c61e5e`
 
@@ -64,6 +65,13 @@ implementation test results.
 
 No constitution exception, new framework or shared agent-context change is
 needed.
+
+Implementation inspection found existing `ReportDefinition` storage with JSON,
+report type, shared visibility and optimistic versioning. Reuse it for
+configured CSV sources and shared saved definitions under distinct report types,
+retaining the existing patient-report type behavior. Only export jobs need a new
+table. See [execution.md](execution.md) for current implementation and
+deployment evidence.
 
 ## Milestone Plan
 

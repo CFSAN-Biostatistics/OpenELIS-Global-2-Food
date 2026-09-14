@@ -2,7 +2,8 @@
 
 **Feature Branch**: `spec/479-ogc-479-reporting-mvp`  
 **Created**: 2026-09-13  
-**Status**: Draft for implementation review; implementation not started  
+**Status**: Agreed MVP scope; implementation in progress
+
 **Phase checkpoint**: Specification and clarification check-ins completed. The
 accepted direction is recorded below and reconciled with the plan and tasks.  
 **Input**: Deliver the smallest useful configurable CSV reporting workflow

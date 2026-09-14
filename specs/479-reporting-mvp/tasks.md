@@ -3,8 +3,10 @@
 **Inputs**: [spec.md](spec.md), [plan.md](plan.md),
 [data-model.md](data-model.md), [contract](contracts/export-api.md),
 [acceptance plan](quickstart.md).  
-**Status**: Reconciled after clarification. Application implementation has not
-started; implementation tasks intentionally remain unchecked.
+**Status**: M1 implementation in progress. T001, T003, T007 and T011 are
+complete; other tasks remain open until their full acceptance conditions pass. See
+[execution.md](execution.md) for current evidence and the subsequently authorized
+Catalyst deployment tasks.
 
 Use one engine and configured source definitions. Complete useful functionality
 first: instance-aware columns, both layouts, every repeated result and shared
@@ -19,7 +21,7 @@ agents.
 plus basic queue return visits from US4. This is a working first slice; M2
 completes the other mock source definitions and operational qualification.
 
-- [ ] T001 Create `feat/479-ogc-479-reporting-mvp-m1-result-export` in its own
+- [x] T001 Create `feat/479-ogc-479-reporting-mvp-m1-result-export` in its own
       worktree; refresh `develop`, confirm the spec PR exists, and read
       `specs/479-reporting-mvp/` plus current configuration/reporting
       conventions.
@@ -29,7 +31,7 @@ completes the other mock source definitions and operational qualification.
       attributes, corrections, components, dictionary/multi-valued/text values,
       precision and two instance configurations; verify adding/renaming a
       supported configured item without code edits.
-- [ ] T003 [US1] Add failing layout/CSV tests under
+- [x] T003 [US1] Add failing layout/CSV tests under
       `src/test/java/org/openelisglobal/reports/dataexport/` for ordered
       headers/cells, BOM, escaping, nulls, zero rows and both layouts; preserve
       every repeat and compare identity/value multiplicities without
@@ -48,7 +50,7 @@ completes the other mock source definitions and operational qualification.
       configuration-driven fields/filters, defaults, search/order, layout
       switching, retained edits, inline ready download and shared
       save/reopen/copy/update/delete with fresh dates.
-- [ ] T007 [P] [US1] Author real native reporting flows in
+- [x] T007 [P] [US1] Author real native reporting flows in
       `frontend/playwright/tests/foundational/core/custom-data-export.spec.ts`
       using `specs/479-reporting-mvp/quickstart.md`; validate `core-app`
       classification and follow the current Playwright author/audit workflow.
@@ -67,7 +69,7 @@ completes the other mock source definitions and operational qualification.
       `src/main/java/org/openelisglobal/reports/dataexport/dao/` and `service/`,
       making T002 pass; document proven field/date/component mappings in
       `specs/479-reporting-mvp/data-model.md`.
-- [ ] T011 [US1] Implement common spreadsheet and detailed-list formatting under
+- [x] T011 [US1] Implement common spreadsheet and detailed-list formatting under
       `src/main/java/org/openelisglobal/reports/dataexport/service/`, making
       T003 pass; preserve source identities, typed values, repeated results and
       captured labels without extending the legacy Routine CSV writer.
