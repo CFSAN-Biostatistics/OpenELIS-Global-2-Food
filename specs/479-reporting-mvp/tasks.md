@@ -3,7 +3,7 @@
 **Inputs**: [spec.md](spec.md), [plan.md](plan.md),
 [data-model.md](data-model.md), [contract](contracts/export-api.md),
 [acceptance plan](quickstart.md), [UAT contract](uat.md).
-**Status**: M1 implementation in progress. T001–T003, T005, T007 and T009 are
+**Status**: M1 implementation in progress. T001–T003, T005, T007, T009 and T011 are
 complete; other tasks remain open until their full acceptance conditions pass. See
 [execution.md](execution.md) for current evidence and the subsequently authorized
 Catalyst deployment tasks.
@@ -77,13 +77,13 @@ completes the other mock source definitions and operational qualification.
       `src/main/java/org/openelisglobal/reports/dataexport/dao/` and `service/`,
       making T002 pass; document proven field/date/component mappings in
       `specs/479-reporting-mvp/data-model.md`.
-- [ ] T011 [US1] Implement common spreadsheet and detailed-list formatting under
+- [x] T011 [US1] Implement common spreadsheet and detailed-list formatting under
       `src/main/java/org/openelisglobal/reports/dataexport/service/`, making
       T003 pass; preserve source identities, typed values, repeated results and
       captured labels without extending the legacy Routine CSV writer.
-      Reopened after source review found that result-dependent turnaround
-      attributes can be copied from the first specimen record; the user's
-      per-test versus overall-sample decision is pending.
+      Iteration 9 resolves the first-record turnaround defect. Real-database
+      comparisons and browser downloads preserve per-test/repeat durations in
+      both layouts, including missing intervals and renamed components.
 - [ ] T012 [US2] Implement submission, bounded worker/atomic claims, private
       file publication, existing-access checks and download under
       `src/main/java/org/openelisglobal/reports/dataexport/service/`; retain
@@ -179,14 +179,15 @@ applications.
       and recovery evidence. State deployment/user-acceptance status separately;
       do not merge or deploy as part of this task.
 
-## UAT Delivery — Deployed, Reviewable MVP
+## Continuous UAT Delivery — Publish Each Usable Stage
 
-**Goal**: Deploy the complete qualified MVP to the Catalyst UAT hostname and
-make its critical workflows executable through the established review overlay.
-This phase establishes readiness for human UAT; it does not manufacture a human
-acceptance result.
+**Goal**: Keep the Catalyst UAT instance aligned with each usable development
+stage. Automated end-to-end checks and human review exercise the same workflows,
+fixtures and expected outcomes. Publish working stages with explicit known gaps;
+do not wait for completion of the whole MVP. Full MVP acceptance remains a
+separate completion criterion. Repeat these delivery tasks for each stage.
 
-- [ ] T032 Reconcile the exact application revisions and required CI, then
+- [ ] T032 Record the exact application revision, current CI and stage scope, then
       create a reproducible deployment candidate for
       `reporting.catalyst.openelis-global.org`. Record current Catalyst capacity,
       existing service ownership, backup and rollback inputs before mutation.
@@ -201,9 +202,10 @@ acceptance result.
 - [ ] T035 Run the focused Playwright acceptance files against the deployed
       target, compare actual downloaded CSVs with the fixture oracle, and verify
       both Sample & Testing layouts, shared reuse, configured source reports and
-      queue/recovery behavior before publishing UAT readiness.
+      available queue behavior. Record failures and uncovered planned capabilities;
+      they do not postpone access to other usable workflows.
 - [ ] T036 Create the `reporting` review in the central Grist document and apply
-      the four stable UAT stories from `uat.md` through the review-tooling
+      the currently executable stages of the four stable UAT stories from `uat.md` through the review-tooling
       authoring path. Read before writing, inspect computed problems and verify
       the public checklist JSON after every change.
 - [ ] T037 Inject the established review overlay into the reporting UAT host;
@@ -212,8 +214,8 @@ acceptance result.
       real submitted/downloaded review report.
 - [ ] T038 Record the deployed URL, exact application/review-tooling revisions,
       checklist revision, automated preflight evidence and remaining human UAT
-      status in `execution.md`. Hand the live target to reviewers only when all
-      required preflight checks pass.
+      status in `execution.md`. Hand each usable stage to reviewers with its
+      actual check results and known limitations; do not wait for the full MVP.
 
 ## Dependencies
 
@@ -226,9 +228,12 @@ graph LR
     U --> V
     V --> M1[M1 PR]
     M1 --> M2[Additional configurations and recovery]
+    M1 --> D[Publish current stage to Catalyst UAT]
+    M2 --> D
+    D --> H[Automated and human review of shared workflows]
+    H --> M1
+    H --> M2
     M2 --> Q[Full MVP qualification and M2 PR]
-    Q --> D[Exact Catalyst UAT deployment]
-    D --> H[Human UAT]
 ```
 
 T006/T007 may proceed alongside backend work after the contract and fixture

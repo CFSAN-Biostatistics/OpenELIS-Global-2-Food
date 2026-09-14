@@ -75,18 +75,21 @@ deployment evidence.
 
 ## Milestone Plan
 
-| ID  | Branch suffix       | Scope                                                                                                                                  | Verification                                                                                             | Depends on    |
-| --- | ------------------- | -------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- | ------------- |
-| M1  | `m1-result-export`  | Common configured engine, Sample & Testing, instance-aware fields, both layouts, shared saved definitions, inline download/basic queue | US1–US3 with real records; repeat preservation; catalog changes without code edits; shared report rerun  | Spec/contract |
-| M2  | `m2-queue-recovery` | Referral/non-conformance source definitions and mappings using the same engine; recovery, retention and qualification                  | All three configured report types; US4; same-engine configuration test; restart and workload checks      | M1            |
-| UAT | exact qualified SHA | Public Catalyst reporting target, stable review fixtures, Grist checklist, review overlay and deployment provenance                    | Live automated preflight plus executable critical-workflow UAT; human results remain separately recorded | M2            |
+| ID  | Branch suffix       | Scope                                                                                                                                  | Verification                                                                                             | Depends on        |
+| --- | ------------------- | -------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- | ----------------- |
+| M1  | `m1-result-export`  | Common configured engine, Sample & Testing, instance-aware fields, both layouts, shared saved definitions, inline download/basic queue | US1–US3 with real records; repeat preservation; catalog changes without code edits; shared report rerun  | Spec/contract     |
+| M2  | `m2-queue-recovery` | Referral/non-conformance source definitions and mappings using the same engine; recovery, retention and qualification                  | All three configured report types; US4; same-engine configuration test; restart and workload checks      | M1                |
+| UAT | exact qualified SHA | Public Catalyst reporting target, stable review fixtures, Grist checklist, review overlay and deployment provenance                    | Live automated preflight plus executable critical-workflow UAT; human results remain separately recorded | Each usable stage |
 
 ```mermaid
 graph LR
     S[Specification and clarification] --> M1[One engine: real Sample and Testing export]
+    M1 --> U[Publish current stage to the shared UAT target]
     M1 --> M2[Additional source definitions and recovery]
-    M2 --> U[Deploy UAT target and review overlay]
-    U --> R[Human MVP review]
+    M2 --> U
+    U --> R[Automated and human review of the same workflows]
+    R --> M1
+    R --> M2
 ```
 
 Create the spec PR first. The constitution allows implementation during spec
@@ -95,6 +98,12 @@ review. Use `feat/479-ogc-479-reporting-mvp-m1-result-export` and
 PR per milestone. If M2 begins before M1 merges, keep its review diff isolated
 from M1. No integration branch is necessary. Merge and deployment are separate
 actions from creating the implementation and its evidence.
+
+Publication is part of each usable implementation stage. The public target must
+reflect ongoing work; do not wait for M2 or the full MVP. Automated end-to-end
+checks and human UAT share workflows, stable fixtures and expected outcomes.
+Record known failures and unfinished capabilities on the current stage while
+retaining the full MVP completion criteria.
 
 This sequence is about proving a useful workflow early, not separate projects or
 a multi-week discovery phase. AI-assisted implementation can accelerate tasks;
@@ -139,6 +148,14 @@ same-event pairings between unrelated repeats. Repeat specimen/sample metadata
 and leave unrelated test cells blank as needed. Row identity must preserve
 separate specimens under one accession. Both layouts reconcile to the same
 result identities and values, although their row counts differ.
+
+Turnaround follows the accepted per-test spreadsheet meaning. Emit the three
+result-dependent intervals with their test/component measurements so the common
+pivot preserves each repeat's times. Expose these optional fields through
+separate `testTurnaround` and `componentTurnaround` catalogs; ordinary test
+defaults therefore remain unchanged. Keep specimen intervals common and generic
+result intervals in the detailed layout. Reject obsolete generic spreadsheet
+interval selections through the existing stale-column handling.
 
 Referral and non-conformance definitions declare their own row/date meanings. Do
 not reinterpret an event's reported date as the event date or assume a catalog

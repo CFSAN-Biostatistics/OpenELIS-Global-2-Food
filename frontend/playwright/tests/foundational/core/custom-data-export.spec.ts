@@ -168,6 +168,55 @@ test("spreadsheet preserves both identical readings in an instance-configured te
   expect(new Set(records.map((row) => row[0])).size).toBe(1);
 });
 
+test("turnaround beside a test preserves each repeated result's own duration", async ({
+  page,
+}) => {
+  await openBuilder(page, "2026-05-06");
+  const duration = "Viral Load — Resulted to Validated (min)";
+  await page.getByText(duration, { exact: true }).click();
+  const preview = page.getByRole("region", { name: "CSV header preview" });
+  const initial = await preview.getByRole("columnheader").allTextContents();
+  // Exercise the user's ordering controls and compare actual downloaded cells.
+  const moves = initial.indexOf(duration) - initial.indexOf("Viral Load") - 1;
+  expect(moves).toBeGreaterThanOrEqual(0);
+  for (let index = 0; index < moves; index++)
+    await page
+      .getByRole("button", { name: `Move ${duration} up`, exact: true })
+      .click();
+  const { headers, records } = await downloadReport(page, 2);
+  const testColumn = headers.indexOf("Viral Load");
+  expect(headers[testColumn + 1]).toBe(duration);
+  expect(
+    records.map((row) => [
+      row[headers.indexOf("Accession Number")],
+      row[testColumn],
+      row[testColumn + 1],
+    ]),
+  ).toEqual([
+    ["REPORTING-MVP-TURNAROUND", "450", "30"],
+    ["REPORTING-MVP-TURNAROUND", "450", "90"],
+  ]);
+  await page.getByRole("button", { name: "Edit report", exact: true }).click();
+  await page.getByRole("combobox", { name: "CSV layout" }).click();
+  await page
+    .getByRole("option", {
+      name: "Detailed list — results in rows",
+      exact: true,
+    })
+    .click();
+  await page.getByText("Resulted to Validated (min)", { exact: true }).click();
+  const detail = await downloadReport(page, 2);
+  expect(
+    detail.records.map((row) => [
+      row[detail.headers.indexOf("Result Value")],
+      row[detail.headers.indexOf("Resulted to Validated (min)")],
+    ]),
+  ).toEqual([
+    ["450", "30"],
+    ["450", "90"],
+  ]);
+});
+
 test("detailed layout exports both result identities and keeps the chosen period", async ({
   page,
 }) => {
@@ -241,7 +290,7 @@ test("another configured report uses its own defaults and the same builder and q
 test("an empty period produces a header-only download and an explicit zero-row result", async ({
   page,
 }) => {
-  await openBuilder(page, "2026-05-06");
+  await openBuilder(page, "2026-05-07");
   const { records } = await downloadReport(page, 0);
   expect(records).toEqual([]);
 });

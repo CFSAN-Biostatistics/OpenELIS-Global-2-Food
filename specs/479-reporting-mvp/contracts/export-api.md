@@ -62,6 +62,15 @@ field-reference representation must distinguish source and configured identity;
 finalize its serialization with the catalog implementation. Requests and saved
 definitions use that same representation.
 
+Per-test spreadsheet intervals use `test:<id>:<interval>` and
+`component:<id>:<interval>`, where the interval is `orderToResultMinutes`,
+`receivedToValidatedMinutes` or `resultedToValidatedMinutes`. They are numeric
+measurements tied to the corresponding result, with readable test/component
+labels. The detailed list uses the existing generic interval identities.
+Generic result-dependent intervals are unavailable in the spreadsheet and old
+requests selecting them receive the existing stale-column error. Both layouts
+retain common specimen collection-to-receipt and order-to-collection fields.
+
 Sample & Testing supports `SPREADSHEET` (default) and `RESULT_LIST`. Other
 source definitions advertise meaningful layouts; a flat event report uses the
 common tabular projection. Both Sample & Testing layouts preserve every included

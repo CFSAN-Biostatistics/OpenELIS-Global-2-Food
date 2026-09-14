@@ -36,6 +36,10 @@ No product-answer placeholder remains. The last topic's implementation
 interpretation is visible in the specification rather than represented as an
 explicit user selection of three independent workstreams.
 
+The later turnaround clarification is also resolved: spreadsheet durations
+belong to each test/result, including repeats; collection-to-receipt stays
+specimen-level. User Story 1 includes the corresponding acceptance scenario.
+
 ## Implementation Readiness
 
 - [x] Separates functional requirements from implementation responsibilities.

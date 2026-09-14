@@ -93,6 +93,9 @@ change ticket assignments.
   spreadsheet layout as the default for routine reporting.
 - Q: How should the spreadsheet handle repeated finalized results for a test? →
   A: Preserve every result, using additional rows for repeated tests.
+- Q: How should turnaround appear when a spreadsheet contains several tests? →
+  A: Show turnaround beside each test. Repeated results keep their own durations;
+  collection-to-receipt remains a common specimen field.
 
 - Q: Should the MVP include personal named reports? → A: Include reusable
   definitions without making per-user scoping a prerequisite; use shared
@@ -106,6 +109,10 @@ change ticket assignments.
   the critical reporting workflows. A local implementation or draft PR is only
   an intermediate checkpoint. Automated deployment checks and human UAT results
   remain separate evidence.
+- Q: Should public UAT wait until the MVP is finished? → A: No. It must reflect
+  each usable development stage and help find issues as work proceeds.
+  Automated end-to-end validation and human UAT use the same workflows,
+  fixtures and expected results; they are not separate late-stage scopes.
 
 The mock includes Sample & Testing, Referrals and Non-Conformance; its complete
 fictional worked example is Sample & Testing. The implementation interpretation
@@ -149,6 +156,11 @@ record set and column sequence.
    can download it without navigating away and find it later in my queue; no
    matching records produces a valid header-only CSV and an explicit zero-row
    result.
+7. **Given** tests or repeated results with different turnaround times, **when**
+   I select turnaround columns in the spreadsheet, **then** each duration
+   appears in a column for its own test beside the chosen result column and
+   remains with that result's row. Missing timestamps leave empty duration
+   cells without losing results. Collection-to-receipt remains specimen-level.
 
 ### User Story 2 — Refine a Report Without Repeated Setup (Priority: P1)
 

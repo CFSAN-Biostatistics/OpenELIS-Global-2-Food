@@ -36,6 +36,11 @@ import org.springframework.transaction.annotation.Transactional;
 public class SampleTestingSource implements ReportingSource {
     private static final List<String> BOTH = List.of("SPREADSHEET", "RESULT_LIST");
     private static final List<String> DETAIL = List.of("RESULT_LIST");
+    private static final List<String> SPREADSHEET = List.of("SPREADSHEET");
+    private static final List<Interval> RESULT_INTERVALS = List.of(
+            new Interval("orderToResultMinutes", "Order to Result (min)"),
+            new Interval("receivedToValidatedMinutes", "Received to Validated (min)"),
+            new Interval("resultedToValidatedMinutes", "Resulted to Validated (min)"));
     @Autowired
     private SampleTestingExportDAO dao;
     @Autowired
@@ -51,7 +56,8 @@ public class SampleTestingSource implements ReportingSource {
     @Override
     public void validateConfiguration(ReportSourceConfig configuration) {
         if (!"collectionDate".equals(configuration.dateAnchor())
-                || !List.of("tests", "components", "observations").containsAll(configuration.catalogs())
+                || !List.of("tests", "components", "observations", "testTurnaround", "componentTurnaround")
+                        .containsAll(configuration.catalogs())
                 || !List.of("labSectionIds", "testIds", "resultStatuses").containsAll(configuration.filters())) {
             throw new IllegalArgumentException("reporting.definition.unsupportedMapping");
         }
@@ -91,21 +97,31 @@ public class SampleTestingSource implements ReportingSource {
         common(fields, "dateResulted", "Date Resulted", "datetime", "result", DETAIL);
         common(fields, "validationDate", "Validation Date", "datetime", "result", DETAIL);
         common(fields, "labSection", "Lab Section", "text", "result", DETAIL);
-        common(fields, "orderToResultMinutes", "Order to Result (min)", "number", "turnaround", BOTH);
-        common(fields, "receivedToValidatedMinutes", "Received to Validated (min)", "number", "turnaround", BOTH);
+        common(fields, "orderToResultMinutes", "Order to Result (min)", "number", "turnaround", DETAIL);
+        common(fields, "receivedToValidatedMinutes", "Received to Validated (min)", "number", "turnaround", DETAIL);
         common(fields, "orderToCollectionMinutes", "Order to Collection (min)", "number", "turnaround", BOTH);
         common(fields, "collectionToReceivedMinutes", "Collection to Received (min)", "number", "turnaround", BOTH);
-        common(fields, "resultedToValidatedMinutes", "Resulted to Validated (min)", "number", "turnaround", BOTH);
+        common(fields, "resultedToValidatedMinutes", "Resulted to Validated (min)", "number", "turnaround", DETAIL);
         var tests = dao.tests();
         var names = tests.stream().collect(Collectors.toMap(t -> t.getId(), t -> t.getDescription()));
         tests.forEach(t -> fields
                 .add(new ReportingVariable("test:" + t.getId(), t.getDescription(), "result", "tests", true, BOTH)));
-        dao.components().stream().filter(c -> names.containsKey(c.getTestId()))
-                .forEach(c -> fields.add(new ReportingVariable("component:" + c.getId(),
-                        names.get(c.getTestId()) + " — " + c.getLabel(), c.getResultType(), "components", true, BOTH)));
+        tests.forEach(t -> turnaroundFields(fields, "test:" + t.getId(), t.getDescription(), "testTurnaround"));
+        dao.components().stream().filter(c -> names.containsKey(c.getTestId())).forEach(c -> {
+            String id = "component:" + c.getId();
+            String label = names.get(c.getTestId()) + " — " + c.getLabel();
+            fields.add(new ReportingVariable(id, label, c.getResultType(), "components", true, BOTH));
+            turnaroundFields(fields, id, label, "componentTurnaround");
+        });
         dao.observationTypes().forEach(t -> fields.add(new ReportingVariable("observation:" + t.getId(),
                 t.getDescription(), "text", "observations", false, BOTH)));
         return fields;
+    }
+
+    private static void turnaroundFields(List<ReportingVariable> fields, String measurement, String label,
+            String group) {
+        RESULT_INTERVALS.forEach(interval -> fields.add(new ReportingVariable(measurement + ":" + interval.id(),
+                label + " — " + interval.label(), "number", group, true, SPREADSHEET)));
     }
 
     private static void common(List<ReportingVariable> fields, String id, String label, String type, String group,
@@ -177,8 +193,13 @@ public class SampleTestingSource implements ReportingSource {
                     Map<String, String> attributes = new LinkedHashMap<>(first.attributes());
                     attributes.put("resultValue", value.toString());
                     Map<String, String> measurements = new LinkedHashMap<>();
-                    for (String id : first.measurementIds())
+                    for (String id : first.measurementIds()) {
                         measurements.put(id, value.toString());
+                        // Keep null intervals present: a result with missing timestamps
+                        // must still survive a duration-only spreadsheet selection.
+                        for (Interval interval : RESULT_INTERVALS)
+                            measurements.put(id + ":" + interval.id(), first.attributes().get(interval.id()));
+                    }
                     return new ExportRecord(first.id(), first.specimen(), null, attributes, measurements);
                 }
             };
@@ -330,5 +351,8 @@ public class SampleTestingSource implements ReportingSource {
 
     private record Normalized(String id, String specimen, Map<String, String> attributes, List<String> measurementIds,
             String value, String multiKey) {
+    }
+
+    private record Interval(String id, String label) {
     }
 }

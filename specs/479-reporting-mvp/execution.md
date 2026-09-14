@@ -305,8 +305,80 @@ Evidence: `/private/tmp/reporting-config-filters-component-red-2.log`,
 
 Together with Iteration 7 and the instance-field mapping evidence, this closes
 T009. Turnaround, the remaining M1 qualification, M2, deployment and human UAT
-remain open. The turnaround decision was resurfaced in the question tool;
-affected work remains paused until answered.
+remain open. The turnaround decision was resurfaced in the question tool and
+answered after this checkpoint: show turnaround beside each test, preserving
+repeat-specific durations and common specimen collection-to-receipt time.
+
+## Iteration 9: Per-Test Turnaround and Correct Rerun Downloads
+
+The user selected per-test spreadsheet durations, with each repeat retaining its
+own times and collection-to-receipt remaining specimen-level. The source now
+exposes optional test/component duration catalogs; generic result intervals
+remain in the detailed list. Built-in source version 3 captures the changed
+meaning. Existing stale-column handling rejects obsolete common spreadsheet
+intervals on both submission and save.
+
+The first five real-database cases failed before implementation, then passed:
+two different tests, repeated analyses with different times and equal values,
+duration-only selections with missing/negative intervals, renamed components,
+and layout/default catalog separation. A sixth case verifies rejection of old
+spreadsheet duration selections. All 59 existing/new reporting cases passed;
+the final six-case turnaround run passed after adding that compatibility case
+(60 distinct backend cases across the two runs).
+
+The browser scenario selects and orders turnaround beside Viral Load, downloads
+two equal values with 30/90-minute intervals, then switches to the detailed list
+and compares the same intervals. Its first run exposed a real rerun defect: the
+previous ready file remained clickable while the new submission was pending.
+A component regression reproduced it, including failed submission and retry.
+Starting another run now clears the current-file reference while preserving
+inputs and retry identity; prior jobs remain in the queue. The ten component
+checks and all ten browser checks now pass (browser: 1.6 minutes).
+
+The new May 6 fixture is separate from the original May 5 records; the empty
+period check now uses May 7. Loading the complete SQL fixture exposed and fixed
+an earlier `report_definition.lastupdated` typo (`last_updated` is the actual
+column). The full fixture now loads transactionally. The browser failure was
+not bypassed with a wait or weaker CSV comparison.
+
+Java 21 packaging, production frontend build, both formatters, 45-file reporting
+Spotless validation, browser lint/project registration and local document links
+pass. Reporting instruction coverage is 4,417/5,940 (74.4%); the feature coverage
+goal remains open. Download bytes, successful screenshot and browser logs were
+reviewed. Local service-worker certificate warnings and expected request
+cancellations remain separate from test failures.
+
+Local startup encountered a migration lock owned by the removed container.
+Inspection proved the owner absent and no active transaction; releasing only
+that exact abandoned lock let startup finish. The quickstart now requires
+stopping a host-mounted-WAR runtime before replacing its WAR to avoid the
+Tomcat/recreate race. This affected only the disposable local application.
+
+Evidence: `/private/tmp/reporting-turnaround-red.log`,
+`/private/tmp/reporting-turnaround-green.log`,
+`/private/tmp/reporting-turnaround-boundary.log`,
+`/private/tmp/reporting-rerun-component-red-2.log`,
+`/private/tmp/reporting-rerun-component-green.log`,
+`/private/tmp/reporting-turnaround-browser-final.log`,
+`/private/tmp/reporting-turnaround-build.log` and
+`/private/tmp/reporting-rerun-frontend-build.log`.
+
+This resolves the known turnaround formatting defect and closes T011. Other M1
+qualification, M2 and full MVP acceptance remain open.
+
+## Delivery Correction: Continuous Public UAT
+
+The user explicitly corrected the delivery sequence: UAT is a live reflection
+of development stages and finds issues during implementation. Automated
+end-to-end validation and human UAT use the same workflows, fixtures and
+expected results. Waiting for the full MVP before publishing was a planning
+error; the plan, tasks, quickstart and UAT contract now remove that dependency.
+
+The next action is to publish this working Sample & Testing stage at the stable
+Catalyst reporting hostname with its actual scope and known gaps, then update
+that same target at subsequent checkpoints. Full MVP criteria remain intact.
+Current server inspection confirms capacity and an unused isolated reporting
+path; no reporting application has yet been deployed publicly at this point.
 
 ## M1 Acceptance Checkpoint
 

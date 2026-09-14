@@ -70,6 +70,15 @@ result-ID column is required in the user's CSV; tests can check identity before
 formatting. Verify correction/grouping rules through existing services, not
 assumed status IDs.
 
+Turnaround qualification uses different completion/release times across tests
+and repeated analyses. The spreadsheet exposes optional `testTurnaround` and
+`componentTurnaround` catalogs; select an interval and order it beside its test.
+Compare both layouts against the same stored timestamps. Duration-only selections
+must preserve repeats whose timestamps are missing. The synthetic browser
+fixture has two Viral Load values of 450 collected on 2026-05-06, with
+result-to-validation intervals of 30 and 90 minutes. Its original 2026-05-05
+repeat fixture remains unchanged.
+
 ## Common Source Definition Qualification
 
 Use the same builder, saved-report operations, worker and download for all three
@@ -137,6 +146,13 @@ the changed component files explicitly with `--ignore-path /dev/null`. The
 current `frontend/.prettierignore` entry `reports/` otherwise skips this source
 directory as well as generated reports. Limit that explicit command to the
 changed reporting source/test files.
+
+For a local Tomcat runtime that mounts the worktree's WAR directly, stop the
+isolated application before a build replaces that file. Replacing it while
+Tomcat is watching can start deployment before a subsequent container recreate.
+If startup waits on a migration lock, inspect its owner and active database
+transactions first; release only a confirmed abandoned lock. Do not restart a
+live startup merely because a readiness check times out.
 
 ## Browser Flow Inventory
 
@@ -225,16 +241,18 @@ The focused reporting formatter command is:
 mvn -o '-DspotlessFiles=.*reports/dataexport/.*\.java' spotless:check
 ```
 
-Check that the output reports the number of selected Java files (42 at this
+Check that the output reports the number of selected Java files (45 at this
 checkpoint). `spotlessFiles` matches absolute paths as regular expressions;
 repository-relative file lists previously selected zero files and did not
 validate formatting. Full CI formatting remains a separate gate.
 
-## Deployed UAT Gate
+## Continuous Deployed UAT
 
-After the complete MVP passes local and CI qualification, deploy the exact
-revision to `reporting.catalyst.openelis-global.org` and follow [uat.md](uat.md).
-The live gate requires application health, the exact target revision at
+Publish each usable stage at its exact revision to
+`reporting.catalyst.openelis-global.org` and follow [uat.md](uat.md). Do not wait
+for the full MVP. Use the same workflows, fixture oracles and expected results
+for automated end-to-end checks and human UAT; record current failures and
+unavailable capabilities alongside each stage. Publication requires application health, the exact target revision at
 `/__review/target.json`, stable public synthetic fixtures, focused browser
 preflight with inspected CSV contents, the `reporting` Grist checklist, the
 review overlay and an authenticated submission/download check. Record human UAT

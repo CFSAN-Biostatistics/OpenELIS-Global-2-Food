@@ -6,6 +6,7 @@ import {
   within,
   cleanup,
 } from "@testing-library/react";
+import { waitFor } from "@testing-library/dom";
 import { IntlProvider } from "react-intl";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter } from "react-router-dom";
@@ -42,6 +43,7 @@ const catalog = (layout) => ({
 });
 let requests;
 let failSubmission;
+let submissionGate;
 let job;
 let savedReports;
 let savedMutations;
@@ -59,6 +61,7 @@ beforeEach(() => {
   clearReportingDraft();
   requests = [];
   failSubmission = false;
+  submissionGate = undefined;
   failSavedUpdate = false;
   job = undefined;
   savedReports = [];
@@ -117,16 +120,17 @@ beforeEach(() => {
       if (options.method === "POST") {
         const body = JSON.parse(options.body);
         requests.push(body);
+        if (submissionGate) await submissionGate;
         if (failSubmission) return json({ code: "reporting.jobs.limit" }, 429);
         job = {
-          id: "job-1",
+          id: `job-${requests.length}`,
           state: "READY",
           rowCount: 2,
           request: { definition: source, filterSpec: body.filterSpec },
         };
         return json(job, 202);
       }
-      if (url.includes("/jobs/job-1")) return json(job);
+      if (job && url.endsWith(`/jobs/${job.id}`)) return json(job);
       return json({ jobs: job ? [job] : [], hasMore: false, activeCount: 0 });
     }),
   );
@@ -201,6 +205,50 @@ test("failed submission retains choices and retries with the same request identi
   await screen.findByRole("link", { name: "Download CSV" });
   expect(requests).toHaveLength(2);
   expect(requests[1]).toEqual(requests[0]);
+});
+
+test("a rerun cannot download the prior file while submitting or after failure, and its retry keeps the request identity", async () => {
+  open();
+  await period();
+  fireEvent.click(screen.getByRole("button", { name: "Review report" }));
+  fireEvent.click(screen.getByRole("button", { name: "Generate CSV" }));
+  expect(
+    await screen.findByRole("link", { name: "Download CSV" }),
+  ).toHaveAttribute("href", expect.stringContaining("/job-1/download"));
+  fireEvent.click(screen.getByRole("button", { name: "Edit report" }));
+  fireEvent.click(screen.getByRole("combobox", { name: "CSV layout" }));
+  fireEvent.click(
+    screen.getByRole("option", { name: "Detailed list — results in rows" }),
+  );
+  await screen.findByRole("columnheader", { name: "Result Value" });
+  let release;
+  submissionGate = new Promise((resolve) => {
+    release = resolve;
+  });
+  failSubmission = true;
+  fireEvent.click(screen.getByRole("button", { name: "Review report" }));
+  fireEvent.click(screen.getByRole("button", { name: "Generate CSV" }));
+  await waitFor(() => expect(requests).toHaveLength(2));
+  expect(
+    screen.queryByRole("link", { name: "Download CSV" }),
+  ).not.toBeInTheDocument();
+  release();
+  await screen.findByText(messages["reporting.jobs.limit"]);
+  expect(
+    screen.queryByRole("link", { name: "Download CSV" }),
+  ).not.toBeInTheDocument();
+  expect(
+    screen.getByRole("columnheader", { name: "Result Value" }),
+  ).toBeInTheDocument();
+  submissionGate = undefined;
+  failSubmission = false;
+  fireEvent.click(screen.getByRole("button", { name: "Generate CSV" }));
+  expect(
+    await screen.findByRole("link", { name: "Download CSV" }),
+  ).toHaveAttribute("href", expect.stringContaining("/job-3/download"));
+  expect(requests).toHaveLength(3);
+  expect(requests[2]).toEqual(requests[1]);
+  expect(requests[2].clientRequestId).not.toBe(requests[0].clientRequestId);
 });
 
 test("switching layouts and visiting the queue retains each layout's columns and the period", async () => {

@@ -372,6 +372,9 @@ function ReportingBuilder({ owner }) {
     ) {
       submitted.current = { fingerprint, id: crypto.randomUUID() };
     }
+    // A new run must not expose the previous file as its current download.
+    // Keep draft inputs and the request identity for a failed-submit retry.
+    setDraft((value) => ({ ...value, jobId: null }));
     submission.mutate({ ...request, clientRequestId: submitted.current.id });
   };
   const errorText = (error) =>

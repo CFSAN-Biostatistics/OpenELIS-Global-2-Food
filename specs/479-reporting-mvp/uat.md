@@ -4,6 +4,12 @@ This file defines the implementation-facing UAT contract. The central Grist
 document in `DIGI-UW/openelis-review-tooling` is the live checklist source of
 truth after deployment. Do not serve this Markdown as a second checklist.
 
+UAT follows each development stage and helps discover issues as work proceeds.
+Automated end-to-end checks and human review exercise the same workflows,
+fixtures and expected results. Publish currently executable story steps with
+the stage scope and known gaps, then extend them as capabilities arrive. Do not
+withhold the public target until the complete MVP passes.
+
 ## Target and Evidence
 
 - UAT host: `reporting.catalyst.openelis-global.org`
@@ -13,6 +19,8 @@ truth after deployment. Do not serve this Markdown as a second checklist.
 - Public checklist: `https://grist.openelis-global.org/uat/reporting.json`
 - Fixture period: 2026-05-05 through 2026-05-05
 - Repeated-result accession: `REPORTING-MVP-REPEAT`
+- Turnaround fixture: `REPORTING-MVP-TURNAROUND`, collected 2026-05-06, two
+  Viral Load values of 450 with result-to-validation intervals of 30 and 90 minutes
 - Repeated configured test: `Viral Load`
 - Independent repeated values: two results whose displayed value is `450`
 - Referral fixture: `REPORTING-MVP-REFERRAL`

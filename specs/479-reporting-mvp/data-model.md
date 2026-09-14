@@ -48,6 +48,16 @@ resulted-to-validated. Order time is the start of the stored order date in the
 laboratory timezone; collection, receipt, completion and release use their
 stored timestamps. A missing endpoint produces an empty value.
 
+In the spreadsheet, result-dependent intervals (order-to-result,
+received-to-validated and resulted-to-validated) are separate selected columns
+for each configured test or result component. Their stable identities are
+`test:<id>:<interval>` and `component:<id>:<interval>`. Each value travels with
+its own result, including repeats and missing durations. Users place the
+selected duration beside its test using the same column ordering controls.
+The detailed list keeps the existing interval columns on each result row.
+Order-to-collection and collection-to-received remain common specimen fields.
+Negative elapsed values are retained so inconsistent stored dates are visible.
+
 Supported configured questions come from observation-history types with
 a nonblank description. Their field identity is `observation:<type id>` and
 their current description is the displayed label. The existing observation
