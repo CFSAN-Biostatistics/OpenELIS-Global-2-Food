@@ -5,11 +5,9 @@ usable stage to Reporting UAT. Both milestones remain in scope. The canonical
 mock defines the interface; MVP scope determines which functions are connected.
 Public availability, automated qualification and human acceptance are separate.
 
-## Current Public Stage — Queue Recovery, 2026-09-14
+## Current Public Stage — Configured Navigation and Audit, 2026-09-14
 
-### Navigation and audit increment — locally qualified, publication pending
-
-The next usable stage consolidates the sidebar renderer and its shared Carbon
+The published stage consolidates the sidebar renderer and its shared Carbon
 typography, removing 535 lines of conflicting old sidebar rules. The Reporting
 UAT profile supplies the mock's four sections, icons, direct workflow links and
 collapsed legacy groups through the existing database-plus-configuration menu
@@ -24,22 +22,57 @@ drawer. Sidebar and internal reporting navigation share parameter ownership so
 review context survives changing views. The existing report draft is retained.
 
 The increment adds committed reporting lifecycle and shared-definition events
-to the existing application logger. The public release will retain old logs and
-mount a persistent log directory. A real saved-definition request exposed a
+to the existing application logger. The public release retains old logs and
+mounts a persistent log directory. A real saved-definition request exposed a
 timestamp-precision conflict on immediate edits after creation; a failing
 database round-trip test reproduced it. Creation now uses database-supported
 microsecond precision, and create/read/update/stale-update/delete checks pass
 across committed requests.
 
-Validation includes 125 component checks, focused reporting/menu backend checks,
+Validation includes 125 component checks, 35 focused reporting/menu backend cases across overlapping runs,
 Java 21 packaging, and desktop/phone reporting, navigation and admin checks.
 Actual repeated-result CSV download passed locally. Direct comparison with the
 pinned mock covers the catalog, selection, filters, review and queue. The settled
 admin layout has consistent typography and does not overlap the pinned sidebar;
-the browser check waits for that geometry before capture. Live deployment,
-public browser checks and retained log-mount evidence remain pending below until
-the release is observed. This does not close T021/T028, source activation,
+the browser check waits for that geometry before capture. Public deployment and retained log-mount verification now pass, as recorded below. This does not close T021/T028, source activation,
 multi-instance isolation or human acceptance.
+
+The [public workspace](https://reporting.catalyst.openelis-global.org/reports/custom-data-export)
+is now on frontend/backend/configuration `65f96697e428b3e45c1e9b293115ccf0e2c135f7`,
+deployment `20260914T151244Z-65f96697e428`. Runtime configuration `7780ee2cd9`
+and review tooling `7356f1d32c` remain. The database container and report volume
+were retained, as were the previous artifacts, compose/identity files, a database
+backup and existing logs. One application context started in 459.508 seconds;
+the duplicate legacy API context returns 404. Served HTML/assets match the
+versioned manifest. Mounted menu SHA-256:
+`35c3995db966ef8c1d4897b430cb317b33cb2021422ac16d8a61dfb08302e93e`.
+
+Nine distinct public workflows pass: spreadsheet repeats; detailed identities;
+per-test turnaround in both layouts; shared report use/update/copy/delete;
+desktop/phone column interactions and accessibility; configured sidebar,
+review parameters and history; admin typography/content boundaries; failed retry;
+and expired re-run. The initial nine-check batch had eight passes and one
+spreadsheet timeout at the overall 30-second test limit immediately after
+startup. Its stored job did complete, 8.819 seconds after submission. The
+unchanged spreadsheet repeat and both recovery workflows then passed in a
+four-check run including login. Keep the initial timeout as a startup qualification
+limit; do not report the initial batch as wholly green. Browser downloads and
+seven committed job/definition events were independently verified in the retained
+application logs, including immediate saved-report editing.
+
+Direct public walkthroughs cover the visible section hierarchy, legacy groups,
+canonical report address, retained draft, phone drawer close and desktop admin
+return. The [live checklist](https://grist.openelis-global.org/uat/reporting.json)
+now has six stories and 17 steps: RPT-S06 adds three navigation checks, preserving
+all five prior stories and their stable step keys. Their 14 route references now
+use the canonical reporting path so the review panel can match the existing
+workflows to the new address; instructions and keys were preserved. It was published through the
+review repository's existing Grist story tool using the already-configured host
+connection after the AWS session had expired. No reviewer answers were submitted.
+Exact-revision frontend CI passes; backend CI remains in progress at this record.
+The full MVP and human acceptance remain open.
+
+## Previous Public Stage — Queue Recovery, 2026-09-14
 
 - Application: [Reporting UAT](https://reporting.catalyst.openelis-global.org/CustomDataExport).
   Frontend `0d65ccaac4ba46ac7fa76262368170a13fe7306d`; backend

@@ -30,7 +30,7 @@ Reports menu in a section:
   "menus": [
     {
       "elementId": "instance_reporting_section",
-      "displayKey": "reporting.menu.reportsSection",
+      "displayKey": "sidenav.label.reports",
       "presentationStyle": "section",
       "childMenus": [{ "elementId": "menu_reports", "icon": "reports" }]
     }
