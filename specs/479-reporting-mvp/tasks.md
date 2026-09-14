@@ -2,7 +2,7 @@
 
 **Inputs**: [spec.md](spec.md), [plan.md](plan.md),
 [data-model.md](data-model.md), [contract](contracts/export-api.md),
-[acceptance plan](quickstart.md).  
+[acceptance plan](quickstart.md), [UAT contract](uat.md).
 **Status**: M1 implementation in progress. T001, T003, T007 and T011 are
 complete; other tasks remain open until their full acceptance conditions pass. See
 [execution.md](execution.md) for current evidence and the subsequently authorized
@@ -168,6 +168,42 @@ applications.
       and recovery evidence. State deployment/user-acceptance status separately;
       do not merge or deploy as part of this task.
 
+## UAT Delivery — Deployed, Reviewable MVP
+
+**Goal**: Deploy the complete qualified MVP to the Catalyst UAT hostname and
+make its critical workflows executable through the established review overlay.
+This phase establishes readiness for human UAT; it does not manufacture a human
+acceptance result.
+
+- [ ] T032 Reconcile the exact application revisions and required CI, then
+      create a reproducible deployment candidate for
+      `reporting.catalyst.openelis-global.org`. Record current Catalyst capacity,
+      existing service ownership, backup and rollback inputs before mutation.
+- [ ] T033 Provision or update the reporting UAT application without changing
+      the existing Catalyst UI, databases or unrelated CSiM deployments. Use
+      persistent output storage and publish `/__review/target.json` only after
+      backend, frontend, database migration and route health checks pass.
+- [ ] T034 Seed idempotent, public synthetic reporting fixtures for the stable
+      identifiers in `uat.md`, including repeated identical results, a referral,
+      a non-conformance event, two report users and prepared queue states. Do
+      not depend on browser-only test helpers.
+- [ ] T035 Run the focused Playwright acceptance files against the deployed
+      target, compare actual downloaded CSVs with the fixture oracle, and verify
+      both Sample & Testing layouts, shared reuse, configured source reports and
+      queue/recovery behavior before publishing UAT readiness.
+- [ ] T036 Create the `reporting` review in the central Grist document and apply
+      the four stable UAT stories from `uat.md` through the review-tooling
+      authoring path. Read before writing, inspect computed problems and verify
+      the public checklist JSON after every change.
+- [ ] T037 Inject the established review overlay into the reporting UAT host;
+      configure authenticated submission against that OpenELIS backend; verify
+      checklist loading, target identity, route capture, retained answers and a
+      real submitted/downloaded review report.
+- [ ] T038 Record the deployed URL, exact application/review-tooling revisions,
+      checklist revision, automated preflight evidence and remaining human UAT
+      status in `execution.md`. Hand the live target to reviewers only when all
+      required preflight checks pass.
+
 ## Dependencies
 
 ```mermaid
@@ -180,6 +216,8 @@ graph LR
     V --> M1[M1 PR]
     M1 --> M2[Additional configurations and recovery]
     M2 --> Q[Full MVP qualification and M2 PR]
+    Q --> D[Exact Catalyst UAT deployment]
+    D --> H[Human UAT]
 ```
 
 T006/T007 may proceed alongside backend work after the contract and fixture
@@ -213,11 +251,13 @@ milestones or teams.
 | FR-020      | T005–T007, T014–T016                     |
 | FR-021      | T004, T006, T008, T013, T014, T016       |
 | FR-022      | T009, T013, T014, T020, T022, T026       |
+| FR-023      | T032–T038                                |
 
 CR-001–CR-005 are covered by the architecture, migration, test and milestone
 tasks. SC-001–SC-003 and SC-007/008 are demonstrated in T016; SC-004 in
 T021/T028; SC-005 in T016/T017/T026/T030; SC-006 in T027; and SC-009 in
-T020/T026. T029 checks the complete evidence map.
+T020/T026. SC-010 is established by T032–T038. T029 checks the complete
+implementation evidence map; T038 closes the deployment/UAT-readiness map.
 
 Personal-library/sharing administration, arbitrary source discovery, external
 integrations, scheduling and separate synchronous generation are outside this

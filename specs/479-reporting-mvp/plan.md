@@ -2,8 +2,8 @@
 
 **Branch**: `spec/479-ogc-479-reporting-mvp`  
 **Date**: 2026-09-13  
-**Status**: M1 implementation in progress; full MVP and deployment remain
-pending
+**Status**: M1 implementation in progress; full MVP, UAT integration and
+deployment remain pending
 
 **Specification**: [spec.md](spec.md)  
 **Inspected code baseline**: `e57a53399c2134fe3ff58009119cc05906c61e5e`
@@ -75,16 +75,18 @@ deployment evidence.
 
 ## Milestone Plan
 
-| ID  | Branch suffix       | Scope                                                                                                                                  | Verification                                                                                            | Depends on    |
-| --- | ------------------- | -------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- | ------------- |
-| M1  | `m1-result-export`  | Common configured engine, Sample & Testing, instance-aware fields, both layouts, shared saved definitions, inline download/basic queue | US1–US3 with real records; repeat preservation; catalog changes without code edits; shared report rerun | Spec/contract |
-| M2  | `m2-queue-recovery` | Referral/non-conformance source definitions and mappings using the same engine; recovery, retention and qualification                  | All three configured report types; US4; same-engine configuration test; restart and workload checks     | M1            |
+| ID  | Branch suffix       | Scope                                                                                                                                  | Verification                                                                                             | Depends on    |
+| --- | ------------------- | -------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- | ------------- |
+| M1  | `m1-result-export`  | Common configured engine, Sample & Testing, instance-aware fields, both layouts, shared saved definitions, inline download/basic queue | US1–US3 with real records; repeat preservation; catalog changes without code edits; shared report rerun  | Spec/contract |
+| M2  | `m2-queue-recovery` | Referral/non-conformance source definitions and mappings using the same engine; recovery, retention and qualification                  | All three configured report types; US4; same-engine configuration test; restart and workload checks      | M1            |
+| UAT | exact qualified SHA | Public Catalyst reporting target, stable review fixtures, Grist checklist, review overlay and deployment provenance                    | Live automated preflight plus executable critical-workflow UAT; human results remain separately recorded | M2            |
 
 ```mermaid
 graph LR
     S[Specification and clarification] --> M1[One engine: real Sample and Testing export]
     M1 --> M2[Additional source definitions and recovery]
-    M2 --> R[Complete MVP review]
+    M2 --> U[Deploy UAT target and review overlay]
+    U --> R[Human MVP review]
 ```
 
 Create the spec PR first. The constitution allows implementation during spec
@@ -220,6 +222,19 @@ Run focused tests during development, then applicable repository format/build,
 coverage and CI checks. Record tested revision, actual CSV comparison, browser
 console/screenshots and measured workload. Distinguish local tests, CI, deployed
 behavior and user acceptance.
+
+### UAT Delivery
+
+Use the established `DIGI-UW/openelis-review-tooling` system. Grist is the
+checklist source of truth. The public reporting deployment loads the review
+overlay and publishes verified target metadata only after application health
+and critical browser preflight pass. The deployment must preserve the existing
+Catalyst application and its unrelated CSiM services.
+
+The reviewer-visible stories and stable keys are defined in [uat.md](uat.md).
+Before writing them to Grist, dry-run their exact prose against the deployed
+target and stable synthetic fixtures. A valid checklist endpoint proves only
+delivery; a submitted or downloaded review report records human acceptance.
 
 ## Complexity Tracking
 

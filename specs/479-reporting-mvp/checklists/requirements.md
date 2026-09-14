@@ -8,6 +8,9 @@
 
 - [x] Defines a useful native reporting outcome with four prioritized,
       independently testable user stories.
+- [x] Makes a public Catalyst deployment and review-tooling UAT readiness an
+      explicit completion gate without treating checklist availability as human
+      acceptance.
 - [x] Pins the product source and distinguishes the mock's three types from its
       Sample & Testing worked example.
 - [x] Records instance-aware fields without a fixed numerical catalog limit.
@@ -48,7 +51,7 @@ explicit user selection of three independent workstreams.
 - [x] Uses two validation milestones: common capability/Sample & Testing, then
       additional source mappings and recovery; one implementation PR per
       milestone.
-- [x] Maps all 22 functional requirements and nine success criteria to 31 tasks.
+- [x] Maps all 23 functional requirements and ten success criteria to 38 tasks.
 - [x] Plans meaningful fixture, unit, ORM, integration and real core-app
       Playwright checks before accepting implementation.
 - [x] Schedules actual component/result linkage and referral/event mapping
@@ -59,8 +62,9 @@ explicit user selection of three independent workstreams.
 
 ## Cross-Artifact Review
 
-The eight documents are the specification, plan, tasks, research, logical model,
-API contract, acceptance quickstart and this checklist. They use the same scope:
+The ten documents are the specification, plan, tasks, research, logical model,
+API contract, acceptance quickstart, execution ledger, UAT contract and this
+checklist. They use the same scope:
 dynamic catalog; two Sample & Testing layouts; all repeats; shared definitions;
 three source types through one engine; direct ready download and a basic queue.
 
@@ -72,15 +76,15 @@ source discovery and new external integrations remain outside scope.
 
 Document validation covers SpecKit prerequisite discovery, Markdown formatting,
 relative/source file links, balanced fenced blocks, the JSON request example,
-four user stories, unique sequential FR-001–FR-022 and T001–T031 identifiers,
-nine success criteria and requirement/task coverage. Final review checks the
+four user stories, unique sequential FR-001–FR-023 and T001–T038 identifiers,
+ten success criteria and requirement/task coverage. Final review checks the
 same semantics across artifacts; a passing identifier count alone is
 insufficient.
 
-**Validation result**: Passed on 2026-09-13. SpecKit discovered the package;
-formatting passed for all eight documents; 36 local/source links and the JSON
-example resolved; story, requirement, success-criterion and task counts matched;
-all 22 functional requirements have task mappings. Manual consistency review
+**Validation result**: Passed on 2026-09-13 after the UAT extension. Formatting
+passed for all ten documents; 41 local links and the JSON example resolved;
+four stories, FR-001–FR-023, SC-001–SC-010 and T001–T038 were sequential and
+all requirements had task mappings. Manual consistency review
 reconciled shared definitions versus private files, source-specific dates,
 default versus selectable statuses, layout-specific row counts and inline
 delivery.

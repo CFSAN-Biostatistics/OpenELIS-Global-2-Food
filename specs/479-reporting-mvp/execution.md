@@ -138,19 +138,19 @@ completion gate.
 
 ## Validation Recorded So Far
 
-| Check                         | Observed result                                                                                                                                 |
-| ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
-| Specification checks          | Eight Markdown files, 36 local/source links, JSON example and requirement/task consistency passed                                               |
-| Baseline backend              | Java 21 build/install passed with both test-skip flags; first cache installation attempt needed normal filesystem permission                    |
-| CSV writer and dates          | 12 focused JUnit tests passed; the repeat workload writes 50,000 rows incrementally                                                             |
-| ORM and lifecycle             | Three tests passed; factory startup is under five seconds and needs no database                                                                 |
-| Source configuration          | Four tests passed, including an extra definition over the same supported source                                                                 |
-| PostgreSQL job persistence    | Three tests passed against a disposable database using the repository test setup; migration `479-001-reporting-export-jobs` ran successfully    |
-| Stored source relationships   | Two tests passed: configured component identity survives rename and repeated values; collection dates distinguish specimens under one accession |
-| Combined reporting validation | All 25 focused Java tests passed on 2026-09-13, including source and database checks; JaCoCo report generated                                   |
-| Frontend component/build      | Five focused component checks and the production frontend build passed on 2026-09-13                                                            |
+| Check                         | Observed result                                                                                                                                                                                            |
+| ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Specification checks          | Eight Markdown files, 36 local/source links, JSON example and requirement/task consistency passed                                                                                                          |
+| Baseline backend              | Java 21 build/install passed with both test-skip flags; first cache installation attempt needed normal filesystem permission                                                                               |
+| CSV writer and dates          | 12 focused JUnit tests passed; the repeat workload writes 50,000 rows incrementally                                                                                                                        |
+| ORM and lifecycle             | Three tests passed; factory startup is under five seconds and needs no database                                                                                                                            |
+| Source configuration          | Four tests passed, including an extra definition over the same supported source                                                                                                                            |
+| PostgreSQL job persistence    | Three tests passed against a disposable database using the repository test setup; migration `479-001-reporting-export-jobs` ran successfully                                                               |
+| Stored source relationships   | Two tests passed: configured component identity survives rename and repeated values; collection dates distinguish specimens under one accession                                                            |
+| Combined reporting validation | All 25 focused Java tests passed on 2026-09-13, including source and database checks; JaCoCo report generated                                                                                              |
+| Frontend component/build      | Five focused component checks and the production frontend build passed on 2026-09-13                                                                                                                       |
 | Focused browser acceptance    | Five Playwright checks passed in 37.3 seconds against the packaged app on 2026-09-13: sign-in, both CSV layouts, repeated values, zero-row output, date validation, queue navigation and draft restoration |
-| Formatting                    | Feature-scoped Java formatting passed; frontend dependencies installed from the lockfile                                                        |
+| Formatting                    | Feature-scoped Java formatting passed; frontend dependencies installed from the lockfile                                                                                                                   |
 
 The numeric streaming test is a formatter test, not the complete source/database
 workload qualification. Database checks prove immutable requests, per-owner
@@ -196,6 +196,28 @@ The inspected public routes currently serve Catalyst and dashboards; no public
 OpenELIS route was found. The final OpenELIS URL and deployment arrangement must
 be verified against the actual frontend/proxy configuration. Existing demo data,
 services and unrelated CSiM deployments must be preserved.
+
+## UAT Readiness Check
+
+The MVP is not yet deployed for UAT. On 2026-09-13,
+`reporting.catalyst.openelis-global.org` resolved to the Catalyst host through
+the existing wildcard DNS, but the public Caddy configuration had no OpenELIS
+reporting route. The existing OpenELIS backend remained internal on
+`127.0.0.1:28443` and its database was part of the Catalyst stack.
+
+The established `DIGI-UW/openelis-review-tooling` service is reachable and its
+server-side Grist authoring identity owns the `UAT Checklists` document. Neither
+`reporting` nor `catalyst` existed as a public checklist slug: both returned
+404 from the live read service. The review repository supports integration with
+an existing deployment, stable story/step keys, verified target metadata and
+authenticated submissions. It currently has no `reporting` backend mapping.
+
+FR-023, SC-010, T032–T038 and `uat.md` now make the actual delivery gate
+explicit: complete the MVP, deploy an exact qualified revision at the reporting
+hostname, seed stable public synthetic fixtures, pass deployed browser/CSV
+preflight, author the four critical stories in Grist, inject the overlay and
+verify a revision-bound review handoff. Human acceptance remains pending until
+a reviewer returns a report.
 
 ## Remaining Delivery Work
 

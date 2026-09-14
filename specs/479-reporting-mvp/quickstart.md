@@ -158,3 +158,13 @@ commands and results, CSV comparisons, browser evidence, workload measurements,
 actual output configuration and recovery/cleanup procedures. Keep document
 validation, code tests, CI, deployment and user acceptance separate. This
 package claims document checks only; all implementation tasks remain unchecked.
+
+## Deployed UAT Gate
+
+After the complete MVP passes local and CI qualification, deploy the exact
+revision to `reporting.catalyst.openelis-global.org` and follow [uat.md](uat.md).
+The live gate requires application health, the exact target revision at
+`/__review/target.json`, stable public synthetic fixtures, focused browser
+preflight with inspected CSV contents, the `reporting` Grist checklist, the
+review overlay and an authenticated submission/download check. Record human UAT
+as pending until a reviewer actually returns a revision-bound report.

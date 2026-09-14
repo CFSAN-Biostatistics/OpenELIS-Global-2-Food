@@ -101,6 +101,12 @@ change ticket assignments.
 - Q: Do the mock's report types require independent efforts? → A: Generalize
   reporting through configuration; do not treat the types as separate builds.
 
+- Q: What is the delivery goal? → A: A complete MVP deployed to a public
+  OpenELIS UAT target with the established review overlay and executable UAT for
+  the critical reporting workflows. A local implementation or draft PR is only
+  an intermediate checkpoint. Automated deployment checks and human UAT results
+  remain separate evidence.
+
 The mock includes Sample & Testing, Referrals and Non-Conformance; its complete
 fictional worked example is Sample & Testing. The implementation interpretation
 is one engine with source definitions for those types, using Sample & Testing as
@@ -351,6 +357,16 @@ return visits, retry, cancellation, application restart and expiry.
   require another report-specific frontend or queue. New source kinds can
   require a data mapping.
 
+- **FR-023**: Deploy the complete MVP at
+  `reporting.catalyst.openelis-global.org` from an exact reviewed revision and
+  expose verified deployment identity. Integrate the established OpenELIS UAT
+  review overlay with a `reporting` checklist in Grist. The checklist must give
+  reviewers executable, stable-fixture workflows for both Sample & Testing
+  layouts, shared report reuse, Referrals, Non-Conformance and user-visible
+  queue/recovery actions. Validate the live checklist, overlay, routes,
+  downloaded files and review submission path. Checklist availability is UAT
+  readiness; only submitted reviewer results establish human acceptance.
+
 ### Constitution Compliance Requirements
 
 - **CR-001**: Follow the current repository constitution and existing platform:
@@ -423,3 +439,10 @@ return visits, retry, cancellation, application restart and expiry.
   same builder and job/download path with fixtures proving each source's date
   and row meaning. An additional definition over an existing source appears from
   configuration without adding report-specific frontend or queue code.
+
+- **SC-010**: The exact qualified revision is reachable at
+  `reporting.catalyst.openelis-global.org`; `/__review/target.json` identifies
+  that revision as ready; the live `reporting` overlay presents all critical
+  stories; and an authenticated reviewer can execute the steps, inspect the
+  real CSV files and submit or download a revision-bound UAT report. Automated
+  preflight passes before the target is handed to a human reviewer.
