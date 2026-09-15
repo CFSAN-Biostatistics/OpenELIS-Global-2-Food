@@ -1484,3 +1484,36 @@ exhausted its usage allowance. A fresh capacity check and normal retry succeeded
 two checks passed in 25.5 seconds, and desktop/phone screenshots were inspected.
 The correction remains unpublished; public application 8005e4cc0b and its existing evidence remain the
 current usable stage. No broad acceptance task or human review is closed.
+
+## September 15 delivery checkpoint
+
+Candidate `122dea228b01bf5bf148b22e39cbf7b72132675b` passes
+[backend CI](https://github.com/DIGI-UW/OpenELIS-Global-2/actions/runs/34928675652),
+[frontend CI](https://github.com/DIGI-UW/OpenELIS-Global-2/actions/runs/34928675761),
+and [downstream E2E CI](https://github.com/DIGI-UW/OpenELIS-Global-2/actions/runs/34929254161).
+The E2E workflow includes successful Cypress jobs, both Playwright Core shards,
+both Harness shards, report merges and suite gates. This is distinct from the
+earlier image-build checkpoint. All eleven stack PRs are conflict-free and
+require reviewer approval. No merge is recorded as part of this delivery.
+
+The public application's identity still reports frontend/backend `3de726b8d3`.
+The later candidate adds test/documentation changes and upstream translations;
+the recorded public workflow evidence retains its original tested revisions.
+The external review widget now identifies itself as `ea85d65`; the two-user
+recording proves the earlier `814d8341` widget, not a rerun against this update.
+Human acceptance remains pending.
+
+[The evidence index](https://reporting.catalyst.openelis-global.org/reporting-evidence/)
+contains twelve bundles, including two-user reuse, Non-Conformance saved reuse,
+and separate backend/frontend coverage results. Existing service tests establish
+scope-denial behavior; the public browser workflow establishes cross-owner
+job/file denial and authorized shared reuse. A duplicate browser matrix for
+every service-level denial is not a remaining requirement.
+
+The pinned mock's omitted “Preview controls” toolbar simulates user identity,
+access and the next export failure (canonical HTML line 1289). It is demonstration
+infrastructure, not an unfinished reporting feature. The native column preview
+remains in `ReportingView.jsx`; fictional example rows are not actual report data.
+The brief “Not yet connected” label during catalog loading remains a recorded
+non-blocking usability finding. Full requirement reconciliation and human
+acceptance must not be inferred from CI success alone.

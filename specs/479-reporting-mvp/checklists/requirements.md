@@ -108,3 +108,10 @@ checkpoint all application tasks were unchecked; their current implementation
 status is tracked in `tasks.md`. Completing this document checklist means the package can guide
 implementation; it does not claim application tests, CI, deployment or user
 acceptance have passed.
+
+## September 15 delivery checkpoint
+
+See the [revision-bound delivery receipt](../execution.md#september-15-delivery-checkpoint) for passing backend, frontend and E2E CI, public deployment identity,
+recorded workflow evidence and the distinction between mock simulation controls
+and product features. The full requirement reconciliation is in [acceptance.md](../acceptance.md).
+Human acceptance remains pending and separate from engineering validation.

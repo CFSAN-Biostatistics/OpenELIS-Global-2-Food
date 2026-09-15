@@ -86,17 +86,17 @@ completes the other mock source definitions and operational qualification.
       headers/cells, BOM, escaping, nulls, zero rows and both layouts; preserve
       every repeat and compare identity/value multiplicities without
       cross-products or latest-only selection.
-- [ ] T004 [US3] Add failing ORM/persistence tests under
+- [x] T004 [US3] Add failing ORM/persistence tests under
       `src/test/java/org/openelisglobal/reports/dataexport/` for source
       references, shared definitions, concurrent edits, immutable job requests,
       submission identity and migration/rollback.
-      Partial: database-free ORM startup passes. Dedicated PostgreSQL tests now
+      Database-free ORM startup passes. Dedicated PostgreSQL tests now
       verify fresh initialization, full reporting rollback/reapply, and recovery
       upgrade/rollback over 50,000 jobs while retaining all prior job fields and
       shared-definition fields. A synchronized PostgreSQL two-editor regression
       now passes after correcting the losing write from a server error to the
-      intended conflict response; see `code-qa.md`. Final assembled persistence
-      and migration checks remain required.
+      intended conflict response; see `code-qa.md`. Assembled persistence
+      and migration checks passed in the 95-test reporting run.
 - [x] T005 [US2] Add focused service/API tests under
       `src/test/java/org/openelisglobal/reports/dataexport/` for valid
       configured requests, existing access, owner-scoped files, idempotency and
@@ -162,15 +162,15 @@ completes the other mock source definitions and operational qualification.
       `frontend/src/components/reports/CustomDataExport/`; wire configured
       limits/protected persistent output through existing deployment conventions
       and document settings in `specs/479-reporting-mvp/quickstart.md`.
-- [ ] T016 [US1] Run focused backend, component and real-browser checks from
+- [x] T016 [US1] Run focused backend, component and real-browser checks from
       `specs/479-reporting-mvp/quickstart.md`: compare both CSV layouts to
       records, verify configuration changes, repeat preservation and reuse by a
       second report user; inspect browser console/screenshots and ordinary
       access-negative cases.
-- [ ] T017 Run applicable format/build/coverage checks and document tested
+- [x] T017 Run applicable format/build/coverage checks and document tested
       revision and M1 evidence in `specs/479-reporting-mvp/quickstart.md`;
       confirm useful reporting works before expanding the source definitions.
-- [ ] T018 Open the M1 PR to `develop`, linking the spec, UI evidence and actual
+- [x] T018 Open the M1 PR to `develop`, linking the spec, UI evidence and actual
       CSV comparisons. Report current required CI results and the remaining M2
       scope; do not merge. Publish each usable stage through the UAT tasks below.
 
@@ -283,15 +283,15 @@ applications.
       50,000-job queue and retained shared definitions. Two-process crash
       isolation now passes with live lease renewal, abandoned-only cleanup,
       queued completion, linked retry and unchanged actual CSVs; see execution.md.
-- [ ] T029 Verify every functional requirement and success criterion against
+- [x] T029 Verify every functional requirement and success criterion against
       implementation evidence; update
       `specs/479-reporting-mvp/checklists/requirements.md` and `quickstart.md`
       without conflating document validation, code tests, CI, deployment or user
       acceptance.
-- [ ] T030 Run applicable formatter/build/coverage and required CI checks, audit
+- [x] T030 Run applicable formatter/build/coverage and required CI checks, audit
       the focused Playwright files and prepare the final evidence; do not run
       full E2E suites during ordinary development.
-- [ ] T031 Open the M2 PR to `develop`, linking the completed configured-source
+- [x] T031 Open the M2 PR to `develop`, linking the completed configured-source
       and recovery evidence. State deployment/user-acceptance status separately;
       do not merge or deploy as part of this task.
 
@@ -456,6 +456,14 @@ T016 cross-owner job/file checks now pass publicly with 404 and no CSV content;
 both ordinary users subsequently export identical two-row CSVs. Authentication
 plus workflow passed in 51.1 seconds without retries against widget 814d8341,
 which removes the redundant session probe. Application revision remains 3de726.
-The prior CSRF failure and trace are retained as diagnosis. Remaining clinical
-scope-denial browser evidence, final CI and acceptance reconciliation stay open;
-human acceptance is separate. No PR merge or full-goal completion is claimed.
+The prior CSRF failure and trace are retained as diagnosis. Clinical scope denial is established by service tests; it is not claimed as
+browser evidence. Final CI now passes on 122dea228b01. Engineering acceptance is reconciled in `acceptance.md`;
+human acceptance remains pending; see the September 15 execution checkpoint. No PR merge or full-goal completion is claimed.
+
+## Final engineering evidence reconciliation
+
+[Acceptance map](acceptance.md) covers all 23 functional requirements and ten
+success criteria. The existing 18 reporting test reports contain 95 tests with
+zero failures, errors or skips, including persistence, migration rollback and
+concurrent edits. T018/T031 use the approved official stack #4306 plus #4318
+instead of the original two-PR packaging. No merge or human acceptance is implied.
