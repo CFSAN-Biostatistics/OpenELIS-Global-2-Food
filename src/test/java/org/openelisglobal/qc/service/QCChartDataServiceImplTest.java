@@ -134,7 +134,7 @@ public class QCChartDataServiceImplTest {
         // The ACTIVE-by-instrument query already scopes to instrument "1"; only lots
         // it returns are considered (matches the on-screen chart workflow).
         when(controlLotService.getActiveControlLotsByInstrument("1")).thenReturn(Arrays.asList(lotA, lotB));
-        when(analyzerService.getWithType("1")).thenReturn(Optional.of(analyzer("Cobas 6000")));
+        when(analyzerService.getWithBinding("1")).thenReturn(Optional.of(analyzer("Cobas 6000")));
 
         when(resultDAO.findByControlLotAndDateRange(eq("a"), any(), any()))
                 .thenReturn(Arrays.asList(result("r1"), result("r2")));
@@ -164,7 +164,7 @@ public class QCChartDataServiceImplTest {
         QCControlLot normal = lot("a", "1", "412", "NORMAL");
         QCControlLot high = lot("b", "1", "412", "HIGH");
         when(controlLotService.getActiveControlLotsByInstrument("1")).thenReturn(Arrays.asList(normal, high));
-        when(analyzerService.getWithType("1")).thenReturn(Optional.of(analyzer("Cobas")));
+        when(analyzerService.getWithBinding("1")).thenReturn(Optional.of(analyzer("Cobas")));
         when(resultDAO.findByControlLotAndDateRange(eq("b"), any(), any())).thenReturn(Arrays.asList(result("r1")));
         when(statisticsService.getLatestStatistics("b")).thenReturn(stats("50.0", "1.0", 25));
         when(violationDAO.findByTriggeringResultId(any())).thenReturn(Collections.emptyList());
@@ -179,7 +179,7 @@ public class QCChartDataServiceImplTest {
     public void getExportModel_capsRowsAndFlagsTruncated() {
         QCControlLot lotA = lot("a", "1", "412", "NORMAL");
         when(controlLotService.getActiveControlLotsByInstrument("1")).thenReturn(Arrays.asList(lotA));
-        when(analyzerService.getWithType("1")).thenReturn(Optional.of(analyzer("Cobas")));
+        when(analyzerService.getWithBinding("1")).thenReturn(Optional.of(analyzer("Cobas")));
         when(resultDAO.findByControlLotAndDateRange(eq("a"), any(), any()))
                 .thenReturn(Arrays.asList(result("r1"), result("r2"), result("r3"), result("r4"), result("r5")));
         when(statisticsService.getLatestStatistics("a")).thenReturn(stats("100.0", "2.0", 30));
@@ -196,7 +196,7 @@ public class QCChartDataServiceImplTest {
     public void getExportModel_withTestIdUsesActiveByTestQuery() {
         QCControlLot lotA = lot("a", "1", "412", "NORMAL");
         when(controlLotService.getActiveControlLots("412", "1")).thenReturn(Arrays.asList(lotA));
-        when(analyzerService.getWithType("1")).thenReturn(Optional.of(analyzer("Cobas")));
+        when(analyzerService.getWithBinding("1")).thenReturn(Optional.of(analyzer("Cobas")));
         when(resultDAO.findByControlLotAndDateRange(eq("a"), any(), any())).thenReturn(Arrays.asList(result("r1")));
         when(statisticsService.getLatestStatistics("a")).thenReturn(stats("100.0", "2.0", 30));
         when(violationDAO.findByTriggeringResultId(any())).thenReturn(Collections.emptyList());

@@ -51,6 +51,7 @@ import org.springframework.web.bind.annotation.RestController;
  */
 @RestController
 @RequestMapping("/rest/qc")
+@PreAuthorize("hasAnyRole('ANALYSER_IMPORT', 'ADMIN')")
 public class QCRestController extends BaseRestController {
 
     private static final String[] ALLOWED_FIELDS = new String[] { "id", "productName", "lotNumber", "manufacturer",

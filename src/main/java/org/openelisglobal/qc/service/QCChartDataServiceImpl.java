@@ -75,7 +75,7 @@ public class QCChartDataServiceImpl implements QCChartDataService {
     @Transactional(readOnly = true)
     public QCExportModel getExportModel(String instrumentId, String testId, String controlLevel, Timestamp start,
             Timestamp end, int maxRows) {
-        String instrumentName = analyzerService.getWithType(instrumentId).map(Analyzer::getName).orElse(instrumentId);
+        String instrumentName = analyzerService.getWithBinding(instrumentId).map(Analyzer::getName).orElse(instrumentId);
 
         // Scope to ACTIVE lots, matching the on-screen QC chart/dashboard workflow
         // (getActiveControlLots*). An ACTIVE lot is guaranteed to have a

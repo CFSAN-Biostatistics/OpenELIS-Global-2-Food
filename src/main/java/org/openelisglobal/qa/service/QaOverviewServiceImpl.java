@@ -217,7 +217,7 @@ public class QaOverviewServiceImpl implements QaOverviewService {
 
     private String lookupInstrumentName(String instrumentId) {
         try {
-            return analyzerService.getWithType(instrumentId).map(Analyzer::getName)
+            return analyzerService.getWithBinding(instrumentId).map(Analyzer::getName)
                     .orElse("Instrument " + instrumentId);
         } catch (RuntimeException e) {
             return "Instrument " + instrumentId;

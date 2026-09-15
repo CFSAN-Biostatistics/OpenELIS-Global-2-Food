@@ -64,7 +64,7 @@ import LandingPage from "./components/home/LandingPage";
  * surfaces as an E2E failure: the RouteErrorBoundary catches the
  * `TypeError: Failed to fetch dynamically imported module` and shows
  * its "module could not be loaded" fallback. Seen as a recurring
- * develop-CI flake on AnalyzerForm chunk fetch; the retry wrapper
+ * develop-CI flake on route chunk fetch; the retry wrapper
  * gives the browser three chances with backoff before giving up.
  *
  * Backoff is intentionally short (0.5s/1s/1.5s): the real failures
@@ -73,9 +73,8 @@ import LandingPage from "./components/home/LandingPage";
  * chunk is genuinely missing (e.g., deploy mismatch).
  */
 function lazyWithRetry(factory, retries = 3, backoffMs = 500) {
-  // eslint-disable-next-line local/no-raw-react-lazy --
-  // This IS the lazyWithRetry helper: it legitimately wraps React.lazy
-  // with retry semantics. The rule flags direct callers elsewhere.
+  // This helper is the one legitimate wrapper around React.lazy.
+  // eslint-disable-next-line local/no-raw-react-lazy
   return React.lazy(async () => {
     let lastError;
     for (let attempt = 0; attempt < retries; attempt += 1) {
@@ -95,23 +94,20 @@ function lazyWithRetry(factory, retries = 3, backoffMs = 500) {
 }
 
 const AnalyzersPage = lazyWithRetry(() => import("./pages/AnalyzersPage"));
-const FieldMapping = lazyWithRetry(
-  () => import("./components/analyzers/FieldMapping/FieldMapping"),
-);
-const ErrorDashboardPage = lazyWithRetry(
-  () => import("./pages/ErrorDashboardPage"),
-);
-const CustomFieldTypeManagementPage = lazyWithRetry(
-  () => import("./pages/CustomFieldTypeManagementPage"),
-);
 const AnalyzerTypesPage = lazyWithRetry(
   () => import("./pages/AnalyzerTypesPage"),
 );
-const AnalyzerFormPage = lazyWithRetry(
-  () => import("./components/analyzers/AnalyzerForm/AnalyzerForm"),
+const AnalyzerTypeMappingPage = lazyWithRetry(
+  () => import("./pages/AnalyzerTypeMappingPage"),
 );
-const QcRulePage = lazyWithRetry(
-  () => import("./components/analyzers/QcRules/QcRuleBuilderModal"),
+const MicrobiologyPage = lazyWithRetry(
+  () => import("./pages/MicrobiologyPage"),
+);
+const MicrobiologyWorklistPage = lazyWithRetry(
+  () => import("./pages/MicrobiologyWorklistPage"),
+);
+const MicrobiologyWhonetPage = lazyWithRetry(
+  () => import("./pages/MicrobiologyWhonetPage"),
 );
 import {
   QCDashboard,
@@ -129,6 +125,15 @@ import {
 import { getFromOpenElisServer } from "./components/utils/Utils";
 import { loadAndApplyBranding } from "./components/utils/BrandingUtils";
 import { resolveMessagesForLocale } from "./languages";
+import {
+  getMicrobiologyCaseUrl,
+  getMicrobiologyWorklistUrl,
+  MICROBIOLOGY_CASE_PATH,
+  MICROBIOLOGY_WORKLIST_PATH,
+  parseMicrobiologyCaseSearch,
+  parseMicrobiologyWorklistSearch,
+} from "./components/microbiology/MicrobiologyRoutes";
+import { MICROBIOLOGY_WHONET_PATH } from "./components/microbiology/WhonetRoutes";
 import config from "./config.json";
 import { SecureRoute } from "./components/security";
 import "./index.scss";
@@ -223,6 +228,11 @@ const qaTatBreadcrumbs = [
   { label: "reports.tat.title", link: "" },
 ];
 
+export const ANALYZER_RESULTS_ROLES = [
+  Roles.GLOBAL_ADMIN,
+  Roles.ANALYSER_IMPORT,
+];
+
 export default function App() {
   // The stored preference, or the browser's full tag (region kept: fr-MG
   // resolves to its own bundle, not just fr). The resolver accepts either
@@ -267,7 +277,6 @@ export default function App() {
         });
         if (response.status === 200) {
           const jsonResp = await response.json();
-          console.debug(JSON.stringify(jsonResp));
           if (jsonResp.authenticated) {
             localStorage.setItem("CSRF", jsonResp.csrf);
           }
@@ -454,144 +463,188 @@ export default function App() {
           <Router>
             <Layout onChangeLanguage={onChangeLanguage}>
               <Switch>
-                <Route path="/login" exact component={() => <Login />} />
+                <Route path="/login" exact render={() => <Login />} />
                 <Route
                   path="/ChangePasswordLogin"
                   exact
-                  component={() => <ChangePassword />}
+                  render={() => <ChangePassword />}
                 />
-                <Route
-                  path="/landing"
-                  exact
-                  component={() => <LandingPage />}
-                />
-                <SecureRoute
-                  path="/"
-                  exact
-                  component={() => <Home />}
-                  role=""
-                />
+                <Route path="/landing" exact render={() => <LandingPage />} />
+                <SecureRoute path="/" exact render={() => <Home />} role="" />
                 <SecureRoute
                   path="/Dashboard"
                   exact
-                  component={() => <Home />}
+                  render={() => <Home />}
                   role=""
                 />
                 <SecureRoute
                   path="/admin"
-                  component={() => <Admin />}
+                  render={() => <Admin />}
                   role={Roles.GLOBAL_ADMIN}
                 />
                 <SecureRoute
                   path="/MasterListsPage"
-                  component={() => <Admin />}
+                  render={() => <Admin />}
                   role={Roles.GLOBAL_ADMIN}
                 />
                 <SecureRoute
                   path="/PathologyDashboard"
                   exact
-                  component={() => <PathologyDashboard />}
+                  render={() => <PathologyDashboard />}
                   role=""
                   labUnitRole={{ Pathology: [Roles.RESULTS] }}
                 />
                 <SecureRoute
                   path="/PathologyCaseView/:pathologySampleId"
                   exact
-                  component={() => <PathologyCaseView />}
+                  render={() => <PathologyCaseView />}
                   role=""
                   labUnitRole={{ Pathology: [Roles.RESULTS] }}
                 />
                 <SecureRoute
                   path="/ImmunohistochemistryDashboard"
                   exact
-                  component={() => <ImmunohistochemistryDashboard />}
+                  render={() => <ImmunohistochemistryDashboard />}
                   role=""
                   labUnitRole={{ Immunohistochemistry: [Roles.RESULTS] }}
                 />
                 <SecureRoute
                   path="/ImmunohistochemistryCaseView/:immunohistochemistrySampleId"
                   exact
-                  component={() => <ImmunohistochemistryCaseView />}
+                  render={() => <ImmunohistochemistryCaseView />}
                   role=""
                   labUnitRole={{ Immunohistochemistry: [Roles.RESULTS] }}
                 />
                 <SecureRoute
                   path="/CytologyDashboard"
                   exact
-                  component={() => <CytologyDashboard />}
+                  render={() => <CytologyDashboard />}
                   role=""
                 />
                 <SecureRoute
                   path="/genericProgram"
                   exact
-                  component={() => <ProgramDashboard />}
+                  render={() => <ProgramDashboard />}
                   role={Roles.RECEPTION}
                 />
                 <SecureRoute
                   path="/programView/:programSampleId"
                   exact
-                  component={() => <ProgramCaseView />}
+                  render={() => <ProgramCaseView />}
                   role={Roles.RECEPTION}
                 />
                 <SecureRoute
                   path="/NoteBookDashboard"
                   exact
-                  component={() => <NoteBookDashBoard />}
+                  render={() => <NoteBookDashBoard />}
                   role={[Roles.RECEPTION, Roles.RESULTS, Roles.VALIDATION]}
                 />
                 <SecureRoute
                   path="/EnvironmentalDashboard"
                   exact
-                  component={() => <EnvironmentalDashboard />}
+                  render={() => <EnvironmentalDashboard />}
                   role={Roles.RESULTS}
                 />
                 <SecureRoute
                   path="/NoteBookEntryForm/:notebookid"
                   exact
-                  component={() => <NoteBookEntryForm />}
+                  render={() => <NoteBookEntryForm />}
                   role={Roles.GLOBAL_ADMIN}
                 />
                 <SecureRoute
                   path="/NoteBookEntryForm"
                   exact
-                  component={() => <NoteBookEntryForm />}
+                  render={() => <NoteBookEntryForm />}
                   role={Roles.GLOBAL_ADMIN}
                 />
                 <SecureRoute
                   path="/NoteBookInstanceEntryForm/:notebookid"
                   exact
-                  component={() => <NoteBookInstanceEntryForm />}
+                  render={() => <NoteBookInstanceEntryForm />}
                   role={Roles.RESULTS}
                 />
                 <SecureRoute
                   path="/NoteBookInstanceEditForm/:notebookentryid"
                   exact
-                  component={() => <NoteBookInstanceEntryForm />}
+                  render={() => <NoteBookInstanceEntryForm />}
                   role={Roles.RESULTS}
                 />
                 <SecureRoute
                   path="/NotebookSampleOrder/:notebookId/:notebookEntryId"
                   exact
-                  component={() => <NotebookSampleOrder />}
+                  render={() => <NotebookSampleOrder />}
                   role={Roles.RESULTS}
                 />
                 <SecureRoute
                   path="/NotebookSampleOrder/:notebookId"
                   exact
-                  component={() => <NotebookSampleOrder />}
+                  render={() => <NotebookSampleOrder />}
                   role={Roles.RESULTS}
                 />
                 <SecureRoute
                   path="/CytologyCaseView/:cytologySampleId"
                   exact
-                  component={() => <CytologyCaseView />}
+                  render={() => <CytologyCaseView />}
                   role=""
                   labUnitRole={{ Cytology: [Roles.RESULTS] }}
                 />
                 <SecureRoute
-                  path="/GenericSample/Order"
+                  path={`${MICROBIOLOGY_CASE_PATH}/:caseId`}
                   exact
                   component={() => (
+                    <Suspense fallback={null}>
+                      <MicrobiologyPage />
+                    </Suspense>
+                  )}
+                  role={[Roles.GLOBAL_ADMIN, Roles.RESULTS, Roles.VALIDATION]}
+                />
+                <SecureRoute
+                  path={MICROBIOLOGY_WORKLIST_PATH}
+                  exact
+                  component={() => (
+                    <Suspense fallback={null}>
+                      <MicrobiologyWorklistPage />
+                    </Suspense>
+                  )}
+                  role={[Roles.GLOBAL_ADMIN, Roles.RESULTS, Roles.VALIDATION]}
+                />
+                <SecureRoute
+                  path={MICROBIOLOGY_WHONET_PATH}
+                  exact
+                  component={() => (
+                    <Suspense fallback={null}>
+                      <MicrobiologyWhonetPage />
+                    </Suspense>
+                  )}
+                  role={[Roles.GLOBAL_ADMIN, Roles.RESULTS, Roles.REPORTS]}
+                />
+                <Route
+                  path="/MicrobiologyCaseView/:caseId"
+                  exact
+                  render={({ location, match }) => (
+                    <Redirect
+                      to={getMicrobiologyCaseUrl(
+                        match.params.caseId,
+                        parseMicrobiologyCaseSearch(location.search),
+                      )}
+                    />
+                  )}
+                />
+                <Route
+                  path="/MicrobiologyWorklist"
+                  exact
+                  render={({ location }) => (
+                    <Redirect
+                      to={getMicrobiologyWorklistUrl(
+                        parseMicrobiologyWorklistSearch(location.search),
+                      )}
+                    />
+                  )}
+                />
+                <SecureRoute
+                  path="/GenericSample/Order"
+                  exact
+                  render={() => (
                     <Suspense fallback={null}>
                       <GenericSampleOrder />
                     </Suspense>
@@ -601,7 +654,7 @@ export default function App() {
                 <SecureRoute
                   path="/GenericSample/Edit"
                   exact
-                  component={() => (
+                  render={() => (
                     <Suspense fallback={null}>
                       <GenericSampleOrderEdit />
                     </Suspense>
@@ -611,7 +664,7 @@ export default function App() {
                 <SecureRoute
                   path="/GenericSample/Import"
                   exact
-                  component={() => (
+                  render={() => (
                     <Suspense fallback={null}>
                       <GenericSampleOrderImport />
                     </Suspense>
@@ -621,17 +674,17 @@ export default function App() {
                 <SecureRoute
                   path="/FreezerMonitoring"
                   exact
-                  component={() => (
+                  render={() => (
                     <Suspense fallback={null}>
                       <FreezerMonitoringDashboard />
                     </Suspense>
                   )}
-                  role={Roles.RECEPTION}
+                  role={[Roles.RECEPTION, Roles.GLOBAL_ADMIN]}
                 />
                 <SecureRoute
                   path="/SamplePatientEntry"
                   exact
-                  component={() => (
+                  render={() => (
                     <RouteErrorBoundary {...routeErrorSamplePatientEntry}>
                       <AddOrder />
                     </RouteErrorBoundary>
@@ -647,31 +700,31 @@ export default function App() {
                         <SecureRoute
                           path={`${match.path}`}
                           exact
-                          component={() => <OrderDashboard />}
+                          render={() => <OrderDashboard />}
                           role={Roles.RECEPTION}
                         />
                         <SecureRoute
                           path={`${match.path}/enter`}
                           exact
-                          component={() => <ClinicalOrderEnter />}
+                          render={() => <ClinicalOrderEnter />}
                           role={Roles.RECEPTION}
                         />
                         <SecureRoute
                           path={`${match.path}/collect`}
                           exact
-                          component={() => <OrderCollect />}
+                          render={() => <OrderCollect />}
                           role={Roles.RECEPTION}
                         />
                         <SecureRoute
                           path={`${match.path}/label`}
                           exact
-                          component={() => <OrderLabel />}
+                          render={() => <OrderLabel />}
                           role={Roles.RECEPTION}
                         />
                         <SecureRoute
                           path={`${match.path}/qa`}
                           exact
-                          component={() => <OrderQA />}
+                          render={() => <OrderQA />}
                           role={Roles.RECEPTION}
                         />
                       </Switch>
@@ -687,25 +740,25 @@ export default function App() {
                         <SecureRoute
                           path={`${match.path}`}
                           exact
-                          component={() => <OrderDashboard />}
+                          render={() => <OrderDashboard />}
                           role={Roles.RECEPTION}
                         />
                         <SecureRoute
                           path={`${match.path}/enter`}
                           exact
-                          component={() => <EnvironmentalOrderEnter />}
+                          render={() => <EnvironmentalOrderEnter />}
                           role={Roles.RECEPTION}
                         />
                         <SecureRoute
                           path={`${match.path}/label`}
                           exact
-                          component={() => <OrderLabel />}
+                          render={() => <OrderLabel />}
                           role={Roles.RECEPTION}
                         />
                         <SecureRoute
                           path={`${match.path}/qa`}
                           exact
-                          component={() => <OrderQA />}
+                          render={() => <OrderQA />}
                           role={Roles.RECEPTION}
                         />
                       </Switch>
@@ -721,31 +774,31 @@ export default function App() {
                         <SecureRoute
                           path={`${match.path}`}
                           exact
-                          component={() => <OrderDashboard />}
+                          render={() => <OrderDashboard />}
                           role={Roles.RECEPTION}
                         />
                         <SecureRoute
                           path={`${match.path}/enter`}
                           exact
-                          component={() => <VectorOrderEnter />}
+                          render={() => <VectorOrderEnter />}
                           role={Roles.RECEPTION}
                         />
                         <SecureRoute
                           path={`${match.path}/label`}
                           exact
-                          component={() => <OrderLabel />}
+                          render={() => <OrderLabel />}
                           role={Roles.RECEPTION}
                         />
                         <SecureRoute
                           path={`${match.path}/qa`}
                           exact
-                          component={() => <OrderQA />}
+                          render={() => <OrderQA />}
                           role={Roles.RECEPTION}
                         />
                         <SecureRoute
                           path={`${match.path}/complete`}
                           exact
-                          component={() => <VectorOrderComplete />}
+                          render={() => <VectorOrderComplete />}
                           role={Roles.RECEPTION}
                         />
                       </Switch>
@@ -766,37 +819,37 @@ export default function App() {
                 <SecureRoute
                   path="/vector/identification"
                   exact
-                  component={() => <VectorIdentificationWorklist />}
+                  render={() => <VectorIdentificationWorklist />}
                   role={Roles.RESULTS}
                 />
                 <SecureRoute
                   path="/vector/deconvolution"
                   exact
-                  component={() => <VectorDeconvolutionWorklist />}
+                  render={() => <VectorDeconvolutionWorklist />}
                   role={Roles.RESULTS}
                 />
                 <SecureRoute
                   path="/ModifyOrder"
                   exact
-                  component={() => <ModifyOrder />}
+                  render={() => <ModifyOrder />}
                   role={Roles.RECEPTION}
                 />
                 <SecureRoute
                   path="/SampleEdit"
                   exact
-                  component={() => <FindOrder />}
+                  render={() => <FindOrder />}
                   role={Roles.RECEPTION}
                 />
                 <SecureRoute
                   path="/NceDashboard"
                   exact
-                  component={() => <NonConformIndex form="NceDashboard" />}
+                  render={() => <NonConformIndex form="NceDashboard" />}
                   role={[Roles.RECEPTION, Roles.VALIDATION]}
                 />
                 <SecureRoute
                   path="/ReportNonConformingEvent"
                   exact
-                  component={() => (
+                  render={() => (
                     <NonConformIndex form="ReportNonConformingEvent" />
                   )}
                   role={[Roles.RECEPTION, Roles.VALIDATION]}
@@ -804,7 +857,7 @@ export default function App() {
                 <SecureRoute
                   path="/ViewNonConformingEvent"
                   exact
-                  component={() => (
+                  render={() => (
                     <NonConformIndex form="ViewNonConformingEvent" />
                   )}
                   role={[Roles.RECEPTION, Roles.VALIDATION]}
@@ -813,41 +866,39 @@ export default function App() {
                 <SecureRoute
                   path="/NCECorrectiveAction"
                   exact
-                  component={() => (
-                    <NonConformIndex form="NCECorrectiveAction" />
-                  )}
+                  render={() => <NonConformIndex form="NCECorrectiveAction" />}
                   role={[Roles.RECEPTION, Roles.VALIDATION]}
                 />
 
                 <SecureRoute
                   path="/SampleBatchEntrySetup"
                   exact
-                  component={() => <SampleBatchEntrySetup />}
+                  render={() => <SampleBatchEntrySetup />}
                   role={Roles.RECEPTION}
                 />
 
                 <SecureRoute
                   path="/ElectronicOrders"
                   exact
-                  component={() => <EOrderPage />}
+                  render={() => <EOrderPage />}
                   role={Roles.RECEPTION}
                 />
                 <SecureRoute
                   path="/PrintBarcode"
                   exact
-                  component={() => <PrintBarcode />}
+                  render={() => <PrintBarcode />}
                   role={Roles.RECEPTION}
                 />
                 <SecureRoute
                   path="/PatientManagement/:patientId?"
                   exact
-                  component={() => <PatientManagement />}
+                  render={() => <PatientManagement />}
                   role={Roles.RECEPTION}
                 />
                 <SecureRoute
                   path="/Alerts"
                   exact
-                  component={() => <AlertsDashboard />}
+                  render={() => <AlertsDashboard />}
                   role={[Roles.RECEPTION, Roles.RESULTS]}
                 />
                 {/* QA v0.5 IA rehome (OGC-691): EQA pages moved to /qa/eqa/* */}
@@ -877,43 +928,43 @@ export default function App() {
                 <SecureRoute
                   path="/qa/eqa/orders"
                   exact
-                  component={() => <EQAOrdersPage />}
+                  render={() => <EQAOrdersPage />}
                   role={[Roles.RECEPTION, Roles.RESULTS]}
                 />
                 <SecureRoute
                   path="/qa/eqa/my-programs"
                   exact
-                  component={() => <MyProgramsPage />}
+                  render={() => <MyProgramsPage />}
                   role={[Roles.RECEPTION, Roles.RESULTS]}
                 />
                 <SecureRoute
                   path="/qa/eqa/management"
                   exact
-                  component={() => <EQAProgramManagement />}
+                  render={() => <EQAProgramManagement />}
                   role={[Roles.RECEPTION, Roles.RESULTS]}
                 />
                 <SecureRoute
                   path="/qa/eqa/results"
                   exact
-                  component={() => <EQAResultsPage />}
+                  render={() => <EQAResultsPage />}
                   role={[Roles.RECEPTION, Roles.RESULTS]}
                 />
                 <SecureRoute
                   path="/qa/eqa/participants"
                   exact
-                  component={() => <EQAParticipantsPage />}
+                  render={() => <EQAParticipantsPage />}
                   role={[Roles.RECEPTION, Roles.RESULTS]}
                 />
                 <SecureRoute
                   path="/qa/eqa/distribution/create"
                   exact
-                  component={() => <CreateDistribution />}
+                  render={() => <CreateDistribution />}
                   role={[Roles.RECEPTION, Roles.RESULTS]}
                 />
                 <SecureRoute
                   path="/qa/eqa/distribution"
                   exact
-                  component={() => <EQADistributionDashboard />}
+                  render={() => <EQADistributionDashboard />}
                   role={[Roles.RECEPTION, Roles.RESULTS]}
                 />
                 {/* QA menu (OGC-688): Overview shell + placeholder leaves.
@@ -1031,7 +1082,7 @@ export default function App() {
                 <SecureRoute
                   path="/Storage"
                   exact
-                  component={() => (
+                  render={() => (
                     <RouteErrorBoundary {...routeErrorStorage}>
                       <StorageDashboard />
                     </RouteErrorBoundary>
@@ -1041,7 +1092,7 @@ export default function App() {
                 <SecureRoute
                   path="/Storage/sample-items"
                   exact
-                  component={() => (
+                  render={() => (
                     <RouteErrorBoundary {...routeErrorStorage}>
                       <SampleItemsPage />
                     </RouteErrorBoundary>
@@ -1051,7 +1102,7 @@ export default function App() {
                 <SecureRoute
                   path="/Storage/sample-items/:id/manage-location"
                   exact
-                  component={() => (
+                  render={() => (
                     <RouteErrorBoundary {...routeErrorStorage}>
                       <ManageLocationPage />
                     </RouteErrorBoundary>
@@ -1061,7 +1112,7 @@ export default function App() {
                 <SecureRoute
                   path="/Storage/rooms"
                   exact
-                  component={() => (
+                  render={() => (
                     <RouteErrorBoundary {...routeErrorStorage}>
                       <RoomsPage />
                     </RouteErrorBoundary>
@@ -1071,7 +1122,7 @@ export default function App() {
                 <SecureRoute
                   path="/Storage/devices"
                   exact
-                  component={() => (
+                  render={() => (
                     <RouteErrorBoundary {...routeErrorStorage}>
                       <DevicesPage />
                     </RouteErrorBoundary>
@@ -1081,7 +1132,7 @@ export default function App() {
                 <SecureRoute
                   path="/Storage/shelves"
                   exact
-                  component={() => (
+                  render={() => (
                     <RouteErrorBoundary {...routeErrorStorage}>
                       <ShelvesPage />
                     </RouteErrorBoundary>
@@ -1091,7 +1142,7 @@ export default function App() {
                 <SecureRoute
                   path="/Storage/racks"
                   exact
-                  component={() => (
+                  render={() => (
                     <RouteErrorBoundary {...routeErrorStorage}>
                       <RacksPage />
                     </RouteErrorBoundary>
@@ -1101,7 +1152,7 @@ export default function App() {
                 <SecureRoute
                   path="/Storage/boxes"
                   exact
-                  component={() => (
+                  render={() => (
                     <RouteErrorBoundary {...routeErrorStorage}>
                       <BoxesPage />
                     </RouteErrorBoundary>
@@ -1111,7 +1162,7 @@ export default function App() {
                 <SecureRoute
                   path="/Storage/rooms/new"
                   exact
-                  component={() => (
+                  render={() => (
                     <RouteErrorBoundary {...routeErrorStorage}>
                       <AddLocationPage type="room" />
                     </RouteErrorBoundary>
@@ -1121,7 +1172,7 @@ export default function App() {
                 <SecureRoute
                   path="/Storage/devices/new"
                   exact
-                  component={() => (
+                  render={() => (
                     <RouteErrorBoundary {...routeErrorStorage}>
                       <AddLocationPage type="device" />
                     </RouteErrorBoundary>
@@ -1131,7 +1182,7 @@ export default function App() {
                 <SecureRoute
                   path="/Storage/shelves/new"
                   exact
-                  component={() => (
+                  render={() => (
                     <RouteErrorBoundary {...routeErrorStorage}>
                       <AddLocationPage type="shelf" />
                     </RouteErrorBoundary>
@@ -1141,7 +1192,7 @@ export default function App() {
                 <SecureRoute
                   path="/Storage/racks/new"
                   exact
-                  component={() => (
+                  render={() => (
                     <RouteErrorBoundary {...routeErrorStorage}>
                       <AddLocationPage type="rack" />
                     </RouteErrorBoundary>
@@ -1151,7 +1202,7 @@ export default function App() {
                 <SecureRoute
                   path="/Storage/boxes/new"
                   exact
-                  component={() => (
+                  render={() => (
                     <RouteErrorBoundary {...routeErrorStorage}>
                       <AddBoxPage />
                     </RouteErrorBoundary>
@@ -1161,7 +1212,7 @@ export default function App() {
                 <SecureRoute
                   path="/Storage/rooms/:id/edit"
                   exact
-                  component={() => (
+                  render={() => (
                     <RouteErrorBoundary {...routeErrorStorage}>
                       <EditLocationPage type="room" />
                     </RouteErrorBoundary>
@@ -1171,7 +1222,7 @@ export default function App() {
                 <SecureRoute
                   path="/Storage/devices/:id/edit"
                   exact
-                  component={() => (
+                  render={() => (
                     <RouteErrorBoundary {...routeErrorStorage}>
                       <EditLocationPage type="device" />
                     </RouteErrorBoundary>
@@ -1181,7 +1232,7 @@ export default function App() {
                 <SecureRoute
                   path="/Storage/shelves/:id/edit"
                   exact
-                  component={() => (
+                  render={() => (
                     <RouteErrorBoundary {...routeErrorStorage}>
                       <EditLocationPage type="shelf" />
                     </RouteErrorBoundary>
@@ -1191,7 +1242,7 @@ export default function App() {
                 <SecureRoute
                   path="/Storage/racks/:id/edit"
                   exact
-                  component={() => (
+                  render={() => (
                     <RouteErrorBoundary {...routeErrorStorage}>
                       <EditLocationPage type="rack" />
                     </RouteErrorBoundary>
@@ -1201,7 +1252,7 @@ export default function App() {
                 <SecureRoute
                   path="/Storage/boxes/:id/edit"
                   exact
-                  component={() => (
+                  render={() => (
                     <RouteErrorBoundary {...routeErrorStorage}>
                       <EditBoxPage />
                     </RouteErrorBoundary>
@@ -1211,19 +1262,19 @@ export default function App() {
                 <SecureRoute
                   path="/inventory"
                   exact
-                  component={() => <InventoryManagement />}
+                  render={() => <InventoryManagement />}
                   role={[Roles.RESULTS, Roles.GLOBAL_ADMIN]}
                 />
                 <SecureRoute
                   path="/SampleShipment"
                   exact
-                  component={() => <ShipmentDashboard />}
+                  render={() => <ShipmentDashboard />}
                   role={[Roles.RECEPTION, Roles.RESULTS, Roles.GLOBAL_ADMIN]}
                 />
                 <SecureRoute
                   path="/SampleShipment/create-box"
                   exact
-                  component={() => <BoxCreation />}
+                  render={() => <BoxCreation />}
                   role={[Roles.RECEPTION, Roles.RESULTS, Roles.GLOBAL_ADMIN]}
                 />
                 <SecureRoute
@@ -1235,13 +1286,13 @@ export default function App() {
                 <SecureRoute
                   path="/SampleShipment/receive"
                   exact
-                  component={() => <ReceptionWorkflow />}
+                  render={() => <ReceptionWorkflow />}
                   role={[Roles.RECEPTION, Roles.RESULTS, Roles.GLOBAL_ADMIN]}
                 />
                 <SecureRoute
                   path="/SampleShipment/reports"
                   exact
-                  component={() => (
+                  render={() => (
                     <Suspense fallback={null}>
                       <ShipmentReport />
                     </Suspense>
@@ -1251,30 +1302,30 @@ export default function App() {
                 <SecureRoute
                   path="/SampleShipment/settings"
                   exact
-                  component={() => <ShipmentSettings />}
+                  render={() => <ShipmentSettings />}
                   role={[Roles.RECEPTION, Roles.GLOBAL_ADMIN]}
                 />
                 <SecureRoute
                   path="/SampleShipment/reference-lab-results"
                   exact
-                  component={() => <ReferenceLabResults />}
+                  render={() => <ReferenceLabResults />}
                   role={[Roles.RECEPTION, Roles.RESULTS, Roles.GLOBAL_ADMIN]}
                 />
                 <SecureRoute
                   path="/SampleShipment/:tab"
-                  component={() => <ShipmentDashboard />}
+                  render={() => <ShipmentDashboard />}
                   role={[Roles.RECEPTION, Roles.RESULTS, Roles.GLOBAL_ADMIN]}
                 />
                 <SecureRoute
                   path="/SampleManagement"
                   exact
-                  component={() => <SampleManagement />}
+                  render={() => <SampleManagement />}
                   role={[Roles.RECEPTION, Roles.RESULTS]}
                 />
                 <SecureRoute
                   path="/analyzers/new"
                   exact
-                  component={() => (
+                  render={() => (
                     <RouteErrorBoundary {...routeErrorAnalyzers}>
                       <Suspense fallback={null}>
                         <AnalyzerFormPage />
@@ -1286,7 +1337,7 @@ export default function App() {
                 <SecureRoute
                   path="/analyzers/:id/edit"
                   exact
-                  component={() => (
+                  render={() => (
                     <RouteErrorBoundary {...routeErrorAnalyzers}>
                       <Suspense fallback={null}>
                         <AnalyzerFormPage />
@@ -1298,7 +1349,7 @@ export default function App() {
                 <SecureRoute
                   path="/analyzers/:id/qc-rules"
                   exact
-                  component={() => (
+                  render={() => (
                     <RouteErrorBoundary {...routeErrorAnalyzers}>
                       <Suspense fallback={null}>
                         <QcRulePage />
@@ -1310,19 +1361,19 @@ export default function App() {
                 <SecureRoute
                   path="/analyzers"
                   exact
-                  component={() => (
+                  render={() => (
                     <RouteErrorBoundary {...routeErrorAnalyzers}>
                       <Suspense fallback={null}>
                         <AnalyzersPage />
                       </Suspense>
                     </RouteErrorBoundary>
                   )}
-                  role={Roles.ANALYSER_IMPORT}
+                  role={[Roles.ANALYSER_IMPORT, Roles.GLOBAL_ADMIN]}
                 />
                 <SecureRoute
                   path="/analyzers/:id/mappings"
                   exact
-                  component={() => (
+                  render={() => (
                     <RouteErrorBoundary {...routeErrorAnalyzers}>
                       <Suspense fallback={null}>
                         <FieldMapping />
@@ -1334,19 +1385,19 @@ export default function App() {
                 <SecureRoute
                   path="/analyzers/errors"
                   exact
-                  component={() => (
+                  render={() => (
                     <RouteErrorBoundary {...routeErrorAnalyzers}>
                       <Suspense fallback={null}>
                         <ErrorDashboardPage />
                       </Suspense>
                     </RouteErrorBoundary>
                   )}
-                  role={Roles.ANALYSER_IMPORT}
+                  role={[Roles.ANALYSER_IMPORT, Roles.GLOBAL_ADMIN]}
                 />
                 <SecureRoute
                   path="/analyzers/custom-field-types"
                   exact
-                  component={() => (
+                  render={() => (
                     <RouteErrorBoundary {...routeErrorAnalyzers}>
                       <Suspense fallback={null}>
                         <CustomFieldTypeManagementPage />
@@ -1358,10 +1409,22 @@ export default function App() {
                 <SecureRoute
                   path="/analyzers/types"
                   exact
-                  component={() => (
+                  render={() => (
                     <RouteErrorBoundary {...routeErrorAnalyzers}>
                       <Suspense fallback={null}>
                         <AnalyzerTypesPage />
+                      </Suspense>
+                    </RouteErrorBoundary>
+                  )}
+                  role={[Roles.ANALYSER_IMPORT, Roles.GLOBAL_ADMIN]}
+                />
+                <SecureRoute
+                  path="/analyzers/types/:profileId/mapping"
+                  exact
+                  component={() => (
+                    <RouteErrorBoundary {...routeErrorAnalyzers}>
+                      <Suspense fallback={null}>
+                        <AnalyzerTypeMappingPage />
                       </Suspense>
                     </RouteErrorBoundary>
                   )}
@@ -1370,7 +1433,7 @@ export default function App() {
                 <SecureRoute
                   path="/analyzers/qc/instruments/:instrumentId"
                   exact
-                  component={() => <InstrumentDetailPage />}
+                  render={() => <InstrumentDetailPage />}
                   role={Roles.LAB_SUPERVISOR}
                 />
                 {/* QA v0.5 IA rehome (OGC-689): QC pages moved to /qa/qc/* */}
@@ -1378,7 +1441,7 @@ export default function App() {
                 <SecureRoute
                   path="/qa/qc/dashboard"
                   exact
-                  component={() => <QCDashboard />}
+                  render={() => <QCDashboard />}
                   role={Roles.LAB_SUPERVISOR}
                 />
                 <SecureRoute
@@ -1390,7 +1453,7 @@ export default function App() {
                 <SecureRoute
                   path="/analyzers/qc/charts/:analyzerId"
                   exact
-                  component={() => <ControlChartDetail />}
+                  render={() => <ControlChartDetail />}
                   role={Roles.LAB_SUPERVISOR}
                 />
                 <Redirect
@@ -1401,19 +1464,19 @@ export default function App() {
                 <SecureRoute
                   path="/qa/qc/control-lots"
                   exact
-                  component={() => <ControlLotList />}
+                  render={() => <ControlLotList />}
                   role={Roles.LAB_SUPERVISOR}
                 />
                 <SecureRoute
                   path="/analyzers/qc/control-lots/new"
                   exact
-                  component={() => <ControlLotSetup />}
+                  render={() => <ControlLotSetup />}
                   role={Roles.LAB_SUPERVISOR}
                 />
                 <SecureRoute
                   path="/analyzers/qc/control-lots/:id"
                   exact
-                  component={() => <ControlLotSetup />}
+                  render={() => <ControlLotSetup />}
                   role={Roles.LAB_SUPERVISOR}
                 />
                 <Redirect
@@ -1424,25 +1487,25 @@ export default function App() {
                 <SecureRoute
                   path="/qa/qc/rule-config"
                   exact
-                  component={() => <RuleConfigPanel />}
+                  render={() => <RuleConfigPanel />}
                   role={Roles.LAB_SUPERVISOR}
                 />
                 <SecureRoute
                   path="/PatientHistory"
                   exact
-                  component={() => <PatientHistory />}
+                  render={() => <PatientHistory />}
                   role={Roles.RECEPTION}
                 />
                 <SecureRoute
                   path="/PatientMerge"
                   exact
-                  component={() => <PatientMerge />}
+                  render={() => <PatientMerge />}
                   role={Roles.RECEPTION}
                 />
                 <SecureRoute
                   path="/GenericSample/Results"
                   exact
-                  component={() => (
+                  render={() => (
                     <Suspense fallback={null}>
                       <GenericSampleResults />
                     </Suspense>
@@ -1452,14 +1515,14 @@ export default function App() {
                 <SecureRoute
                   path="/Aliquot"
                   exact
-                  component={() => <Aliquot />}
+                  render={() => <Aliquot />}
                   role={Roles.RECEPTION}
                 />
 
                 <SecureRoute
                   path="/PatientResults/:patientId"
                   exact
-                  component={() => (
+                  render={() => (
                     <RouteErrorBoundary {...routeErrorPatientResultsViewer}>
                       <Suspense fallback={null}>
                         <RoutedResultsViewer />
@@ -1472,25 +1535,25 @@ export default function App() {
                 <SecureRoute
                   path="/WorkPlanByTestSection"
                   exact
-                  component={() => <Workplan type="unit" />}
+                  render={() => <Workplan type="unit" />}
                   role={Roles.RESULTS}
                 />
                 <SecureRoute
                   path="/WorkplanByTest"
                   exact
-                  component={() => <Workplan type="test" />}
+                  render={() => <Workplan type="test" />}
                   role={Roles.RESULTS}
                 />
                 <SecureRoute
                   path="/WorkplanByPanel"
                   exact
-                  component={() => <Workplan type="panel" />}
+                  render={() => <Workplan type="panel" />}
                   role={Roles.RESULTS}
                 />
                 <SecureRoute
                   path="/WorkplanByPriority"
                   exact
-                  component={() => <Workplan type="priority" />}
+                  render={() => <Workplan type="priority" />}
                   role={Roles.RESULTS}
                 />
                 {/* OGC-1020 (R1): canonical unified worklist, gated by the
@@ -1498,7 +1561,7 @@ export default function App() {
                 <SecureRoute
                   path="/Results"
                   exact
-                  component={() => (
+                  render={() => (
                     <RouteErrorBoundary {...routeErrorResultsSearch}>
                       <UnifiedResultsRoute />
                     </RouteErrorBoundary>
@@ -1508,7 +1571,7 @@ export default function App() {
                 <SecureRoute
                   path="/result"
                   exact
-                  component={() => (
+                  render={() => (
                     <LegacyResultsGate>
                       <RouteErrorBoundary {...routeErrorResultsSearch}>
                         <ResultSearch />
@@ -1520,7 +1583,7 @@ export default function App() {
                 <SecureRoute
                   path="/LogbookResults"
                   exact
-                  component={() => (
+                  render={() => (
                     <LegacyResultsGate>
                       <RouteErrorBoundary {...routeErrorResultsSearch}>
                         <ResultSearch />
@@ -1532,7 +1595,7 @@ export default function App() {
                 <SecureRoute
                   path="/PatientResults"
                   exact
-                  component={() => (
+                  render={() => (
                     <LegacyResultsGate>
                       <RouteErrorBoundary {...routeErrorResultsSearch}>
                         <ResultSearch />
@@ -1544,7 +1607,7 @@ export default function App() {
                 <SecureRoute
                   path="/AccessionResults"
                   exact
-                  component={() => (
+                  render={() => (
                     <LegacyResultsGate>
                       <RouteErrorBoundary {...routeErrorResultsSearch}>
                         <ResultSearch />
@@ -1556,7 +1619,7 @@ export default function App() {
                 <SecureRoute
                   path="/StatusResults"
                   exact
-                  component={() => (
+                  render={() => (
                     <LegacyResultsGate>
                       <RouteErrorBoundary {...routeErrorResultsSearch}>
                         <ResultSearch />
@@ -1568,7 +1631,7 @@ export default function App() {
                 <SecureRoute
                   path="/RangeResults"
                   exact
-                  component={() => (
+                  render={() => (
                     <LegacyResultsGate>
                       <RouteErrorBoundary {...routeErrorResultsSearch}>
                         <ResultSearch />
@@ -1580,31 +1643,31 @@ export default function App() {
                 <SecureRoute
                   path="/RoutineReports"
                   exact
-                  component={() => <RoutineReports />}
+                  render={() => <RoutineReports />}
                   role={Roles.REPORTS}
                 />
                 <SecureRoute
                   path="/RoutineReport"
                   exact
-                  component={() => <RoutineIndex />}
+                  render={() => <RoutineIndex />}
                   role={Roles.REPORTS}
                 />
                 <SecureRoute
                   path="/StudyReports"
                   exact
-                  component={() => <StudyReports />}
+                  render={() => <StudyReports />}
                   role={Roles.REPORTS}
                 />
                 <SecureRoute
                   path="/StudyReport"
                   exact
-                  component={() => <StudyIndex />}
+                  render={() => <StudyIndex />}
                   role={Roles.REPORTS}
                 />
                 <SecureRoute
                   path="/Report"
                   exact
-                  component={() => <ReportIndex />}
+                  render={() => <ReportIndex />}
                   role={Roles.REPORTS}
                 />
                 {/* QA v0.5 IA rehome (OGC-690): Audit Trail moved to QMS pillar */}
@@ -1623,70 +1686,81 @@ export default function App() {
                 <SecureRoute
                   path="/TATReport"
                   exact
-                  component={() => <TATReport />}
+                  render={() => <TATReport />}
                   role={Roles.REPORTS}
                 />
                 <SecureRoute
                   path="/VectorSurveillanceReport"
                   exact
-                  component={() => <VectorSurveillanceReport />}
+                  render={() => <VectorSurveillanceReport />}
                   role={Roles.REPORTS}
                 />
                 <SecureRoute
                   path="/LaporanHasil"
                   exact
-                  component={() => <LaporanHasilReport />}
+                  render={() => <LaporanHasilReport />}
                   role={Roles.REPORTS}
                 />
                 <SecureRoute
                   path="/VectorManualEntry"
                   exact
-                  component={() => <ManualEntryHelper />}
+                  render={() => <ManualEntryHelper />}
                   role={Roles.REPORTS}
                 />
+                {/* Every validation submenu renders the same component, and
+                    SearchForm picks its mode from window.location.pathname. The
+                    router reuses the mounted instance across these paths, so
+                    without a per-path key the mode effect never re-runs and the
+                    page keeps showing the previous submenu while the URL
+                    changes. The key forces a remount, which is what a fresh load
+                    does and what resets the search state between submenus. */}
                 <SecureRoute
                   path="/validation"
                   exact
-                  component={() => <StudyValidation />}
+                  render={() => <StudyValidation key="validation" />}
                   role={Roles.VALIDATION}
                 />
                 <SecureRoute
                   path="/ResultValidation"
                   exact
-                  component={() => <StudyValidation />}
+                  render={() => <StudyValidation key="ResultValidation" />}
                   role={Roles.VALIDATION}
                 />
                 <SecureRoute
                   path="/AccessionValidation"
                   exact
-                  component={() => <StudyValidation />}
+                  render={() => <StudyValidation key="AccessionValidation" />}
                   role={Roles.VALIDATION}
                 />
                 <SecureRoute
                   path="/AccessionValidationRange"
                   exact
-                  component={() => <StudyValidation />}
+                  render={() => (
+                    <StudyValidation key="AccessionValidationRange" />
+                  )}
                   role={Roles.VALIDATION}
                 />
                 <SecureRoute
                   path="/ResultValidationByTestDate"
                   exact
-                  component={() => <StudyValidation />}
+                  render={() => (
+                    <StudyValidation key="ResultValidationByTestDate" />
+                  )}
                   role={Roles.VALIDATION}
                 />
                 <SecureRoute
                   path="/AnalyzerResults"
                   exact
-                  component={() => (
+                  render={() => (
                     <RouteErrorBoundary {...routeErrorAnalyzerResults}>
                       <Suspense fallback={null}>
                         <AnalyserResultIndex />
                       </Suspense>
                     </RouteErrorBoundary>
                   )}
-                  role={Roles.ANALYSER_IMPORT}
+                  role={ANALYZER_RESULTS_ROLES}
                 />
-                <Route path="*" component={() => <RedirectOldUI />} />
+                <Route path="*" render={() => <RedirectOldUI />} />
               </Switch>
             </Layout>
           </Router>
