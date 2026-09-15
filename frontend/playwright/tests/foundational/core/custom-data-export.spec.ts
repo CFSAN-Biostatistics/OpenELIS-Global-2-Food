@@ -968,7 +968,25 @@ test("ordinary report users share a definition and independently download its re
   expect(
     original.records.map((row) => row[original.headers.indexOf("Viral Load")]),
   ).toEqual(["450", "450"]);
+  const ownedDownload = await page
+    .getByRole("region", { name: "Your current report" })
+    .getByRole("link", { name: "Download CSV" })
+    .getAttribute("href");
+  expect(ownedDownload).toMatch(/\/jobs\/[^/]+\/download$/);
   await signInAsReportUser(page, secondUser);
+  // Shared definitions can be reused; completed jobs still belong to their submitter.
+  for (const endpoint of [
+    ownedDownload!,
+    ownedDownload!.replace(/\/download$/, ""),
+  ]) {
+    const denied = await page.request.get(endpoint);
+    expect(denied.status()).toBe(404);
+    expect(denied.headers()["content-disposition"]).toBeUndefined();
+    expect(denied.headers()["content-type"] || "").not.toContain("text/csv");
+    const body = await denied.text();
+    expect(body).not.toContain(accession);
+    expect(body).not.toContain("Synthetic Reporting Fixture");
+  }
   await page
     .getByRole("button", { name: "Shared reports", exact: true })
     .click();
@@ -1654,6 +1672,8 @@ test("capture the canonical Referral workflow at matching widths", async ({
 test("Non-Conformance preserves event dates, recorded fallbacks and independent occurrences", async ({
   page,
 }) => {
+  test.info().setTimeout(90_000);
+  const reportName = `Non-Conformance reuse ${Date.now()}`;
   await page.goto("/reports/custom-data-export");
   await page
     .getByRole("button", { name: "Start a new export", exact: true })
@@ -1706,7 +1726,9 @@ test("Non-Conformance preserves event dates, recorded fallbacks and independent 
   await expect(
     page.getByText(/event dates when known, otherwise recorded dates/),
   ).toBeVisible();
-  const { headers, records } = await downloadReport(page, 4);
+  await saveReport(page, reportName);
+  const original = await downloadReport(page, 4);
+  const { headers, records } = original;
   expect(headers).toEqual(labels);
   expect(new Set(records.map((row) => row[1])).size).toBe(4);
   for (const row of records) {
@@ -1739,4 +1761,22 @@ test("Non-Conformance preserves event dates, recorded fallbacks and independent 
     "Recorded rejection",
     "",
   ]);
+  await savedLibrary(page);
+  await page
+    .getByRole("searchbox", { name: "Search shared reports", exact: true })
+    .fill(reportName);
+  const card = page.getByRole("article", { name: reportName, exact: true });
+  await card.getByRole("button", { name: "Use report", exact: true }).click();
+  await expect(page.getByLabel("Date from", { exact: true })).toHaveValue("");
+  await expect(page.getByLabel("Date to", { exact: true })).toHaveValue("");
+  await setPeriod(page, "2026-05-10");
+  const reused = await downloadReport(page, 4);
+  expect(reused).toEqual(original);
+  await savedLibrary(page);
+  await page
+    .getByRole("searchbox", { name: "Search shared reports", exact: true })
+    .fill(reportName);
+  await card.getByRole("button", { name: /Delete shared report/ }).click();
+  await page.getByRole("button", { name: /Delete$/ }).click();
+  await expect(card).toBeHidden();
 });

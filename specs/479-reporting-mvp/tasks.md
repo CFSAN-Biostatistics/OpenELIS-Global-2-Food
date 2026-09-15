@@ -113,7 +113,7 @@ completes the other mock source definitions and operational qualification.
       `frontend/playwright/tests/foundational/core/custom-data-export.spec.ts`
       using `specs/479-reporting-mvp/quickstart.md`; validate `core-app`
       classification and follow the current Playwright author/audit workflow.
-- [ ] T008 [US3] Implement shared-definition/job persistence under
+- [x] T008 [US3] Implement shared-definition/job persistence under
       `src/main/java/org/openelisglobal/reports/dataexport/valueholder/` and
       `dao/`, with registered Liquibase migration and rollback under
       `src/main/resources/liquibase/3.6.x.x/`, making T004 pass.
@@ -129,7 +129,7 @@ completes the other mock source definitions and operational qualification.
       filter subsets in the builder, review, save and request paths, including
       real output after switching reports. Broader field and access-negative
       qualification remains in T016.
-- [ ] T010 [US1] Implement the Sample & Testing source mapping and bounded
+- [x] T010 [US1] Implement the Sample & Testing source mapping and bounded
       parameterized queries under
       `src/main/java/org/openelisglobal/reports/dataexport/dao/` and `service/`,
       making T002 pass; document proven field/date/component mappings in
@@ -141,11 +141,11 @@ completes the other mock source definitions and operational qualification.
       Iteration 9 resolves the first-record turnaround defect. Real-database
       comparisons and browser downloads preserve per-test/repeat durations in
       both layouts, including missing intervals and renamed components.
-- [ ] T012 [US2] Implement submission, bounded worker/atomic claims, private
+- [x] T012 [US2] Implement submission, bounded worker/atomic claims, private
       file publication, existing-access checks and download under
       `src/main/java/org/openelisglobal/reports/dataexport/service/`; retain
       ordinary audit, idempotency and admission limits, making T005 pass.
-- [ ] T013 [US3] Implement thin common catalog/job and shared-definition
+- [x] T013 [US3] Implement thin common catalog/job and shared-definition
       endpoints/forms under
       `src/main/java/org/openelisglobal/reports/dataexport/controller/` and
       `form/` following `specs/479-reporting-mvp/contracts/export-api.md`; use
@@ -157,7 +157,7 @@ completes the other mock source definitions and operational qualification.
       confirmations from T006. Use URL-owned navigation and session drafts as
       specified in the plan; verify Back/Forward, reload, deep links, late
       responses, keyboard focus and fresh-export reset.
-- [ ] T015 [US4] Add inline job progress/ready download and the basic personal
+- [x] T015 [US4] Add inline job progress/ready download and the basic personal
       queue using current shared query utilities in
       `frontend/src/components/reports/CustomDataExport/`; wire configured
       limits/protected persistent output through existing deployment conventions
@@ -183,13 +183,13 @@ applications.
 - [x] T019 Create `feat/479-ogc-479-reporting-mvp-m2-queue-recovery` in its own
       worktree from the M1 result; refresh branch/PR state and
       `specs/479-reporting-mvp/`.
-- [ ] T020 [US1] Add failing fixture tests under
+- [x] T020 [US1] Add failing fixture tests under
       `src/test/java/org/openelisglobal/reports/dataexport/` for Referral and
       Non-Conformance definitions: occurrence identity, applicable
       dates/statuses, repeated results, event/rejection links and avoiding
       duplicate occurrences; test an additional definition over an existing
       source with no frontend/queue code changes.
-      Partial: nine real-database Referral checks now pass, including configured
+      Nine real-database Referral checks pass, including configured
       date/column mappings, pending and repeated results, interleaved multi-select
       returned dates and source-specific status defaults. Sent date and repeat
       preservation follow the pinned mock and explicit user instruction.
@@ -199,7 +199,10 @@ applications.
       recorded-only rejection inclusion, inclusive period boundaries and distinct
       occurrence preservation. These cases now pass in the five focused
       Non-Conformance backend checks and the public four-row workflow.
-      Additional configured-definition evidence remains to be reconciled for T020.
+      The additional configured Referral definition is covered by
+      ReferralExportMappingIntegrationTest; source initializer and configured
+      Sample summary cases also pass. All existing reporting backend tests
+      passed together on d20ce278c6e8 (95 tests).
 - [x] T021 [US4] Add failing lifecycle tests under
       `src/test/java/org/openelisglobal/reports/dataexport/` for retry lineage,
       queued cancellation, concurrent claims, restart/live-worker isolation,
@@ -246,10 +249,16 @@ applications.
       labels in `frontend/src/components/reports/CustomDataExport/` and
       `frontend/src/languages/en.json`; retain choices, require fresh dates for
       expired reruns and avoid report-specific screens.
-- [ ] T026 [US1] Run the three configured source definitions through the common
+- [x] T026 [US1] Run the three configured source definitions through the common
       builder/saved-report/download flow; compare real fixture records and
       dates, test additional configuration without code changes, and audit the
       focused browser tests using `specs/479-reporting-mvp/quickstart.md`.
+      Sample and Referral saved-settings reuse is recorded in the public 8005
+      walkthroughs. The existing Referral desktop/phone run also verifies blank
+      dates and three returned/pending rows. Non-Conformance saved reuse now
+      passes publicly on 3de726: blank dates and identical independent four-row
+      CSV downloads, authentication plus workflow in 34.7 seconds. The test
+      extension is included in this follow-up; cross-user denial remains T016.
 - [x] T027 [US4] Add/run a reproducible 50,000-result qualification using
       `projects/reporting-uat/qualify-workload.py`, the fixture under
       `src/test/resources/fixtures/`, the incremental Java writer test under
@@ -428,3 +437,25 @@ Personal-library/sharing administration, arbitrary source discovery, external
 integrations, scheduling and separate synchronous generation are outside this
 task list. Shared saved reports, patient information under existing access and
 the mock's three source definitions are included.
+
+## September 14 acceptance reconciliation
+
+The checked implementation items above are supported by the current source and
+existing execution receipts: immutable storage and shared configurations (T008),
+Sample mappings and documented per-result turnaround (T010), atomic submission
+and recovery (T012), thin shared-definition/owner-job endpoints (T013), and
+inline readiness plus queue downloads (T015). These are implementation
+completions, not declarations that every delivery gate is green.
+
+Current feature validation: 95 backend tests pass with 88.5% instruction coverage;
+35 component/route tests pass with 85.39% line coverage. Both planned coverage
+targets are met. Public receipts are in the
+[evidence index](https://reporting.catalyst.openelis-global.org/reporting-evidence/).
+
+T016 cross-owner job/file checks now pass publicly with 404 and no CSV content;
+both ordinary users subsequently export identical two-row CSVs. Authentication
+plus workflow passed in 51.1 seconds without retries against widget 814d8341,
+which removes the redundant session probe. Application revision remains 3de726.
+The prior CSRF failure and trace are retained as diagnosis. Remaining clinical
+scope-denial browser evidence, final CI and acceptance reconciliation stay open;
+human acceptance is separate. No PR merge or full-goal completion is claimed.
