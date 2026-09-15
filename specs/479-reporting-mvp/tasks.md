@@ -8,19 +8,24 @@ declarations, tests, fixtures, helpers and documentation), and separate
 navigation changes. M1/M2 below retain functional traceability; their old
 one-PR-per-milestone branch packaging is superseded. The full MVP scope remains.
 
+**Evidence index:** [All published recordings, CSVs and QA checkpoints](https://reporting.catalyst.openelis-global.org/reporting-evidence/).
+
 **Inputs**: [spec.md](spec.md), [plan.md](plan.md),
 [data-model.md](data-model.md), [contract](contracts/export-api.md),
 [acceptance plan](quickstart.md), [UAT contract](uat.md).
-**Current review/UAT checkpoint (September 14, Pacific time):** All ten stack
-PRs are ready for review; none is merged. Public frontend `7cca586e58`, backend
-`8005e4cc0b` and review tooling `2048bc3cfd` remain deployed. The focused public
-run passed four checks covering both layouts at phone width and a saved report
-rerun across distinct periods. [Recordings and actual CSVs](https://reporting.catalyst.openelis-global.org/reporting-evidence/20260914-uat-checkpoint-2048/)
-are published. Submitted UI `568b745437` and navigation `9c1bfd713c` pass frontend
-and full E2E CI; backend checks remain running at this checkpoint.
-Grist publication is complete for currently executable stages: six stories and
-23 steps. Non-Conformance and human acceptance remain open. See the current
-receipt in `execution.md`; earlier snapshots below retain their historical scope.
+**Current review/UAT checkpoint (September 14, Pacific time):** The ten-PR
+stack remains open for review; Non-Conformance follow-up
+[PR #4318](https://github.com/DIGI-UW/OpenELIS-Global-2/pull/4318) is stacked above
+the separate navigation PR. Public frontend/backend `3de726b8d3` now connect all
+three report sources. Review tooling `2048bc3cfd` and the database were retained.
+The focused public Non-Conformance workflow and authentication pass in 35.3 seconds
+with no retries, downloading four independent occurrences with explicit date
+basis. [Video, CSV and screenshots](https://reporting.catalyst.openelis-global.org/reporting-evidence/20260914-non-conformance-3de726/)
+are published with verified hashes. Frontend and static CI pass; backend CI is
+still running at this checkpoint. Grist's existing six-story/23-step checklist
+awaits the RPT-101/RPT-202 availability and fixture update from its owner. Earlier
+Sample & Testing, Referrals, saved-period and recovery evidence remains available.
+Remaining audit, reviewer feedback and human acceptance are not closed by this run.
 
 **Earlier Referral qualification**: Sample & Testing, Referrals, queue recovery and configurable
 navigation are publicly testable at frontend/backend/instance configuration
@@ -213,7 +218,7 @@ applications.
       process, with exact CSV and interruption-audit checks. Cancellation
       confirmation/reload, no later claim and refused download pass publicly;
       publication of its RPT-303 checklist instruction remains under T036.
-- [ ] T022 [US1] Add Referral and Non-Conformance source mappings/configured
+- [x] T022 [US1] Add Referral and Non-Conformance source mappings/configured
       definitions using the same feature under
       `src/main/java/org/openelisglobal/reports/dataexport/` and the existing
       resource/configuration locations, making T020 pass; record exact date and
@@ -222,7 +227,7 @@ applications.
       through the existing builder, shared reports, queue and actual CSV at
       desktop/phone widths. Non-Conformance now passes five backend checks, three
       selected builder checks and the recorded local four-row CSV workflow.
-      Public deployment remains open.
+      Public workflow and actual four-row CSV also pass at `3de726b8d3`.
 - [x] T023 [US4] Implement failed-job retry and queued-only cancellation through
       the common service/controller paths under
       `src/main/java/org/openelisglobal/reports/dataexport/`, preserving
@@ -295,14 +300,15 @@ separate completion criterion. Repeat these delivery tasks for each stage.
       the existing Catalyst UI, databases or unrelated CSiM deployments. Use
       persistent output storage and publish `/__review/target.json` only after
       backend, frontend, database migration and route health checks pass.
-- [ ] T034 Seed idempotent, public synthetic reporting fixtures for the stable
+- [x] T034 Seed idempotent, public synthetic reporting fixtures for the stable
       identifiers in `uat.md`, including repeated identical results, a referral,
       a non-conformance event, two report users and prepared queue states. Do
       not depend on browser-only test helpers.
       Current stage has persistent synthetic repeat/turnaround fixtures and two
       existing report users, failed/expired recovery examples, the three-row
       Referral fixture and the 50,000-result workload for repeatable queued
-      cancellation. The Non-Conformance fixture remains open.
+      cancellation. The idempotent Non-Conformance fixture is now deployed and
+      qualified: four May 10 occurrences with distinct identities and date bases.
 - [x] T035 Run the focused Playwright acceptance files against the deployed
       target, compare actual downloaded CSVs with the fixture oracle, and verify
       both Sample & Testing layouts, shared reuse, configured source reports and

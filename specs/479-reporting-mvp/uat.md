@@ -45,7 +45,7 @@ test system or a new synchronization service.
 | ---------------- | ------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
 | RPT-S01, RPT-S05 | OGC-479; choose fields, filter, review and export (FR-1/2/3), turnaround domain | Both layouts, every repeated result and turnaround beside each test are explicit MVP decisions.                         |
 | RPT-S02          | OGC-483; saved report settings (FR-7)                                           | Definitions are shared for this MVP; do not restore the source document's personal-only restriction.                    |
-| RPT-S03          | OGC-479; report families and date anchors (FR-1-008, FR-2-001)                  | Referrals is connected; Non-Conformance's date rule is approved; its connected workflow still awaits public deployment. |
+| RPT-S03          | OGC-479; report families and date anchors (FR-1-008, FR-2-001)                  | Referrals and Non-Conformance are publicly connected; the approved date fallback is visibly labeled. |
 | RPT-S04          | OGC-481; queue, downloads and recovery (FR-6)                                   | Common queued delivery preserves the approved builder and queue experience.                                             |
 | RPT-S06          | Explicitly approved navigation/configuration follow-up                          | Original navigation story mapping remains pending; these RPT keys are walkthrough IDs, not invented upstream story IDs. |
 
@@ -61,7 +61,7 @@ human journey without deleting criteria or changing stable key meanings.
 | ------------------------------------------ | --------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
 | RPT-S01 routine export; RPT-S05 turnaround | Both layouts, repeated identities/values, per-result intervals and ordered headers                  | Find the right fields, understand filters, and use the downloaded report.           |
 | RPT-S02 shared reports                     | Save/use/copy/update/delete, fresh dates, separate users and stale-edit behavior                    | Reuse a routine report with little setup; understand editing versus copying.        |
-| RPT-S03 other sources                      | Referral period and returned/pending rows through the same builder; Non-Conformance remains pending | Understand source choices and whether the available workflow fits the task.         |
+| RPT-S03 other sources                      | Referral period/returned/pending rows and Non-Conformance occurrences/date basis through the same builder | Understand source choices and whether the available workflow fits the task.         |
 | RPT-S04 queue/recovery                     | Frozen retries, expiry, cancellation and file identity; heavy workload separately                   | Find completed work and understand progress, failure and recovery actions.          |
 | RPT-S06 navigation/configuration           | URL state, retained drafts, responsive navigation and persistence of menu settings                  | Discoverability, consistent typography, keyboard/phone usability and mock fidelity. |
 
@@ -79,8 +79,8 @@ because a commit changed. Automated runs never fill in human Pass answers.
 Keep PR validation, deployed validation and human feedback as separate states.
 A successful smoke run is not full regression or human acceptance. A skipped
 test is not a pass; a missing prerequisite for a required check remains open.
-Record Non-Conformance as outside the current usable stage and still required
-for the full MVP. Stop and reassess after two attempts without verified progress
+Non-Conformance is now in the usable public stage; full human acceptance remains
+open. Stop and reassess after two attempts without verified progress
 or new evidence; pause only work dependent on an unresolved behavior decision.
 
 The deployment receipt in `execution.md` identifies the currently public stage.
@@ -188,8 +188,8 @@ through the same reporting experience.
 
 Current-stage availability check: `RPT-200` required — Start a new export and
 inspect the three report-type cards. Referrals is publicly connected.
-Non-Conformance is locally qualified and awaits public deployment; visible cards
-alone do not establish acceptance. The public Grist checklist is published;
+Non-Conformance is publicly qualified at `3de726b8d3`; visible cards alone do
+not establish human acceptance. The public Grist checklist is published;
 its Non-Conformance instruction still needs the fixture update below when deployed.
 
 1. `RPT-201` required — Select Referrals and add Accession Number, Referral ID,

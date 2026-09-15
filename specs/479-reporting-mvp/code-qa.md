@@ -392,3 +392,29 @@ at `/private/tmp/reporting-nc-local-evidence/`; execution output is
 `/private/tmp/reporting-nc-local.log`. Public deployment, publication of these
 artifacts and human acceptance are not yet credited. No broader suite is needed
 solely to repeat this local checkpoint.
+
+## Public Non-Conformance delivery — September 14, 2026
+
+Frontend and backend `3de726b8d38ba102ac2fa564c95ac59a2a4e02b7` are deployed.
+The previous database, menu configuration, review integration mounts and older
+evidence were preserved. Startup completed in 461 seconds; its configured FHIR
+endpoint remains unavailable. No reporting failure was observed after startup.
+
+The focused public workflow and authentication passed in 35.3 seconds without
+retries. Actual CSV rows match the four-occurrence local oracle. Desktop/phone
+screens and representative video frames were inspected.
+[Published evidence](https://reporting.catalyst.openelis-global.org/reporting-evidence/20260914-non-conformance-3de726/)
+contains the video, actual CSV, screenshots, mock reference and revision/hash
+manifest. Nine public files matched their hashes; the video supports HTTP 206
+range delivery. Frontend/static CI pass; backend CI is still running.
+
+Non-blocking follow-up observed in the recording: while the report-type request
+is loading, the type cards briefly show “Not yet connected.”
+`ReportingView.jsx` derives connected types from possibly absent request data
+(lines 77–80). Once loaded, all three cards are available. This should distinguish
+loading from an unavailable source; it does not prevent the tested export.
+No additional feature changes or expanded test run were made for this finding.
+Grist's owner is updating RPT-101/RPT-202, preserving existing human results.
+Human acceptance and the remaining full-milestone audit remain open.
+
+The [consolidated evidence index](https://reporting.catalyst.openelis-global.org/reporting-evidence/) links all eight published bundles, separating local recordings from public runs and retaining revision-specific provenance.
