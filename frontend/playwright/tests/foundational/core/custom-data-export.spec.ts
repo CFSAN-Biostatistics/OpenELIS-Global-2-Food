@@ -654,6 +654,110 @@ test("a shared report reopens with fresh dates and supports confirmed update, co
   }
 });
 
+test("a saved detailed report reruns for a different period with fresh results", async ({
+  page,
+}, testInfo) => {
+  testInfo.setTimeout(90_000);
+  const name = `Reporting period rerun ${Date.now()}`;
+  let savedId: string | null = null;
+  const jobs: unknown[] = [];
+  await openBuilder(page);
+  await detailedLayout(page);
+  await addField(page, "Resulted to Validated (min)");
+  try {
+    await saveReport(page, name);
+    savedId = new URL(page.url()).searchParams.get("saved");
+    expect(savedId).toBeTruthy();
+    const definitionResponse = await page.request.get(
+      `/api/OpenELIS-Global/rest/reports/data-export/saved-configs/${savedId}`,
+    );
+    expect(definitionResponse.status()).toBe(200);
+    const definition = await definitionResponse.json();
+    expect(definition.name).toBe(name);
+    for (const day of ["2026-05-05", "2026-05-06"]) {
+      if (day === "2026-05-06") {
+        await savedLibrary(page);
+        await page
+          .getByRole("searchbox", {
+            name: "Search shared reports",
+            exact: true,
+          })
+          .fill(name);
+        await page
+          .getByRole("article", { name, exact: true })
+          .getByRole("button", { name: "Use report", exact: true })
+          .click();
+        await expect(page.getByLabel("Date from", { exact: true })).toHaveValue(
+          "",
+        );
+        await expect(page.getByLabel("Date to", { exact: true })).toHaveValue(
+          "",
+        );
+        await setPeriod(page, day);
+      }
+      const { headers, records } = await downloadReport(page, 2);
+      expect(headers).toEqual([
+        "Accession Number",
+        "Result Value",
+        "Result ID",
+        "Resulted to Validated (min)",
+      ]);
+      expect(records.map((row) => [row[0], row[1], row[3]])).toEqual(
+        day === "2026-05-05"
+          ? [
+              ["REPORTING-MVP-REPEAT", "450", "0"],
+              ["REPORTING-MVP-REPEAT", "450", "0"],
+            ]
+          : [
+              ["REPORTING-MVP-TURNAROUND", "450", "30"],
+              ["REPORTING-MVP-TURNAROUND", "450", "90"],
+            ],
+      );
+      expect(new Set(records.map((row) => row[2])).size).toBe(2);
+      const link = await page
+        .getByRole("region", { name: "Your current report" })
+        .getByRole("link", { name: "Download CSV" })
+        .getAttribute("href");
+      expect(link).toMatch(/\/jobs\/[^/]+\/download$/);
+      const jobResponse = await page.request.get(
+        link!.replace(/\/download$/, ""),
+      );
+      expect(jobResponse.status()).toBe(200);
+      const job = await jobResponse.json();
+      expect(job.state).toBe("READY");
+      expect(job.request.filterSpec.dateFrom).toBe(day);
+      expect(job.request.filterSpec.dateTo).toBe(day);
+      jobs.push(job);
+    }
+    await testInfo.attach("saved-period-provenance.json", {
+      body: Buffer.from(
+        JSON.stringify(
+          { baseUrl: testInfo.project.use.baseURL, definition, jobs },
+          null,
+          2,
+        ),
+      ),
+      contentType: "application/json",
+    });
+  } finally {
+    if (savedId) {
+      const endpoint = `/api/OpenELIS-Global/rest/reports/data-export/saved-configs/${savedId}`;
+      const current = await page.request.get(endpoint);
+      expect(current.status()).toBe(200);
+      const definition = await current.json();
+      expect(definition.name).toBe(name);
+      const csrf = await page.evaluate(
+        () => localStorage.getItem("CSRF") || "",
+      );
+      const removed = await page.request.delete(
+        `${endpoint}?expectedVersion=${encodeURIComponent(definition.version)}`,
+        { headers: { "X-CSRF-Token": csrf } },
+      );
+      expect(removed.status()).toBe(204);
+    }
+  }
+});
+
 test("a stale shared-report editor keeps its draft and can save a separate copy", async ({
   page,
   context,
