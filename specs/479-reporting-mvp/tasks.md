@@ -197,7 +197,9 @@ applications.
       otherwise use the recorded date and visibly identify the basis. Prove
       event-date precedence even when the recorded date lies in another period,
       recorded-only rejection inclusion, inclusive period boundaries and distinct
-      occurrence preservation. Non-Conformance activation remains unfinished.
+      occurrence preservation. These cases now pass in the five focused
+      Non-Conformance backend checks and the public four-row workflow.
+      Additional configured-definition evidence remains to be reconciled for T020.
 - [x] T021 [US4] Add failing lifecycle tests under
       `src/test/java/org/openelisglobal/reports/dataexport/` for retry lineage,
       queued cancellation, concurrent claims, restart/live-worker isolation,

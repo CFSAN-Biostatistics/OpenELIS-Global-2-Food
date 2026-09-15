@@ -39,9 +39,10 @@ explicit user selection of three independent workstreams.
 Implementation exposed three additional product questions. The pinned mock's
 sent-date rule and the user's repeat-preservation requirement resolve the two
 Referral questions; Referrals is connected and has passed public CSV checks.
-Only native rejection records without an event date remain unresolved. Their
-inclusion rule pauses Non-Conformance activation, not the other sources. See
-`execution.md` for the dated decision and validation evidence.
+The user resolved the remaining Non-Conformance date question on September 14:
+prefer event date, otherwise use recorded date with a visible Date Basis.
+Non-Conformance is now connected and publicly validated at `3de726b8d3`; see
+`../code-qa.md` and the evidence index for the dated result.
 
 The later turnaround clarification is also resolved: spreadsheet durations
 belong to each test/result, including repeats; collection-to-receipt stays

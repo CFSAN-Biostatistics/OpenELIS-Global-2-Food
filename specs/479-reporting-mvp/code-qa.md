@@ -418,3 +418,20 @@ Grist's owner is updating RPT-101/RPT-202, preserving existing human results.
 Human acceptance and the remaining full-milestone audit remain open.
 
 The [consolidated evidence index](https://reporting.catalyst.openelis-global.org/reporting-evidence/) links all eight published bundles, separating local recordings from public runs and retaining revision-specific provenance.
+
+## Delivery-branch test reconciliation — September 14, 2026
+
+The existing Sample & Testing follow-up `e7e279a12b` was still only on its
+source PR branch. A normal merge brings its stronger CSV assertions into the
+assembled delivery branch without changing production source. The focused
+`SampleTestingMappingIntegrationTest` suite passes all ten checks in the assembled
+context (`/private/tmp/reporting-assembled-sample-check.log`, Maven 39.8 seconds).
+Its independent CSV parser verifies full-width text, quoting/line breaks, grouped
+multiselect labels, qualifiers and repeated values in both layouts. No broader
+suite or new public deployment was run for this test/documentation increment.
+
+The stopping-point page, execution header and specification checklist now
+acknowledge the approved Non-Conformance date rule and public delivery. Earlier
+revision receipts remain historical records; unresolved task boxes are not
+automatically interpreted as absent implementation. Full milestone completion
+continues to require the criterion-level evidence reconciliation and current CI.
