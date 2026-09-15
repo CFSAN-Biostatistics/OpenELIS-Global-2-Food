@@ -262,6 +262,93 @@ test("spreadsheet preserves both identical readings in an instance-configured te
   expect(new Set(records.map((row) => row[0])).size).toBe(1);
 });
 
+// Uses reporting-field-values.sql: real configured text/dictionary options and
+// two separate, equal results for each specimen on a dedicated collection date.
+for (const layout of ["SPREADSHEET", "RESULT_LIST"] as const) {
+  test(`${layout} downloads complete text and dictionary labels without losing repeats`, async ({
+    page,
+  }) => {
+    await page.goto("/CustomDataExport");
+    await startReport(page);
+    if (layout === "SPREADSHEET") {
+      for (const label of ["Accession Number", "Viral Load", "DNA PCR"])
+        await addField(page, label);
+    } else {
+      await detailedLayout(page);
+      await addField(page, "Test Name");
+    }
+    await page.evaluate(async () => {
+      await document.fonts.ready;
+      window.scrollTo(0, 0);
+    });
+    await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
+    await page.screenshot({
+      path: test.info().outputPath("field-columns-desktop.png"),
+      fullPage: true,
+    });
+    await page.setViewportSize({ width: 390, height: 844 });
+    await expect
+      .poll(() => page.evaluate(() => document.documentElement.scrollWidth))
+      .toBeLessThanOrEqual(390);
+    await page.evaluate(async () => {
+      await document.fonts.ready;
+      window.scrollTo(0, 0);
+    });
+    await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
+    await page.screenshot({
+      path: test.info().outputPath("field-columns-narrow.png"),
+      fullPage: true,
+    });
+    await page
+      .getByRole("button", { name: "Next: Set Filters", exact: true })
+      .click();
+    await setPeriod(page, "2026-05-08");
+    const { headers, records } = await downloadReport(page, 4);
+    const textValue = (
+      'Operator says "repeat, please"\r\n<tag> & ' +
+      "untruncated text ".repeat(20)
+    ).slice(0, 200);
+    const values = records.map((row) => {
+      const name = row[headers.indexOf("Accession Number")];
+      const field =
+        layout === "RESULT_LIST"
+          ? "Result Value"
+          : name === "REPORTING-MVP-TEXT"
+            ? "Viral Load"
+            : "DNA PCR";
+      if (layout === "SPREADSHEET") {
+        expect(
+          row[
+            headers.indexOf(
+              name === "REPORTING-MVP-TEXT" ? "DNA PCR" : "Viral Load",
+            )
+          ],
+        ).toBe("");
+      } else {
+        expect(row[headers.indexOf("Test Name")]).toBe(
+          name === "REPORTING-MVP-TEXT" ? "Viral Load" : "DNA PCR",
+        );
+      }
+      return [name, row[headers.indexOf(field)]];
+    });
+    expect(values.sort()).toEqual(
+      [
+        ["REPORTING-MVP-TEXT", textValue],
+        ["REPORTING-MVP-TEXT", textValue],
+        ["REPORTING-MVP-DICTIONARY", "Positive"],
+        ["REPORTING-MVP-DICTIONARY", "Positive"],
+      ].sort(),
+    );
+    if (layout === "RESULT_LIST")
+      expect(
+        new Set(records.map((row) => row[headers.indexOf("Result ID")])).size,
+      ).toBe(4);
+    await expect
+      .poll(() => page.evaluate(() => document.documentElement.scrollWidth))
+      .toBeLessThanOrEqual(390);
+  });
+}
+
 test("turnaround beside a test preserves each repeated result's own duration", async ({
   page,
 }) => {

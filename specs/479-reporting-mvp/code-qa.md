@@ -266,3 +266,36 @@ The application publication remains `8005e4cc0b` at this checkpoint. The latest
 verified general evidence is [the public review gallery](https://reporting.catalyst.openelis-global.org/reporting-evidence/20260914-review-8005/).
 Non-Conformance, remaining included acceptance checks and human acceptance remain
 open. This correction still requires public deployment and current-commit CI.
+
+## Text and dictionary browser qualification — September 14, 2026
+
+`reporting-field-values.sql` adds two synthetic specimens on May 8, 2026,
+using the existing configured Viral Load text option and DNA PCR Positive
+option. Each has two independent equal results. The text fills the existing
+200-character result column and includes a comma, quotes, CRLF and literal
+markup characters. The fixture resolves tests by GUID and dictionary choices
+through their configured option, asserts the resulting identities/date/values,
+and passes a second load without inserting duplicates. Earlier repeat,
+turnaround and referral fixtures remain unchanged. May 7 was rejected because
+it already contains the retained 50,000-result workload fixture.
+
+Two registered `core-app` browser tests select the fields, switch to phone
+width, submit both layouts, download the actual files and compare all four
+records. They also verify distinct result IDs in the detailed layout and blank
+unrelated test cells in the spreadsheet. Local qualification and the first
+public recording each passed both workflows plus authentication. The public
+application remained frontend `7cca586e58`, backend `8005e4cc0b`; only synthetic
+fixture data was added.
+
+A subsequent top-of-page screenshot capture exposed a public phone-width
+obstruction: `oe-review-host` intercepts ordinary clicks on **Next: Set Filters**
+at 390 × 844. Both final recording checks failed at that interaction; the
+review-tooling owner has the trace and screenshots. The tests keep ordinary
+clicks and their original expectations. This public interaction has no acceptance
+credit until the obstruction is corrected and the affected checks pass.
+The first successful recording is not a substitute for that final check.
+
+This increment does not qualify configured multiselects or result components
+through the public browser. Those broader cases retain their database-level
+checks and remain part of the outstanding field audit. Non-Conformance and human
+acceptance also remain open.
