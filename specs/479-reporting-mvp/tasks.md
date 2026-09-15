@@ -10,7 +10,18 @@ one-PR-per-milestone branch packaging is superseded. The full MVP scope remains.
 **Inputs**: [spec.md](spec.md), [plan.md](plan.md),
 [data-model.md](data-model.md), [contract](contracts/export-api.md),
 [acceptance plan](quickstart.md), [UAT contract](uat.md).
-**Status**: Sample & Testing, Referrals, queue recovery and configurable
+**Latest verified review checkpoint (September 14):** Application `8005e4cc0b`
+is public and its backend/frontend/full E2E gates passed. See the
+[revision-specific evidence](https://reporting.catalyst.openelis-global.org/reporting-evidence/20260914-review-8005/)
+and [public identity](https://reporting.catalyst.openelis-global.org/__review/target.json).
+A subsequent two-editor audit found a lingering conflict warning after a
+successful copy. Its one-line UI correction, component regression and desktop/phone
+workflow pass locally; publication and current-commit CI remain pending.
+Detailed evidence and remaining steps are in `code-qa.md`. Earlier deployment
+snapshots below retain their original qualification scope. No full-MVP task is
+closed by this focused correction.
+
+**Earlier Referral qualification**: Sample & Testing, Referrals, queue recovery and configurable
 navigation are publicly testable at frontend/backend/instance configuration
 `d48cd790c492`. Six public checks pass for this Referral increment, including
 actual CSV downloads, shared report reuse, desktop/phone Referral workflows,

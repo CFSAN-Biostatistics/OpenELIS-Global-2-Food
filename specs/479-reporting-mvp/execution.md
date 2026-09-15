@@ -45,7 +45,6 @@ pass. See [the findings and remaining checks](code-qa.md). Final navigation
 assembly, exact-head CI, deployment/video proof and human review remain distinct
 open gates.
 
-
 The user authorized implementing the complete agreed MVP and deploying each
 usable stage to Reporting UAT. Both milestones remain in scope. The canonical
 mock defines the interface; MVP scope determines which functions are connected.
@@ -1398,7 +1397,6 @@ Public preflight found no active jobs and no records on the fixture collection
 date. Public fixture installation and its own browser checks are next; this local
 record does not close T021 or claim public/human acceptance.
 
-
 ## Configuration-default review repair — 2026-09-14
 
 The direction audit found the primary builder ignored `defaultColumns` for
@@ -1427,3 +1425,20 @@ validation and publication remain required before calling the repair delivered.
 The requirements checklist and plan now reflect resolved Referral semantics and
 the existing ten-PR packaging contract. Historical entries above remain dated
 evidence, not the current completion checklist.
+
+## Shared-editor recovery correction — September 14, 2026
+
+RPT-S02 now has a real two-editor browser regression: stale edits preserve the
+winner, keep the losing draft, and allow a separate copy with independently
+verified CSVs. Inspecting the public recording exposed a lingering conflict
+warning after successful copying. A one-line correction and failing-first
+component regression now pass 31 component checks and the compiled local desktop
+workflow. Both builds, formatters and focused lint pass. See
+[the code-QA findings](code-qa.md#shared-editor-recovery-correction--september-14-2026)
+for the initial loading diagnosis, error-state fix and exact remaining work.
+
+The expanded phone run was initially rejected because automatic approval review
+exhausted its usage allowance. A fresh capacity check and normal retry succeeded:
+two checks passed in 25.5 seconds, and desktop/phone screenshots were inspected.
+The correction remains unpublished; public application 8005e4cc0b and its existing evidence remain the
+current usable stage. No broad acceptance task or human review is closed.

@@ -72,3 +72,57 @@ no video, final-stack deployment or human acceptance is credited by that run.
   semantics and disconnected source receive no acceptance credit.
 - Refresh CI for the submitted commits and publish review links. This local
   record and prior green checks do not stand in for those gates.
+
+## Shared-editor recovery correction — September 14, 2026
+
+The public two-editor qualification on application `8005e4cc0b` verifies that
+two tabs can open the same shared definition, the first update persists, and a
+stale second update gets the intended conflict notification while preserving its
+column order. Saving a separate copy succeeds. Reopening both definitions from
+the library and downloading actual synthetic CSVs confirms the original has its
+added Patient Name column while the copy retains its independent reordered
+columns; both retain the two equal Viral Load readings. Cleanup removes only the
+test's uniquely named definitions using their current versions. This tests stale
+editor behavior; the synchronized database race remains a separate test.
+
+The first public attempt exceeded the assertion window while the second tab's
+catalog request was still pending. The trace showed no server failure. A focused
+loading wait allowed the workflow to complete. Reopening from the library,
+rather than reloading an active draft, is required to inspect the server's saved
+definition: preserving a draft on reload is intentional.
+
+The public workflow and its subsequent HD recording passed (each two checks
+including authentication). However, direct frame inspection exposed a real UI
+recovery issue: the old conflict warning remained beside the successful copy
+notification. Those recordings are diagnostic evidence of the existing defect,
+not proof that the correction is deployed.
+
+`CustomDataExport.jsx` now resets the previous update mutation only in the
+successful create/copy callback, after its draft-revision guard. The new component
+regression first reproduced the lingering warning. It also simulates a failed
+copy save, checks that its name and choices remain, then verifies the warning
+clears after a successful retry without altering the original definition.
+All 31 reporting component tests pass. The compiled local two-editor workflow
+passes with actual CSV downloads and asserts the stale warning disappears after
+success (two checks including authentication, 26.9 seconds). Both production
+builds, both formatters and focused Playwright lint passed. Backend packaging
+skipped tests; no backend source changed in this correction. The first formatter
+process failed on dependency DNS/cache access; the authorized retry completed.
+
+The browser regression now additionally switches the second editor to 390px for
+recovery and records desktop/narrow states. Its first launch was rejected because automatic approval review reported an
+exhausted usage allowance. After a fresh usage check and normal approval retry,
+the expanded test passed (two checks including authentication, 25.5 seconds).
+The inspected 390px capture shows the copy success notification without the old
+warning, retains the ordered fields and fits the viewport. Desktop/narrow review
+and save structure were compared with the pinned mock; no layout code changed.
+The regression registers each created definition for cleanup before assertions
+that could fail after a successful write.
+
+Pending: assemble the existing navigation child without rewriting history, and publish
+and re-record the corrected public workflow. Preserve the review-tooling release
+`7e45214eaf0be66b899807c60e61840f3efe284e` and its Grist-owned presentation.
+The application publication remains `8005e4cc0b` at this checkpoint. The latest
+verified general evidence is [the public review gallery](https://reporting.catalyst.openelis-global.org/reporting-evidence/20260914-review-8005/).
+Non-Conformance, remaining included acceptance checks and human acceptance remain
+open. This correction still requires public deployment and current-commit CI.

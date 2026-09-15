@@ -567,6 +567,183 @@ test("a shared report reopens with fresh dates and supports confirmed update, co
   }
 });
 
+test("a stale shared-report editor keeps its draft and can save a separate copy", async ({
+  page,
+  context,
+}, testInfo) => {
+  testInfo.setTimeout(120_000);
+  const reportName = `Reporting editors ${Date.now()}`;
+  const copyName = `${reportName} copy`;
+  const created = new Map<string, string>();
+  const other = await context.newPage();
+  other.on("pageerror", (error) => browserErrors.push(error.message));
+  try {
+    await openBuilder(page);
+    await saveReport(page, reportName);
+    const originalId = new URL(page.url()).searchParams.get("saved");
+    expect(originalId).toBeTruthy();
+    created.set(originalId!, reportName);
+    await savedLibrary(page);
+    await other.goto(page.url());
+    // Both editors open the same version before either changes the definition.
+    for (const editor of [page, other]) {
+      await editor
+        .getByRole("searchbox", { name: "Search shared reports", exact: true })
+        .fill(reportName);
+      await editor
+        .getByRole("article", { name: reportName, exact: true })
+        .getByRole("button", { name: "Use report", exact: true })
+        .click();
+      await expect(editor.getByLabel("Date from", { exact: true })).toHaveValue(
+        "",
+        { timeout: 20_000 },
+      );
+      await setPeriod(editor);
+      await editor.getByRole("button", { name: "Back", exact: true }).click();
+    }
+    await addField(page, "Patient Name");
+    await other
+      .getByRole("button", { name: "Move Viral Load up", exact: true })
+      .click();
+    await reviewReport(page);
+    await reviewReport(other);
+    const retainedHeaders = ["Accession Number", "Viral Load", "Specimen ID"];
+    await expect(
+      other
+        .getByRole("list", { name: "CSV columns in order" })
+        .getByRole("listitem"),
+    ).toHaveText(retainedHeaders);
+    await page
+      .getByRole("button", { name: "Update shared report", exact: true })
+      .click();
+    await page.getByRole("button", { name: "Update", exact: true }).click();
+    await expect(
+      page.getByText(`Updated ${reportName}.`, { exact: true }),
+    ).toBeVisible();
+    await other
+      .getByRole("button", { name: "Update shared report", exact: true })
+      .click();
+    await other.getByRole("button", { name: "Update", exact: true }).click();
+    await expect(
+      other.getByText(
+        "Someone changed this shared report after you opened it. Your choices are still here; reopen the current saved report or save a copy.",
+        { exact: true },
+      ),
+    ).toBeVisible();
+    await expect(
+      other
+        .getByRole("list", { name: "CSV columns in order" })
+        .getByRole("listitem"),
+    ).toHaveText(retainedHeaders);
+    await other.evaluate(() => window.scrollTo(0, 0));
+    await expect.poll(() => other.evaluate(() => window.scrollY)).toBe(0);
+    await other.screenshot({
+      path: testInfo.outputPath("shared-editor-conflict.png"),
+      fullPage: true,
+    });
+    await other.setViewportSize({ width: 390, height: 844 });
+    await expect
+      .poll(() =>
+        other.evaluate(
+          () => document.documentElement.scrollWidth <= innerWidth,
+        ),
+      )
+      .toBe(true);
+    await other.screenshot({
+      path: testInfo.outputPath("shared-editor-conflict-narrow.png"),
+      fullPage: true,
+    });
+    await other
+      .getByRole("button", { name: "Save a copy", exact: true })
+      .click();
+    await other
+      .getByRole("textbox", { name: "Report name", exact: true })
+      .fill(copyName);
+    await other
+      .getByRole("button", { name: "Save shared report", exact: true })
+      .click();
+    await expect(
+      other.getByText(`Saved as ${copyName}.`, { exact: true }),
+    ).toBeVisible();
+    const copyId = new URL(other.url()).searchParams.get("saved");
+    expect(copyId).toBeTruthy();
+    expect(copyId).not.toBe(originalId);
+    created.set(copyId!, copyName);
+    await expect(
+      other.getByText(
+        "Someone changed this shared report after you opened it. Your choices are still here; reopen the current saved report or save a copy.",
+        { exact: true },
+      ),
+    ).toBeHidden();
+    await other.screenshot({
+      path: testInfo.outputPath("shared-editor-copy-saved-narrow.png"),
+      fullPage: true,
+    });
+    await other.setViewportSize({ width: 1280, height: 720 });
+    // Reopen both server definitions: the rejected edit must not alter the winner.
+    for (const [editor, id, headers] of [
+      [
+        page,
+        originalId!,
+        ["Accession Number", "Specimen ID", "Viral Load", "Patient Name"],
+      ],
+      [other, copyId!, retainedHeaders],
+    ] as const) {
+      await savedLibrary(editor);
+      await editor.reload();
+      const name = created.get(id)!;
+      await editor
+        .getByRole("searchbox", { name: "Search shared reports", exact: true })
+        .fill(name);
+      await editor
+        .getByRole("article", { name, exact: true })
+        .getByRole("button", { name: "Use report", exact: true })
+        .click();
+      await expect(editor).toHaveURL(new RegExp(`saved=${id}`));
+      await expect(editor.getByLabel("Date from", { exact: true })).toHaveValue(
+        "",
+        { timeout: 20_000 },
+      );
+      await setPeriod(editor);
+      const result = await downloadReport(editor, 2);
+      expect(result.headers).toEqual(headers);
+      await editor.screenshot({
+        path: testInfo.outputPath(
+          name === reportName
+            ? "shared-editor-original.png"
+            : "shared-editor-copy.png",
+        ),
+        fullPage: true,
+      });
+      expect(
+        result.records.map((row) => row[result.headers.indexOf("Viral Load")]),
+      ).toEqual(["450", "450"]);
+    }
+  } catch (error) {
+    await other.screenshot({
+      path: testInfo.outputPath("other-editor-failure.png"),
+      fullPage: true,
+    });
+    throw error;
+  } finally {
+    // Remove only this run's uniquely named definitions, using their latest versions.
+    const csrf = await page.evaluate(() => localStorage.getItem("CSRF") || "");
+    for (const [id, name] of created) {
+      const endpoint = `/api/OpenELIS-Global/rest/reports/data-export/saved-configs/${encodeURIComponent(id)}`;
+      const response = await page.request.get(endpoint);
+      expect(response.status()).toBe(200);
+      const current = await response.json();
+      expect(current.name).toBe(name);
+      const removed = await page.request.delete(
+        `${endpoint}?expectedVersion=${encodeURIComponent(current.version)}`,
+        { headers: { "X-CSRF-Token": csrf } },
+      );
+      expect(removed.status()).toBe(204);
+    }
+    await other.close();
+  }
+});
+
 test("ordinary report users share a definition and independently download its repeated results", async ({
   page,
 }, testInfo) => {

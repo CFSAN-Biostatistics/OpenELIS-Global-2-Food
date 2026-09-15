@@ -504,6 +504,7 @@ function ReportingBuilder({ owner }) {
           setDraft((value) => ({ ...value, savedReport: result }));
           navigate({ savedId: result.id }, true);
           setSavedNotice(t("reporting.saved.created", { name: result.name }));
+          updateSaved.reset();
           setSaveOpen(false);
         },
       },
