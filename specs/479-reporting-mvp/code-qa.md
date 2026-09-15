@@ -299,3 +299,18 @@ This increment does not qualify configured multiselects or result components
 through the public browser. Those broader cases retain their database-level
 checks and remain part of the outstanding field audit. Non-Conformance and human
 acceptance also remain open.
+
+## Saved-period rerun and checkpoint handoff
+
+The registered saved-period test passes locally (workflow plus authentication,
+18.7 seconds): save/run May 5, reopen from the shared library with blank dates,
+then run May 6. Actual CSVs preserve both results and show 0/0 minutes for the
+first period and 30/90 for the second. Both server job snapshots and the saved
+definition snapshot are retained with the downloaded files outside Git for the
+Catalyst integration handoff. No fixture reset was used.
+
+The corresponding public run is not accepted: the same review-widget host
+intercepts **Generate CSV** at desktop width. The widget owner has this finding.
+Per the user's checkpoint direction, remaining work prioritizes that normal-use
+obstruction, one focused rerun and a manual-UAT handoff; broader field and
+Non-Conformance gaps remain visible rather than prompting more test expansion.
