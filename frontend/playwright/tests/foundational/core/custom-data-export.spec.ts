@@ -1650,3 +1650,93 @@ test("capture the canonical Referral workflow at matching widths", async ({
   ).toBeVisible();
   await captureWidths(page, testInfo, "mock-referral-review", false);
 });
+
+test("Non-Conformance preserves event dates, recorded fallbacks and independent occurrences", async ({
+  page,
+}) => {
+  await page.goto("/reports/custom-data-export");
+  await page
+    .getByRole("button", { name: "Start a new export", exact: true })
+    .click();
+  await page.getByRole("radio", { name: /Non-Conformance/ }).click();
+  await expect(
+    page.getByRole("heading", { name: "Your CSV columns (0)" }),
+  ).toBeVisible();
+  const available = page.getByRole("region", { name: "Available fields" });
+  await expect(
+    available.getByRole("button", {
+      name: "Non-Conformance / Rejections",
+      exact: true,
+    }),
+  ).toHaveAttribute("aria-expanded", "false");
+  for (const width of [1280, 390]) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.evaluate(async () => {
+      await document.fonts.ready;
+      window.scrollTo(0, 0);
+    });
+    await expect
+      .poll(() => page.evaluate(() => document.documentElement.scrollWidth))
+      .toBeLessThanOrEqual(width);
+    await page.screenshot({
+      path: test.info().outputPath(`nc-catalog-${width}.png`),
+      fullPage: true,
+    });
+  }
+  const labels = [
+    "Accession Number",
+    "Occurrence ID",
+    "Rejection Reason",
+    "Rejection Date",
+    "Date Basis",
+    "Event Date",
+    "Recorded Date",
+    "Record Source",
+    "Status",
+  ];
+  for (const label of labels) await addField(page, label);
+  await page
+    .getByRole("button", { name: "Next: Set Filters", exact: true })
+    .click();
+  await expect(
+    page.getByText(/event dates when known, otherwise recorded dates/),
+  ).toBeVisible();
+  await setPeriod(page, "2026-05-10");
+  await reviewReport(page);
+  await expect(
+    page.getByText(/event dates when known, otherwise recorded dates/),
+  ).toBeVisible();
+  const { headers, records } = await downloadReport(page, 4);
+  expect(headers).toEqual(labels);
+  expect(new Set(records.map((row) => row[1])).size).toBe(4);
+  for (const row of records) {
+    expect(row[0]).toBe("REPORTING-MVP-NCE");
+    expect(row[2]).toBe("RPT-MVP-HAEMOLYSIS");
+    expect(row[3]).toBe("2026-05-10");
+  }
+  const known = records.filter((row) => row[4] === "Event date");
+  expect(known).toHaveLength(1);
+  expect(known[0].slice(5)).toEqual([
+    "2026-05-10",
+    "2026-05-12",
+    "Non-conformance event",
+    "OPEN",
+  ]);
+  const fallback = records.filter((row) => row[4] === "Recorded date");
+  expect(fallback).toHaveLength(2);
+  for (const row of fallback)
+    expect(row.slice(5)).toEqual([
+      "",
+      "2026-05-10",
+      "Non-conformance event",
+      "OPEN",
+    ]);
+  const legacy = records.filter((row) => row[4] === "Recorded rejection date");
+  expect(legacy).toHaveLength(1);
+  expect(legacy[0].slice(5)).toEqual([
+    "",
+    "2026-05-10",
+    "Recorded rejection",
+    "",
+  ]);
+});

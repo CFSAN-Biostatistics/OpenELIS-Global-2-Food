@@ -188,8 +188,11 @@ applications.
       date/column mappings, pending and repeated results, interleaved multi-select
       returned dates and source-specific status defaults. Sent date and repeat
       preservation follow the pinned mock and explicit user instruction.
-      Native rejection date coverage remains an unanswered product question;
-      Non-Conformance activation and affected expectations remain open.
+      Date choice resolved by the user on September 14: prefer the event date,
+      otherwise use the recorded date and visibly identify the basis. Prove
+      event-date precedence even when the recorded date lies in another period,
+      recorded-only rejection inclusion, inclusive period boundaries and distinct
+      occurrence preservation. Non-Conformance activation remains unfinished.
 - [x] T021 [US4] Add failing lifecycle tests under
       `src/test/java/org/openelisglobal/reports/dataexport/` for retry lineage,
       queued cancellation, concurrent claims, restart/live-worker isolation,
@@ -217,7 +220,9 @@ applications.
       event-link rules in `specs/479-reporting-mvp/data-model.md`.
       Partial: Referrals is connected and publicly validated at `d48cd790c492`
       through the existing builder, shared reports, queue and actual CSV at
-      desktop/phone widths. Non-Conformance remains open.
+      desktop/phone widths. Non-Conformance now passes five backend checks, three
+      selected builder checks and the recorded local four-row CSV workflow.
+      Public deployment remains open.
 - [x] T023 [US4] Implement failed-job retry and queued-only cancellation through
       the common service/controller paths under
       `src/main/java/org/openelisglobal/reports/dataexport/`, preserving
