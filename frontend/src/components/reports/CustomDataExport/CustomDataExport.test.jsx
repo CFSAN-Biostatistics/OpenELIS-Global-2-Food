@@ -51,6 +51,7 @@ let job;
 let savedReports;
 let savedMutations;
 let failSavedUpdate;
+let failSavedCreate;
 let deletedSaved;
 let consoleErrors;
 let recoveryRequests;
@@ -73,6 +74,7 @@ beforeEach(() => {
   submissionGate = undefined;
   catalogGate = undefined;
   failSavedUpdate = false;
+  failSavedCreate = false;
   job = undefined;
   savedReports = [];
   savedMutations = [];
@@ -117,6 +119,8 @@ beforeEach(() => {
       )
         return json({ reports: savedReports, hasMore: false, page: 0 });
       if (url.includes("/saved-configs") && options.method === "POST") {
+        if (failSavedCreate)
+          return json({ code: "reporting.networkError" }, 503);
         const body = JSON.parse(options.body);
         savedMutations.push(body);
         const created = {
@@ -413,13 +417,21 @@ test.each(["SPREADSHEET", "RESULT_LIST"])(
     configuredDefaults[layout] = ["accessionNumber"];
     const entry = `/reports/custom-data-export?view=builder&step=columns&type=SAMPLE_TESTING&layout=${layout}`;
     const rendered = open(entry);
-    fireEvent.click(await screen.findByRole("button", { name: "Remove Accession Number" }));
-    expect(screen.getByRole("heading", { name: "Your CSV columns (0)" })).toBeVisible();
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Remove Accession Number" }),
+    );
+    expect(
+      screen.getByRole("heading", { name: "Your CSV columns (0)" }),
+    ).toBeVisible();
     rendered.unmount();
     open(entry);
     await screen.findByRole("region", { name: "Available fields" });
-    expect(screen.getByRole("heading", { name: "Your CSV columns (0)" })).toBeVisible();
-    expect(screen.queryByRole("button", { name: "Remove Accession Number" })).toBeNull();
+    expect(
+      screen.getByRole("heading", { name: "Your CSV columns (0)" }),
+    ).toBeVisible();
+    expect(
+      screen.queryByRole("button", { name: "Remove Accession Number" }),
+    ).toBeNull();
   },
 );
 
@@ -890,6 +902,43 @@ test("a stale shared-report update keeps the draft and explains the conflict", a
     await screen.findByText(messages["reporting.saved.changed"]),
   ).toBeVisible();
   expect(headers()).toEqual(["Accession Number", "Hemoglobin"]);
+});
+
+test("saving a copy resolves a stale-edit warning only after the copy succeeds", async () => {
+  const original = savedFixture();
+  savedReports.push(original);
+  failSavedUpdate = true;
+  open();
+  await useSaved();
+  await period();
+  review();
+  fireEvent.click(screen.getByRole("button", { name: "Update shared report" }));
+  fireEvent.click(screen.getByRole("button", { name: "Update" }));
+  expect(
+    await screen.findByText(messages["reporting.saved.changed"]),
+  ).toBeVisible();
+  fireEvent.click(screen.getByRole("button", { name: "Save a copy" }));
+  fireEvent.change(screen.getByLabelText("Report name"), {
+    target: { value: "Recovered report" },
+  });
+  failSavedCreate = true;
+  fireEvent.click(screen.getByRole("button", { name: "Save shared report" }));
+  expect(
+    await within(screen.getByRole("dialog")).findByText(
+      messages["reporting.networkError"],
+    ),
+  ).toBeVisible();
+  expect(screen.getByLabelText("Report name")).toHaveValue("Recovered report");
+  expect(savedReports).toEqual([original]);
+  expect(headers()).toEqual(["Accession Number", "Hemoglobin"]);
+  failSavedCreate = false;
+  fireEvent.click(screen.getByRole("button", { name: "Save shared report" }));
+  expect(await screen.findByText("Saved as Recovered report.")).toBeVisible();
+  expect(
+    screen.queryByText(messages["reporting.saved.changed"]),
+  ).not.toBeInTheDocument();
+  expect(savedReports[0]).toEqual(original);
+  expect(savedReports[1].definition).toEqual(original.definition);
 });
 
 test("configured filters exclude unsupported restored choices from review, save, and generation", async () => {

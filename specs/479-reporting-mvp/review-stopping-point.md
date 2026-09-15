@@ -53,30 +53,25 @@ independently complete user workflows.
 
 ## Review-ready versus merge-ready
 
-As verified on 2026-09-14, the public application is
-`9baa356345489bf16d197c4ea6db48a615f894f9`, the assembled ten-PR stack.
-[Recorded workflow evidence](https://reporting.catalyst.openelis-global.org/reporting-evidence/20260914-stack-9baa/)
-contains six inspected recordings from the local compiled stack.
-[Public deployment checks](https://reporting.catalyst.openelis-global.org/reporting-evidence/20260914-public-9baa/)
-passed seven checks including authentication, with actual CSV comparisons.
-These are automated results; human acceptance remains pending.
+The latest verified public application at this checkpoint is
+`8005e4cc0b2b05d054489730aef969027d773093`, deployment
+`20260914T234348Z-8005e4cc0b2b`. Its backend, frontend and full E2E GitHub gates
+pass. [Current public workflow evidence](https://reporting.catalyst.openelis-global.org/reporting-evidence/20260914-review-8005/)
+contains three inspected HD recordings, actual CSVs and matching queue downloads,
+plus desktop/narrow comparisons with the pinned mock. Five public workflows
+passed across seven checks including two authentication setups. Earlier recovery
+proof remains tied to `9baa356`; navigation/Dashboard repair recordings identify
+their original local builds. Human acceptance remains pending.
 
-The original stack's first nine PRs passed their checks. Navigation's three E2E
-failures were repaired, followed by a Dashboard failed-load/cancellation repair.
-[Inspected repair recordings](https://reporting.catalyst.openelis-global.org/reporting-evidence/20260914-navigation-ba3c/)
-cover local frontend `ba3c5ad` against backend `9baa356`. Four affected checks
-including authentication passed. That evidence does not establish public delivery
-of the repairs. The `ba3c5ad` frontend checks passed, but its completed E2E run found a menu-test
-assumption about the standard Admin group versus the Reporting direct link.
-The latest test correction follows both configurations; new-commit CI remains
-required. Backend CI was still running at the latest inspection.
-
-Reporting UI follow-up `bf7fbf5` removes the primary-report exception for initial
-columns. Its bundled defaults remain empty, and instance configuration can
-choose defaults in either layout. It passed 22 backend tests, 30 component tests,
-and both production builds. The assembled branch, public publication and CI for
-this correction still require verification. The [code-QA record](code-qa.md)
-separates these stages from full-MVP completion and human acceptance.
+Reporting UI follow-up `36eb98edda` adds a two-editor regression and corrects the
+old conflict warning persisting after a successful copy. Its component regression
+reproduced the defect before the one-line fix. All 31 reporting component checks,
+compiled desktop/phone recovery with actual CSVs, both builds, formatting and
+focused lint pass. Failed copying retains the entered name and selected fields.
+The original saved definition and its independent copy retain their own columns.
+This follow-up still needs assembled publication, public recording and fresh CI;
+it is not yet part of the public `8005e4cc0b` result. The [code-QA record](code-qa.md)
+separates current validation from full-MVP and human acceptance.
 
 Before calling this checkpoint merge-ready:
 
