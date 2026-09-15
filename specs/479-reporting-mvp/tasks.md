@@ -388,7 +388,9 @@ builder's completed functional scope. See [the contract](fhir-replay.md).
       dates and existing identities; do not invoke result entry or bulk backfill.
 - [x] T043 Validate rejected input without emission, selection-only processing,
       and real asynchronous failure/completion. Format and build with the checks
-      recorded: 12 focused tests and the Java 21 WAR build pass.
+      recorded: 13 focused tests and the Java 21 WAR build pass, including a
+      regression for the circular referral/transform initialization found at
+      first local startup.
 - [ ] T044 Publish one cohesive follow-up PR and coordinate replacement of only
       the reporting app with the integration
       owner, preserving the database/report volumes, FHIR proxy connection and

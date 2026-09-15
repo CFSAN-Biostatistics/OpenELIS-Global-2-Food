@@ -13,6 +13,7 @@ import org.openelisglobal.common.rest.BaseRestController;
 import org.openelisglobal.dataexchange.fhir.exception.FhirLocalPersistingException;
 import org.openelisglobal.dataexchange.fhir.form.FhirReplayRequest;
 import org.openelisglobal.dataexchange.fhir.service.FhirTransformService;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -29,7 +30,7 @@ public class FhirReplayRestController extends BaseRestController {
 
     private final FhirTransformService fhirTransformService;
 
-    public FhirReplayRestController(FhirTransformService fhirTransformService) {
+    public FhirReplayRestController(@Lazy FhirTransformService fhirTransformService) {
         this.fhirTransformService = fhirTransformService;
     }
 

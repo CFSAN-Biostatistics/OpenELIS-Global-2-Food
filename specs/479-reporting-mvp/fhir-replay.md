@@ -59,11 +59,19 @@ failure, invalid transaction responses and timeout behavior.
 selected-sample-only transformation with retained identities, and propagation of
 FHIR store errors through the existing service.
 
-Local validation on September 15: all 12 focused tests passed with zero failures,
+Local validation on September 15: all 13 focused tests passed with zero failures,
 errors or skips. The Java 21 WAR build passed with both test-skipping flags after
 the focused test run. The HTTP test context uses the existing EL-free validator
 pattern because Tomcat supplies EL in the deployed runtime. No frontend code or
 dependencies changed.
+
+The first local startup exposed an existing circular referral/transform dependency:
+eager controller construction requested the transform before Spring had wrapped
+its asynchronous proxy. Constructor injection now resolves lazily.
+`FhirReplayWiringTest` reproduced the original startup error before the fix and
+passes afterward using the real transform implementation and Spring async proxy.
+The corrected WAR was rebuilt; native startup and integration acceptance remain
+separate from these focused checks.
 
 The follow-up PR and coordinated deployment receipt are recorded here as they
 complete. No runtime replacement or replay is implied by the source change alone.
