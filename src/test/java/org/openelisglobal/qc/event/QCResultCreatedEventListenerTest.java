@@ -69,8 +69,10 @@ public class QCResultCreatedEventListenerTest {
 
         verify(ruleEvaluationService).evaluateAllRules("R1");
         verify(violationService, never()).createViolation(any(), any());
-        verify(resultDAO).update(testResult);
-        assertEquals("ACCEPTED", testResult.getResultStatus());
+        // An empty evaluation is "no rules ran", so the listener leaves the status
+        // alone; testHandleQCResultCreated_WithNoRulesEvaluated_ShouldNotTouchStatus
+        // covers why that matters.
+        verify(resultDAO, never()).update(any());
     }
 
     /**

@@ -286,14 +286,6 @@ public abstract class BaseWebContextSensitiveTest extends AbstractTransactionalJ
                 ensureAuditSystemUser();
                 ensureReferenceSeedRows();
 
-                // Fixture rows carry explicit ids but never advance the backing
-                // sequence, so a later sequence-backed insert into a fixture-named
-                // table collides with a seeded id (observation_history was the
-                // repeat offender). Every table a dataset names was just truncated,
-                // so MAX(id)+1 is exactly the right next value — resync here rather
-                // than hoping each test remembers resyncSequence().
-                resyncSequencesForTables(dataset.getTableNames());
-
                 // Refresh StatusService cache to pick up any status_of_sample changes
                 // from the loaded test data
                 if (statusService != null) {
@@ -483,50 +475,6 @@ public abstract class BaseWebContextSensitiveTest extends AbstractTransactionalJ
                     + ")::bigint, false)");
         } catch (SQLException e) {
             throw new RuntimeException("Failed to resync sequence " + sequence + " from " + table, e);
-        }
-    }
-
-    /**
-     * {@link #resyncSequence} for every dataset-named table whose backing sequence
-     * follows the {@code 
-     * 
-    <table>
-     * _seq} convention and whose id column is numeric. Tables with UUID ids or
-     * unconventionally named sequences are skipped — no worse than before, when
-     * nothing was resynced at all.
-     *
-     * <p>
-     * Forward-only, via GREATEST against the sequence's own high-water mark:
-     * fixture rows never advance the sequence, so bumping it past MAX(id) fixes
-     * literal-id collisions — but pulling a high sequence DOWN to a just-truncated
-     * table's MAX+1 creates the opposite collision, because other tests insert
-     * literal low ids by raw JDBC outside any dataset load (dictionary id 8,
-     * history id 100009 in CI). A sequence may only ever move up.
-     */
-    private void resyncSequencesForTables(String[] tableNames) throws SQLException {
-        try (Connection conn = dataSource.getConnection()) {
-            for (String table : tableNames) {
-                String tableName = table.toLowerCase();
-                String sequence = tableName + "_seq";
-                try (java.sql.PreparedStatement check = conn.prepareStatement("SELECT 1 FROM pg_class c"
-                        + " JOIN pg_namespace n ON n.oid = c.relnamespace"
-                        + " JOIN information_schema.columns col ON col.table_name = ? AND col.column_name = 'id'"
-                        + "   AND col.table_schema = 'clinlims' AND col.data_type IN ('numeric', 'integer', 'bigint')"
-                        + " WHERE c.relkind = 'S' AND c.relname = ? AND n.nspname = 'clinlims'")) {
-                    check.setString(1, tableName);
-                    check.setString(2, sequence);
-                    try (java.sql.ResultSet rs = check.executeQuery()) {
-                        if (!rs.next()) {
-                            continue;
-                        }
-                    }
-                }
-                try (Statement st = conn.createStatement()) {
-                    st.execute("SELECT setval('clinlims." + sequence + "', GREATEST("
-                            + "(SELECT COALESCE(MAX(id), 0) + 1 FROM clinlims." + tableName + ")::bigint, "
-                            + "(SELECT last_value + 1 FROM clinlims." + sequence + ")), false)");
-                }
-            }
         }
     }
 
