@@ -1,5 +1,31 @@
 # Reporting MVP Implementation and Deployment
 
+## Current manual-UAT checkpoint — September 14, 2026 (Pacific time)
+
+The public stage remains frontend `7cca586e5874ccb177d3a59f75177a5a9867e1d5`,
+backend `8005e4cc0b2b05d054489730aef969027d773093`, review tooling
+`2048bc3cfd038e42d0fcb92412d4ce5c79fbc090`. The review-widget obstruction is fixed.
+Four focused public checks passed with ordinary interactions: authentication,
+both CSV layouts at phone width, and a saved report rerun across distinct periods.
+[Published recordings, CSVs and manifest](https://reporting.catalyst.openelis-global.org/reporting-evidence/20260914-uat-checkpoint-2048/)
+identify test source `568b7454370bf8873a5c8b52cbf1ef6f47f01ce7`. Public CSV bytes
+and video availability were verified. No additional test matrix was introduced.
+
+Backend authoring and the [public Grist checklist](https://grist.openelis-global.org/uat/reporting.json)
+agree on revision `8b87c62931a32705395fc8be2d5c5aef7195eeb0d6b64a615390cb0a2bda0bd4`,
+verified September 15 at 02:03 UTC. Six stories contain 23 steps. Only RPT-303
+and RPT-504 were added; all 21 preexisting steps, including the newer split
+Referrals walkthrough, were preserved. Story PR links now reference #4310,
+#4309 and #4315. The review owner used revision preconditions and stable-row-ID
+readback; reviewer results were not written. T036 and T041 publication gaps are
+closed. No human-pass claim is made.
+
+All ten stack PRs are ready for review, none merged. Submitted UI `568b745437`
+and navigation `9c1bfd713c` passed frontend and full E2E CI; their backend jobs
+remain running at this checkpoint. Non-Conformance still awaits its missing
+event-date decision and implementation; full MVP completion remains open.
+The following sections are historical snapshots, not current blockers.
+
 ## Validation ownership and delivery checkpoint — September 14, 2026
 
 Original `openelis-work` user stories and the approved mock govern UAT. Grist
