@@ -20,6 +20,7 @@ result-writing path or reporting-builder capability is introduced.
 
 Use existing administrator authentication and the normal CSRF mechanism for
 session-based requests. Existing Basic authentication remains available.
+Send `Content-Type: application/json` and `Accept: application/json`.
 
 ```json
 { "sampleIds": ["1154", "1157"] }
@@ -39,7 +40,7 @@ session-based requests. Existing Basic authentication remains available.
 Example completed response (the count depends on the selected samples):
 
 ```json
-{ "status": "completed", "sampleIds": ["1154", "1157"], "resourceCount": 14 }
+{ "status": "completed", "sampleIds": ["1154", "1157"], "resourceCount": 15 }
 ```
 
 Success means the FHIR store returned a nonempty transaction response with a
@@ -73,12 +74,39 @@ passes afterward using the real transform implementation and Spring async proxy.
 The corrected WAR was rebuilt; native startup and integration acceptance remain
 separate from these focused checks.
 
-The follow-up PR and coordinated deployment receipt are recorded here as they
-complete. No runtime replacement or replay is implied by the source change alone.
-
 The agreed synthetic cohort is sample 1154 (`REPORTING-MVP-REPEAT`, two results)
 and sample 1157 (`REPORTING-MVP-TURNAROUND`, two results). The integration owner
 verified that these samples contain only the four intended results. Deployment
 must preserve the existing database/report volumes, proxy connection and disabled
 startup imports. Broad `/OEToFhir` backfill and same-resource Observation PUT are
 not part of this procedure.
+
+## Verified native result
+
+[PR #4323](https://github.com/DIGI-UW/OpenELIS-Global-2/pull/4323), implementation
+`fa70a8c001811ea69b3020cdd2390d249c1b2ea6`, is deployed on the local reporting
+instance. Built, staged and active WAR SHA-256:
+`34ed37b11ceef8c91d14c2d102260bcbf2f6bc8c956dda41f75628261ed51052`.
+Native and proxied login, the reporting page and authenticated FHIR metadata
+returned HTTP 200; metadata reports FHIR 4.0.1. Database/web container identities
+and start times, mounts and runtime configuration hashes were preserved.
+
+At 2026-09-15 23:25 UTC, the integration owner submitted the two selected sample
+IDs and received HTTP 200 with `status: completed` and `resourceCount: 15`.
+Store reads matched all four expected Observations to the earlier native facade
+outputs, including identities, status, code, quantity, patient/specimen/order
+references and effective/issued dates. Before/after full-row snapshots were
+byte-identical for four results, three analyses, two samples and two sample items.
+The native task independently checked the replay response and snapshot equality.
+
+Evidence is retained by the integration owner under
+`catalyst-evidence/four-pathways/2026-09-15/native-fhir-read/`:
+`replay-response.json`, `replay-verified.json` and the before/after table snapshots.
+Verification receipt SHA-256:
+`711c3248e1c036896ffce81c62bb15bac0410a88fe5085539a84233e0623cab8`.
+An earlier client request used an unsupported Accept header and returned 406
+without emission; the corrected JSON request required no product change.
+
+T044's native delivery is complete. Downstream Data Pipes/Spark/Catalyst
+verification is separate and remains with the integration task. This checkpoint
+does not claim a merge, public deployment or human UAT acceptance.

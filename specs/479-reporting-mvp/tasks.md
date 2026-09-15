@@ -391,11 +391,14 @@ builder's completed functional scope. See [the contract](fhir-replay.md).
       recorded: 13 focused tests and the Java 21 WAR build pass, including a
       regression for the circular referral/transform initialization found at
       first local startup.
-- [ ] T044 Publish one cohesive follow-up PR and coordinate replacement of only
-      the reporting app with the integration
-      owner, preserving the database/report volumes, FHIR proxy connection and
-      disabled startup imports. The integration owner verifies the selected
-      cohort before/after and completes downstream validation separately.
+- [x] T044 Publish [PR #4323](https://github.com/DIGI-UW/OpenELIS-Global-2/pull/4323)
+      and replace only the local reporting app, preserving the database/report
+      volumes, FHIR proxy connection and disabled startup imports. Native login
+      and authenticated FHIR metadata pass. The integration owner replayed only
+      samples 1154/1157: 15 resources persisted, all four intended Observations
+      matched, and full source rows were unchanged. See the
+      [verified native result](fhir-replay.md#verified-native-result).
+      Downstream Spark/Catalyst validation remains owned by the integration task.
 
 ## Dependencies
 
