@@ -375,6 +375,26 @@ reporting scope while completing the navigation contract in `plan.md`.
       read back at checklist revision `8b87c62931a3`; see `execution.md`.
       Human acceptance remains separate.
 
+## Native FHIR integration follow-up — September 15, 2026
+
+This bounded repair supports the approved four-pathway Catalyst integration.
+Native OpenELIS owns its implementation; the integration task links this register
+and owns downstream Spark/Catalyst validation. It does not reopen the reporting
+builder's completed functional scope. See [the contract](fhir-replay.md).
+
+- [x] T042 Expose an administrator-authenticated, stateless POST for 1–100
+      explicit sample IDs, validate the whole selection before transformation,
+      and reuse the existing native sample transform. Preserve retained values,
+      dates and existing identities; do not invoke result entry or bulk backfill.
+- [x] T043 Validate rejected input without emission, selection-only processing,
+      and real asynchronous failure/completion. Format and build with the checks
+      recorded: 12 focused tests and the Java 21 WAR build pass.
+- [ ] T044 Publish one cohesive follow-up PR and coordinate replacement of only
+      the reporting app with the integration
+      owner, preserving the database/report volumes, FHIR proxy connection and
+      disabled startup imports. The integration owner verifies the selected
+      cohort before/after and completes downstream validation separately.
+
 ## Dependencies
 
 ```mermaid
