@@ -10,7 +10,7 @@ import { ConfigurationContext, NotificationContext } from "../../layout/Layout";
  * OGC-1147 — the QC-hold annotation on a validation row.
  *
  * Copy-level assertions cover the words a technician reads; the mounted-component
- * test covers the DEF-1 regression — the reason sentence must actually render on
+ * test covers the regression — the reason sentence must actually render on
  * the held row, not sit in a title prop Carbon's Tag silently discards.
  */
 const renderWithIntl = (component) =>
@@ -79,7 +79,7 @@ describe("Validation QC-hold copy", () => {
     expect(help).toMatch(/warning only/i);
   });
 
-  test("the held row renders the reason sentence in the tag's popover (DEF-1)", () => {
+  test("the held row renders the reason sentence in the tag's popover", () => {
     renderValidation({ resultList: [heldRow] });
     // The tag itself…
     expect(screen.getAllByText("QC failed").length).toBeGreaterThan(0);

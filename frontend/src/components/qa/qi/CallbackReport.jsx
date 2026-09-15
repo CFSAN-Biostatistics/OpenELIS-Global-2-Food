@@ -1,6 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
 import {
-  DataTable,
   DataTableSkeleton,
   DatePicker,
   DatePickerInput,
@@ -15,9 +14,11 @@ import {
   Tag,
 } from "@carbon/react";
 import { FormattedMessage, useIntl } from "react-intl";
-import { getFromOpenElisServer } from "../../utils/Utils";
+import { getFromOpenElisServer, toLocalIsoDate } from "../../utils/Utils";
 import PageBreadCrumb from "../../common/PageBreadCrumb";
+import QASimpleTable from "../common/QASimpleTable";
 import QAEmptyState from "../common/QAEmptyState";
+import { rateTone } from "./qiThresholds";
 import "./QIDashboard.css";
 
 /**
@@ -73,31 +74,11 @@ const FAILURE_REASONS = [
   "noCallback",
 ];
 
-/** Tag tone against qi_config thresholds (CALLBACK is HIGHER_BETTER). */
-function rateTone(rate, config) {
-  if (
-    rate == null ||
-    !config?.enabled ||
-    config.target == null ||
-    config.action == null
-  ) {
-    return "gray";
-  }
-  if (rate >= config.target) {
-    return "green";
-  }
-  return rate <= config.action ? "red" : "amber";
-}
-
-function formatDate(d) {
-  return d.toISOString().split("T")[0];
-}
-
 function defaultRange() {
   const to = new Date();
   const from = new Date();
   from.setDate(from.getDate() - 30);
-  return { fromDate: formatDate(from), toDate: formatDate(to) };
+  return { fromDate: toLocalIsoDate(from), toDate: toLocalIsoDate(to) };
 }
 
 function formatTimestamp(value) {
@@ -164,8 +145,8 @@ const CallbackReport = () => {
     if (dates.length === 2) {
       setPage(0);
       setRange({
-        fromDate: formatDate(dates[0]),
-        toDate: formatDate(dates[1]),
+        fromDate: toLocalIsoDate(dates[0]),
+        toDate: toLocalIsoDate(dates[1]),
       });
     }
   };
@@ -361,41 +342,7 @@ const CallbackReport = () => {
           <h4 className="amendment-section__title">
             <FormattedMessage id="qa.qi.callback.list.title" />
           </h4>
-          <DataTable
-            rows={rows}
-            headers={HEADERS.map((h) => ({
-              key: h.key,
-              header: intl.formatMessage({ id: h.labelKey }),
-            }))}
-          >
-            {({ rows: tableRows, headers, getHeaderProps, getRowProps }) => (
-              <TableContainer>
-                <Table size="sm">
-                  <TableHead>
-                    <TableRow>
-                      {headers.map((header) => (
-                        <TableHeader
-                          {...getHeaderProps({ header })}
-                          key={header.key}
-                        >
-                          {header.header}
-                        </TableHeader>
-                      ))}
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {tableRows.map((row) => (
-                      <TableRow {...getRowProps({ row })} key={row.id}>
-                        {row.cells.map((cell) => (
-                          <TableCell key={cell.id}>{cell.value}</TableCell>
-                        ))}
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-            )}
-          </DataTable>
+          <QASimpleTable rows={rows} headers={HEADERS} />
           <Pagination
             page={page + 1}
             pageSize={pageSize}

@@ -11,9 +11,9 @@
 
     One row documents one manual phone-callback attempt for a critical result
     (TJC NPSG.02.03.01 / CLSI GP47 read-back). The callback act is manual;
-    this table only records that it happened. Result-grain per the C.4 outline
-    (qi-critical-callback-compliance-outline.md §5): the callback anchors to a
-    PERSISTED result (result_id), and result_value snapshots the value as
+    this table only records that it happened. Result-grain: the callback
+    anchors to a PERSISTED result (result_id), and result_value snapshots
+    the value as
     communicated — immune to later edits/amendments. analysis_id is derived
     from the result server-side and kept for one-hop compliance joins.
 

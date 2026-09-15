@@ -1,24 +1,17 @@
 import React, { useEffect, useMemo, useState } from "react";
 import {
-  DataTable,
   DataTableSkeleton,
   DatePicker,
   DatePickerInput,
   Dropdown,
   Pagination,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableHeader,
-  TableRow,
   Tag,
   TextInput,
 } from "@carbon/react";
 import { FormattedMessage, useIntl } from "react-intl";
-import { getFromOpenElisServer } from "../../utils/Utils";
+import { getFromOpenElisServer, toLocalIsoDate } from "../../utils/Utils";
 import PageBreadCrumb from "../../common/PageBreadCrumb";
+import QASimpleTable from "../common/QASimpleTable";
 import QAEmptyState from "../common/QAEmptyState";
 import "../qi/QIDashboard.css";
 
@@ -58,17 +51,10 @@ const ACTION_TYPE_KEYS = {
 
 const STATUS_TAG_TYPE = { open: "blue", overdue: "red", completed: "green" };
 
-function localISO(date) {
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(
-    2,
-    "0",
-  )}-${String(date.getDate()).padStart(2, "0")}`;
-}
-
 function shift(days) {
   const d = new Date();
   d.setDate(d.getDate() + days);
-  return localISO(d);
+  return toLocalIsoDate(d);
 }
 
 // Backend sends dueDate/dateCompleted as yyyy-MM-dd strings, so lexical compare == date compare.
@@ -111,7 +97,7 @@ const CapaRegister = () => {
     );
   }, []);
 
-  const today = localISO(new Date());
+  const today = toLocalIsoDate(new Date());
   const weekAhead = shift(7);
   const ninetyAgo = shift(-90);
 
@@ -273,8 +259,8 @@ const CapaRegister = () => {
                 setRange(
                   dates.length === 2
                     ? {
-                        fromDate: localISO(dates[0]),
-                        toDate: localISO(dates[1]),
+                        fromDate: toLocalIsoDate(dates[0]),
+                        toDate: toLocalIsoDate(dates[1]),
                       }
                     : { fromDate: "", toDate: "" },
                 );
@@ -304,46 +290,7 @@ const CapaRegister = () => {
             />
           ) : (
             <>
-              <DataTable
-                rows={rows}
-                headers={HEADERS.map((h) => ({
-                  key: h.key,
-                  header: intl.formatMessage({ id: h.labelKey }),
-                }))}
-              >
-                {({
-                  rows: tableRows,
-                  headers,
-                  getHeaderProps,
-                  getRowProps,
-                }) => (
-                  <TableContainer>
-                    <Table size="sm">
-                      <TableHead>
-                        <TableRow>
-                          {headers.map((header) => (
-                            <TableHeader
-                              {...getHeaderProps({ header })}
-                              key={header.key}
-                            >
-                              {header.header}
-                            </TableHeader>
-                          ))}
-                        </TableRow>
-                      </TableHead>
-                      <TableBody>
-                        {tableRows.map((row) => (
-                          <TableRow {...getRowProps({ row })} key={row.id}>
-                            {row.cells.map((cell) => (
-                              <TableCell key={cell.id}>{cell.value}</TableCell>
-                            ))}
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </TableContainer>
-                )}
-              </DataTable>
+              <QASimpleTable rows={rows} headers={HEADERS} />
               <Pagination
                 page={page + 1}
                 pageSize={pageSize}

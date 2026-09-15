@@ -1,21 +1,10 @@
 import React, { useEffect, useState } from "react";
-import {
-  Button,
-  DataTable,
-  DataTableSkeleton,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableHeader,
-  TableRow,
-  Tag,
-} from "@carbon/react";
+import { Button, DataTableSkeleton, Tag } from "@carbon/react";
 import { Edit } from "@carbon/icons-react";
 import { FormattedMessage, useIntl } from "react-intl";
 import { getFromOpenElisServer } from "../../utils/Utils";
 import PageBreadCrumb from "../../common/PageBreadCrumb";
+import QASimpleTable from "../common/QASimpleTable";
 import QIConfigEditor from "./QIConfigEditor";
 import { unitFor } from "./qiThresholds";
 import "./QIDashboard.css";
@@ -123,41 +112,7 @@ const QIConfigList = () => {
           <FormattedMessage id="qa.qiConfig.error" />
         </p>
       ) : (
-        <DataTable
-          rows={rows}
-          headers={HEADERS.map((h) => ({
-            key: h.key,
-            header: intl.formatMessage({ id: h.labelKey }),
-          }))}
-        >
-          {({ rows: tableRows, headers, getHeaderProps, getRowProps }) => (
-            <TableContainer>
-              <Table size="lg">
-                <TableHead>
-                  <TableRow>
-                    {headers.map((header) => (
-                      <TableHeader
-                        {...getHeaderProps({ header })}
-                        key={header.key}
-                      >
-                        {header.header}
-                      </TableHeader>
-                    ))}
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {tableRows.map((row) => (
-                    <TableRow {...getRowProps({ row })} key={row.id}>
-                      {row.cells.map((cell) => (
-                        <TableCell key={cell.id}>{cell.value}</TableCell>
-                      ))}
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          )}
-        </DataTable>
+        <QASimpleTable rows={rows} headers={HEADERS} size="lg" />
       )}
 
       {editing && (

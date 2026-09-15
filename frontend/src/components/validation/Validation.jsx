@@ -488,7 +488,7 @@ const Validation = (props) => {
                 than another icon — the reason has to be readable, or a tech clears
                 the hold out of confusion and the safety argument evaporates.
                 DefinitionTooltip, not a title prop: Carbon's Tag swallows title
-                and renders its own wrapper, so the reason never showed (DEF-1). */}
+                and renders its own wrapper, so the reason never showed. */}
             {row.qcHold && (
               <DefinitionTooltip
                 definition={intl.formatMessage({

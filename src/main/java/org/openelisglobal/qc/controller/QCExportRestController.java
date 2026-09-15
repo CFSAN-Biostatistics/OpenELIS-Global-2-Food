@@ -182,7 +182,7 @@ public class QCExportRestController {
             }
         }
         if (model.truncated()) {
-            // Never drop rows silently in a compliance export (OGC-706 §01 #4).
+            // Never drop rows silently in a compliance export (OGC-706).
             writer.printf("%s%n", StringUtil.csvEscape(m("qc.export.truncated") + " (" + MAX_EXPORT_ROWS + ")"));
         }
         writer.flush();
@@ -258,7 +258,7 @@ public class QCExportRestController {
                     StringUtil.csvEscape(benchTechnicianName(result)));
         }
         if (truncated) {
-            // Never drop rows silently in a compliance export (OGC-706 §01 #4).
+            // Never drop rows silently in a compliance export (OGC-706).
             writer.printf("%s%n", StringUtil.csvEscape(m("qc.export.truncated") + " (" + MAX_EXPORT_ROWS + ")"));
         }
         writer.flush();
@@ -508,7 +508,7 @@ public class QCExportRestController {
         Double sigma = section.sigma() != null ? section.sigma().sigma() : null;
         String category = section.sigma() != null ? section.sigma().category() : "";
 
-        PdfPTable table = new PdfPTable(4);
+        PdfPTable table = new PdfPTable(8);
         table.setWidthPercentage(100);
         table.setSpacingBefore(2);
         table.setSpacingAfter(6);

@@ -75,7 +75,8 @@ public class QCChartDataServiceImpl implements QCChartDataService {
     @Transactional(readOnly = true)
     public QCExportModel getExportModel(String instrumentId, String testId, String controlLevel, Timestamp start,
             Timestamp end, int maxRows) {
-        String instrumentName = analyzerService.getWithBinding(instrumentId).map(Analyzer::getName).orElse(instrumentId);
+        String instrumentName = analyzerService.getWithBinding(instrumentId).map(Analyzer::getName)
+                .orElse(instrumentId);
 
         // Scope to ACTIVE lots, matching the on-screen QC chart/dashboard workflow
         // (getActiveControlLots*). An ACTIVE lot is guaranteed to have a
@@ -99,7 +100,7 @@ public class QCChartDataServiceImpl implements QCChartDataService {
             if (results.isEmpty()) {
                 continue;
             }
-            // Cap total run rows across lots (CSV bound; §01 #4). The PDF is scope-
+            // Cap total run rows across lots (CSV bound). The PDF is scope-
             // bounded so this rarely triggers there.
             if (totalRuns + results.size() > maxRows) {
                 results = new ArrayList<>(results.subList(0, Math.max(0, maxRows - totalRuns)));

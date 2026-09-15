@@ -118,7 +118,7 @@ public class QCChartDataRestController {
             response.setMinus2SD(mean - 2 * sd);
             response.setMinus3SD(mean - 3 * sd);
 
-            // C.1 / OGC-704: Westgard sigma metric (mean/SD + per-test TEa, bias 0).
+            // OGC-704: Westgard sigma metric (mean/SD + per-test TEa, bias 0).
             // Shared with the OGC-706 export via QCChartDataService#getStatisticsWithSigma.
             response.setSigma(statsWithSigma.sigma().sigma());
             response.setSigmaCategory(statsWithSigma.sigma().category());
@@ -266,7 +266,7 @@ public class QCChartDataRestController {
         private double minus1SD;
         private double minus2SD;
         private double minus3SD;
-        // C.1 / OGC-704: sigma metric; null sigma when NOT_CALCULABLE
+        // OGC-704: sigma metric; null sigma when NOT_CALCULABLE
         private Double sigma;
         private String sigmaCategory;
 

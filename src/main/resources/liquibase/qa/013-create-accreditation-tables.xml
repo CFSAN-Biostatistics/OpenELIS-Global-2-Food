@@ -8,7 +8,7 @@
     <!--
     OGC-686 Test Accreditation — accrediting bodies + per-test enrollment.
 
-    Data model decision (D.0): a real accreditation certificate carries ONE
+    Data model decision: a real accreditation certificate carries ONE
     expiry for the whole accredited scope, and mid-cycle scope extensions inherit
     it. So `expires_on` lives on `accrediting_body`, and `test_accreditation` is a
     membership row: which tests fall under which body, with an optional
@@ -52,7 +52,7 @@
             <!-- FK to clinlims.image(id); NULL = no logo uploaded yet, in which
                  case the body still contributes to the report notes line. -->
             <column name="logo_image_id" type="numeric"/>
-            <!-- Certificate expiry for the whole accredited scope (D.0). -->
+            <!-- Certificate expiry for the whole accredited scope. -->
             <column name="expires_on" type="DATE">
                 <constraints nullable="false"/>
             </column>
@@ -119,7 +119,7 @@
                 <constraints nullable="false"/>
             </column>
             <!-- When this test entered the body's scope. Provenance only: expiry
-                 comes from the body (D.0). NULL for tests enrolled at setup. -->
+                 comes from the body. NULL for tests enrolled at setup. -->
             <column name="effective_from" type="DATE"/>
             <column name="lastupdated" type="TIMESTAMP" defaultValueComputed="now()">
                 <constraints nullable="false"/>
@@ -195,6 +195,6 @@
          story put an item in the QMS pillar that rendered as the raw i18n key (no
          en.json entry yet) and 404'd on click (no route, no component yet).
          The menu row, the sideNav.label.qa.qms.accreditation key and the App.jsx
-         route belong together with the page in D.2. -->
+         route ship together with the page. -->
 
 </databaseChangeLog>

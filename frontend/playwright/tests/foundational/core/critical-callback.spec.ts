@@ -15,7 +15,7 @@ import {
 } from "../../../helpers/timeouts";
 
 /**
- * Critical Callback Compliance (C.4 / OGC-714 + OGC-715) — the full loop:
+ * Critical Callback Compliance (OGC-714 + OGC-715) — the full loop:
  * psql-seed a critical band on the ordered test (ResultLimit has no REST
  * write path) → order → save a critical result → needs-callback banner +
  * Log-callback button in Results Entry → modal logs the call → banner

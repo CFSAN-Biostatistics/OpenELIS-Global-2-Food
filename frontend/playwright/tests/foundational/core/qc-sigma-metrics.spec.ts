@@ -3,7 +3,7 @@ import { Page } from "@playwright/test";
 import { seedSigmaData, SigmaSeed } from "../../../helpers/seed-qc-sigma-data";
 
 /**
- * C.1 Westgard sigma metrics (OGC-704 compute, OGC-705 tile) — E2E.
+ * Westgard sigma metrics (OGC-704 compute, OGC-705 tile) — E2E.
  *
  * The exhaustive band math (WORLD_CLASS/ACCEPTABLE/MARGINAL/POOR + edge cases)
  * is covered deterministically by the SigmaMetrics unit test; this spec covers

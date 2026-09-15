@@ -58,7 +58,7 @@ const ControlLotList = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [statusFilter, setStatusFilter] = useState("");
-  // GAP-3: lot-level Levey-Jennings chart. The lot-scoped endpoints existed
+  // Lot-level Levey-Jennings chart. The lot-scoped endpoints existed
   // before this — the list just never linked to them.
   const [chartLot, setChartLot] = useState(null);
   const [chartData, setChartData] = useState([]);

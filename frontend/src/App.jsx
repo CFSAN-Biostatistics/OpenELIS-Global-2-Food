@@ -973,19 +973,19 @@ export default function App() {
                 <SecureRoute
                   path="/qa/overview"
                   exact
-                  component={() => <QAOverview />}
+                  render={() => <QAOverview />}
                   role={[Roles.RECEPTION, Roles.RESULTS, Roles.VALIDATION]}
                 />
                 <SecureRoute
                   path="/qa/qc/reagent-qc"
                   exact
-                  component={() => <QAPlaceholder feature="reagent-qc" />}
+                  render={() => <QAPlaceholder feature="reagent-qc" />}
                   role={Roles.LAB_SUPERVISOR}
                 />
                 <SecureRoute
                   path="/qa/qc/manual-qc"
                   exact
-                  component={() => <QAPlaceholder feature="manual-qc" />}
+                  render={() => <QAPlaceholder feature="manual-qc" />}
                   role={Roles.LAB_SUPERVISOR}
                 />
                 {/* QA v1 MVP (OGC-695/696): QI Dashboard replaces the pillar
@@ -994,20 +994,20 @@ export default function App() {
                 <SecureRoute
                   path="/qa/qi/dashboard"
                   exact
-                  component={() => <QIDashboard />}
+                  render={() => <QIDashboard />}
                   role={[Roles.RECEPTION, Roles.RESULTS, Roles.VALIDATION]}
                 />
                 <SecureRoute
                   path="/qa/qi/config"
                   exact
-                  component={() => <QIConfigList />}
+                  render={() => <QIConfigList />}
                   permission="qa.manage.qi"
                   role={Roles.GLOBAL_ADMIN}
                 />
                 <SecureRoute
                   path="/qa/qi/tat"
                   exact
-                  component={() => (
+                  render={() => (
                     <QIEnabledRoute indicator="TAT">
                       <TATReport breadcrumbs={qaTatBreadcrumbs} />
                     </QIEnabledRoute>
@@ -1017,7 +1017,7 @@ export default function App() {
                 <SecureRoute
                   path="/qa/qi/rejection"
                   exact
-                  component={() => (
+                  render={() => (
                     <QIEnabledRoute indicator="REJECTION">
                       <RejectionReport />
                     </QIEnabledRoute>
@@ -1027,7 +1027,7 @@ export default function App() {
                 <SecureRoute
                   path="/qa/qi/amendment"
                   exact
-                  component={() => (
+                  render={() => (
                     <QIEnabledRoute indicator="AMENDMENT">
                       <AmendmentReport />
                     </QIEnabledRoute>
@@ -1037,7 +1037,7 @@ export default function App() {
                 <SecureRoute
                   path="/qa/qi/callback"
                   exact
-                  component={() => (
+                  render={() => (
                     <QIEnabledRoute indicator="CALLBACK">
                       <CallbackReport />
                     </QIEnabledRoute>
@@ -1047,7 +1047,7 @@ export default function App() {
                 <SecureRoute
                   path="/qa/qms/nce-register"
                   exact
-                  component={() => (
+                  render={() => (
                     <NonConformIndex form="ViewNonConformingEvent" />
                   )}
                   role={[Roles.RECEPTION, Roles.VALIDATION]}
@@ -1055,27 +1055,27 @@ export default function App() {
                 <SecureRoute
                   path="/qa/qms/audit-trail"
                   exact
-                  component={() => <AuditTrailReportIndex />}
+                  render={() => <AuditTrailReportIndex />}
                   role={Roles.GLOBAL_ADMIN}
                 />
                 <SecureRoute
                   path="/qa/qms/e-signature-log"
                   exact
-                  component={() => <ESignatureLog />}
+                  render={() => <ESignatureLog />}
                   permission="qa.view.qms"
                   role={Roles.GLOBAL_ADMIN}
                 />
                 <SecureRoute
                   path="/qa/qms/capa-register"
                   exact
-                  component={() => <CapaRegister />}
+                  render={() => <CapaRegister />}
                   permission="qa.view.qms"
                   role={Roles.GLOBAL_ADMIN}
                 />
                 <SecureRoute
                   path="/qa/qms/accreditation"
                   exact
-                  component={() => <Accreditation />}
+                  render={() => <Accreditation />}
                   permission="qa.view.qms"
                   role={Roles.GLOBAL_ADMIN}
                 />
@@ -1447,7 +1447,7 @@ export default function App() {
                 <SecureRoute
                   path="/qa/qc/alerts"
                   exact
-                  component={() => <QCDashboard initialTab={1} />}
+                  render={() => <QCDashboard initialTab={1} />}
                   role={Roles.LAB_SUPERVISOR}
                 />
                 <SecureRoute

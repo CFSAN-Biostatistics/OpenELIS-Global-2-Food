@@ -28,7 +28,7 @@ public class QcViolationNceServiceImpl implements QcViolationNceService {
 
     public static final String TRIGGER_SOURCE_QC_VIOLATION = "QC_VIOLATION";
     /**
-     * Bench controls that raise the signal without a statistical violation (D4).
+     * Bench controls that raise the signal without a statistical violation.
      */
     public static final String TRIGGER_SOURCE_BENCH_CONTROL = "QC_BENCH_CONTROL";
     public static final String CAP_NONE_APPLIED = "none_applied";

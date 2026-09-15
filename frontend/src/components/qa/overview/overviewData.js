@@ -45,7 +45,7 @@ export const fetchAccreditationSummary = dedupedFetch((resolve) => {
   );
 });
 
-// C.4 critical-callback compliance summary for a window (OGC-714/715):
+// Critical-callback compliance summary for a window (OGC-714/715):
 // {enabled, criticalCount, confirmedCount, compliancePercent, target}. When
 // the CALLBACK indicator is disabled the response says enabled=false —
 // callers hide their surface (same cascade as the QI Dashboard tile).

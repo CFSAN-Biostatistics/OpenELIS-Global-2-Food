@@ -17,9 +17,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -43,23 +45,9 @@ public class AmendmentReportRestController extends BaseRestController {
 
         requireAuthenticatedUser(request);
 
-        LocalDate from;
-        LocalDate to;
-        try {
-            from = LocalDate.parse(fromDate);
-            to = LocalDate.parse(toDate);
-        } catch (DateTimeParseException e) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Invalid parameter: " + e.getMessage()));
-        }
+        Range range = parseRange(fromDate, toDate);
 
-        if (from.isAfter(to)) {
-            return ResponseEntity.badRequest().body(Map.of("error", "fromDate must not be after toDate"));
-        }
-        if (ChronoUnit.DAYS.between(from, to) > MAX_DATE_RANGE_DAYS) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Date range must not exceed 1 year"));
-        }
-
-        AmendmentSummaryResponse response = amendmentReportService.getSummary(from, to);
+        AmendmentSummaryResponse response = amendmentReportService.getSummary(range.from(), range.to());
 
         logger.info("Amendment summary by user {} | range {}-{} | {} amended of {} released", getSysUserId(request),
                 fromDate, toDate, response.getAmendedCount(), response.getReleasedCount());
@@ -84,23 +72,9 @@ public class AmendmentReportRestController extends BaseRestController {
             pageSize = MAX_PAGE_SIZE;
         }
 
-        LocalDate from;
-        LocalDate to;
-        try {
-            from = LocalDate.parse(fromDate);
-            to = LocalDate.parse(toDate);
-        } catch (DateTimeParseException e) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Invalid parameter: " + e.getMessage()));
-        }
+        Range range = parseRange(fromDate, toDate);
 
-        if (from.isAfter(to)) {
-            return ResponseEntity.badRequest().body(Map.of("error", "fromDate must not be after toDate"));
-        }
-        if (ChronoUnit.DAYS.between(from, to) > MAX_DATE_RANGE_DAYS) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Date range must not exceed 1 year"));
-        }
-
-        AmendmentDetailResponse response = amendmentReportService.getDetail(from, to, page, pageSize);
+        AmendmentDetailResponse response = amendmentReportService.getDetail(range.from(), range.to(), page, pageSize);
 
         logger.info("Amendment detail by user {} | range {}-{} | page {} size {} | {} total", getSysUserId(request),
                 fromDate, toDate, page, pageSize, response.getTotalCount());
@@ -114,23 +88,9 @@ public class AmendmentReportRestController extends BaseRestController {
 
         requireAuthenticatedUser(request);
 
-        LocalDate from;
-        LocalDate to;
-        try {
-            from = LocalDate.parse(fromDate);
-            to = LocalDate.parse(toDate);
-        } catch (DateTimeParseException e) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Invalid parameter: " + e.getMessage()));
-        }
+        Range range = parseRange(fromDate, toDate);
 
-        if (from.isAfter(to)) {
-            return ResponseEntity.badRequest().body(Map.of("error", "fromDate must not be after toDate"));
-        }
-        if (ChronoUnit.DAYS.between(from, to) > MAX_DATE_RANGE_DAYS) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Date range must not exceed 1 year"));
-        }
-
-        AmendmentTrendResponse response = amendmentReportService.getTrend(from, to, interval);
+        AmendmentTrendResponse response = amendmentReportService.getTrend(range.from(), range.to(), interval);
 
         logger.info("Amendment trend by user {} | range {}-{} | interval {} | {} points", getSysUserId(request),
                 fromDate, toDate, interval, response.getPoints().size());
@@ -144,28 +104,56 @@ public class AmendmentReportRestController extends BaseRestController {
 
         requireAuthenticatedUser(request);
 
+        Range range = parseRange(fromDate, toDate);
+
+        AmendmentBreakdownResponse response = amendmentReportService.getBreakdown(range.from(), range.to());
+
+        logger.info("Amendment breakdown by user {} | range {}-{} | {} tests", getSysUserId(request), fromDate, toDate,
+                response.getRows().size());
+
+        return ResponseEntity.ok(response);
+    }
+
+    private record Range(LocalDate from, LocalDate to) {
+    }
+
+    /**
+     * Shared range guard: ISO dates, from before or equal to to, at most a year.
+     * Bad input surfaces as 400 through {@link #handleBadInput}.
+     */
+    private static Range parseRange(String fromDate, String toDate) {
         LocalDate from;
         LocalDate to;
         try {
             from = LocalDate.parse(fromDate);
             to = LocalDate.parse(toDate);
         } catch (DateTimeParseException e) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Invalid parameter: " + e.getMessage()));
+            throw new BadRange("Invalid parameter: " + e.getMessage());
         }
-
         if (from.isAfter(to)) {
-            return ResponseEntity.badRequest().body(Map.of("error", "fromDate must not be after toDate"));
+            throw new BadRange("fromDate must not be after toDate");
         }
         if (ChronoUnit.DAYS.between(from, to) > MAX_DATE_RANGE_DAYS) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Date range must not exceed 1 year"));
+            throw new BadRange("Date range must not exceed 1 year");
         }
+        return new Range(from, to);
+    }
 
-        AmendmentBreakdownResponse response = amendmentReportService.getBreakdown(from, to);
+    /**
+     * Only the range guard above raises this, so an unrelated
+     * IllegalArgumentException from the service layer still surfaces as a 500
+     * rather than being reported to the caller as bad input.
+     */
+    private static class BadRange extends IllegalArgumentException {
+        BadRange(String message) {
+            super(message);
+        }
+    }
 
-        logger.info("Amendment breakdown by user {} | range {}-{} | {} tests", getSysUserId(request), fromDate, toDate,
-                response.getRows().size());
-
-        return ResponseEntity.ok(response);
+    @ExceptionHandler(BadRange.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public Map<String, String> handleBadInput(BadRange e) {
+        return Map.of("error", e.getMessage());
     }
 
     /** Verify user is authenticated, throw 401 if not */

@@ -131,32 +131,22 @@ const QIDashboard = () => {
   const [, setTick] = useState(0); // re-render so "last refreshed" stays fresh
   const cooldownRef = useRef(null);
 
-  const fetchTat = useCallback(() => {
-    setTat({ loading: true });
-    const dates = windowDates(windowId);
-    const query = (from, to) =>
-      `/rest/reports/tat/summary?fromDate=${from}&toDate=${to}` +
-      `&segment=RECEIPT_TO_VALIDATION&calculationMode=CALENDAR&breakdownBy=LAB_UNIT`;
-    let current;
-    let prior;
-    let pending = 2;
-    const finish = () => {
-      if (--pending > 0) return;
-      setTat({ loading: false, data: current, prior });
-      setLastRefreshed(new Date());
-    };
-    getFromOpenElisServer(query(dates.fromDate, dates.toDate), (res) => {
-      current = res;
-      finish();
-    });
-    getFromOpenElisServer(
-      query(dates.priorFromDate, dates.priorToDate),
-      (res) => {
-        prior = res;
-        finish();
-      },
-    );
-  }, [windowId]);
+  const fetchTat = useCallback(
+    () =>
+      fetchWindowedPair(
+        windowId,
+        (from, to) =>
+          `/rest/reports/tat/summary?fromDate=${from}&toDate=${to}` +
+          `&segment=RECEIPT_TO_VALIDATION&calculationMode=CALENDAR&breakdownBy=LAB_UNIT`,
+        (state) => {
+          setTat(state);
+          if (!state.loading) {
+            setLastRefreshed(new Date());
+          }
+        },
+      ),
+    [windowId],
+  );
 
   const fetchAmendment = useCallback(
     () =>
@@ -180,30 +170,16 @@ const QIDashboard = () => {
     [windowId],
   );
 
-  const fetchRejection = useCallback(() => {
-    setRejection({ loading: true });
-    const dates = windowDates(windowId);
-    const query = (from, to) =>
-      `/rest/reports/rejection/summary?fromDate=${from}&toDate=${to}`;
-    let current;
-    let prior;
-    let pending = 2;
-    const finish = () => {
-      if (--pending > 0) return;
-      setRejection({ loading: false, data: current, prior });
-    };
-    getFromOpenElisServer(query(dates.fromDate, dates.toDate), (res) => {
-      current = res;
-      finish();
-    });
-    getFromOpenElisServer(
-      query(dates.priorFromDate, dates.priorToDate),
-      (res) => {
-        prior = res;
-        finish();
-      },
-    );
-  }, [windowId]);
+  const fetchRejection = useCallback(
+    () =>
+      fetchWindowedPair(
+        windowId,
+        (from, to) =>
+          `/rest/reports/rejection/summary?fromDate=${from}&toDate=${to}`,
+        setRejection,
+      ),
+    [windowId],
+  );
 
   // NCE Pulse is a current-state count, not a windowed trend — fetched once
   // on mount (and on refresh), independent of the reporting window.
@@ -325,20 +301,12 @@ const QIDashboard = () => {
     });
   }
 
-  let rejectionDelta = null;
-  if (
-    rejectionData?.ratePercent != null &&
-    rejection.prior?.ratePercent != null
-  ) {
-    const diff = rejectionData.ratePercent - rejection.prior.ratePercent;
-    const flat = Math.abs(diff) < 0.005;
-    rejectionDelta = {
-      arrow: flat ? "—" : diff < 0 ? "↓" : "↑",
-      text: flat ? "" : `${Math.abs(diff).toFixed(2)}%`,
-      // fewer rejections = better
-      tone: flat ? "flat" : diff < 0 ? "good" : "bad",
-    };
-  }
+  // fewer rejections = better
+  const rejectionDelta = pctDelta(
+    rejectionData?.ratePercent,
+    rejection.prior?.ratePercent,
+    false,
+  );
 
   let rejectionSecondary = null;
   if (rejectionData?.totalCount > 0) {

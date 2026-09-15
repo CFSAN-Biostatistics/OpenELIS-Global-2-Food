@@ -26,6 +26,7 @@ import { useLocation } from "react-router-dom";
 import { initialReportFormValues, selectOptions } from "./ViewNonConforming";
 import {
   getDifferenceInDays,
+  toLocalIsoDate,
   getFromOpenElisServer,
   postToOpenElisServerJsonResponse,
 } from "../../utils/Utils";
@@ -49,12 +50,6 @@ const initialFormData = {
     turnAroundTime: undefined,
   },
 };
-
-// yyyy-MM-dd in local time; Jackson binds this straight to the java.sql.Date due_date column.
-const toIsoDate = (date) =>
-  `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(
-    date.getDate(),
-  ).padStart(2, "0")}`;
 
 export const NCECorrectiveAction = () => {
   const [reportFormValues, setReportFormValues] = useState(
@@ -155,7 +150,7 @@ export const NCECorrectiveAction = () => {
     !!formData.dateCompleted &&
     !!formData.actionLog.actionType?.split(",").filter(Boolean).length;
 
-  // F-4: Submit saves the corrective action whenever the row is complete. The
+  // Submit saves the corrective action whenever the row is complete. The
   // effectiveness review (submit === true → Yes, false → No) is a distinct record:
   // answering it is enough to submit on its own, and only a "Yes" verdict resolves
   // the NCE — a "No" verdict is recorded without closing (so the outcome isn't lost).
@@ -183,7 +178,7 @@ export const NCECorrectiveAction = () => {
       discussionDate: formData[`discussionDate`] ?? "",
     };
 
-    // F-4: send the actual effectiveness verdict when answered. The backend persists
+    // Send the actual effectiveness verdict when answered. The backend persists
     // it either way; only "Yes" transitions the NCE to Completed, "No" is recorded
     // without closing.
     if (reviewAnswered) {
@@ -755,7 +750,9 @@ export const NCECorrectiveAction = () => {
                       ...prev,
                       actionLog: {
                         ...prev.actionLog,
-                        dueDate: dates[0] ? toIsoDate(dates[0]) : undefined,
+                        dueDate: dates[0]
+                          ? toLocalIsoDate(dates[0])
+                          : undefined,
                       },
                     }))
                   }

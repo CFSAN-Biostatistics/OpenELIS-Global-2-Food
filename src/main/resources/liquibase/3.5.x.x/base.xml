@@ -541,7 +541,7 @@
        (renumbered 052→077→084: develop claimed 051-075, then 076-082) -->
   <include relativeToChangelogFile="true" file="084-nce-action-log-due-date.xml"/>
 
-  <!-- C.1 / OGC-704: per-test TEa for Westgard sigma metrics
+  <!-- OGC-704: per-test TEa for Westgard sigma metrics
        (renumbered 053→078→085: develop claimed 051-075, then 076-082) -->
   <include relativeToChangelogFile="true" file="085-add-test-tea-column.xml"/>
 

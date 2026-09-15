@@ -348,7 +348,7 @@ public class AccessionValidationRestController extends BaseResultValidationContr
         // } else {
         List<String> withheldAccessions = createUpdateList(resultItemList, analysisUpdateList, resultUpdateList,
                 noteUpdateList, deletableList, resultSaveService, areListeners);
-        // DEF-2: a refused release must travel back to the caller — the only other
+        // A refused release must travel back to the caller — the only other
         // trace is a backend log line, which reads as a silent failure on screen.
         form.setWithheldAccessions(withheldAccessions);
         // }
@@ -505,8 +505,8 @@ public class AccessionValidationRestController extends BaseResultValidationContr
     }
 
     /**
-     * @return accession numbers whose release was withheld by an open QC failure
-     *         (DEF-2) — surfaced on the save response so the frontend can warn.
+     * @return accession numbers whose release was withheld by an open QC failure —
+     *         surfaced on the save response so the frontend can warn.
      */
     private List<String> createUpdateList(List<AnalysisItem> analysisItems, List<Analysis> analysisUpdateList,
             List<Result> resultUpdateList, List<Note> noteUpdateList, List<Result> deletableList,
@@ -535,7 +535,7 @@ public class AccessionValidationRestController extends BaseResultValidationContr
                         // saved below, and rejection stays available — for a result whose
                         // control failed, rejecting is usually the correct action.
                         withheldAccessions.add(analysisItem.getAccessionNumber());
-                        LogEvent.logWarn(this.getClass().getName(), "createResultsFromItems",
+                        LogEvent.logWarn(this.getClass().getName(), "createUpdateList",
                                 "Release of analysis " + analysis.getId() + " withheld: open QC failure");
                     }
 

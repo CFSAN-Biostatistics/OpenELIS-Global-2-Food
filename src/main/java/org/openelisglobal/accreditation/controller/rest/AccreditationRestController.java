@@ -132,12 +132,9 @@ public class AccreditationRestController extends BaseRestController {
         }
         // The image row stores no content type, so derive it from the bytes rather
         // than claiming PNG for a JPEG upload.
-        String contentType = URLConnection.guessContentTypeFromName("logo");
+        String contentType = null;
         try (java.io.InputStream in = new ByteArrayInputStream(image.getImage())) {
-            String sniffed = URLConnection.guessContentTypeFromStream(in);
-            if (sniffed != null) {
-                contentType = sniffed;
-            }
+            contentType = URLConnection.guessContentTypeFromStream(in);
         } catch (IOException e) {
             LogEvent.logError(e);
         }

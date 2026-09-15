@@ -185,11 +185,6 @@ public interface AnalysisDAO extends BaseDAO<Analysis, String> {
             Timestamp lowDate, Timestamp highDate) throws LIMSRuntimeException;
 
     /**
-     * Whether any patient analysis of a test completed on an analyzer strictly
-     * before the given time. Used to tell whether the 24h affected-samples floor
-     * actually excluded samples (OGC-728 cap-reason accuracy).
-     */
-    /**
      * The lab-unit-keyed counterpart of
      * {@link #getAffectedSampleItemIdsByAnalyzerAndTestCompletedInRange}, for
      * controls run at the bench (OGC-1147). A manual or RDT control has no
@@ -208,6 +203,11 @@ public interface AnalysisDAO extends BaseDAO<Analysis, String> {
     boolean existsAnalysisCompletedBeforeByTestSectionAndTest(String testSectionId, String testId, Timestamp before)
             throws LIMSRuntimeException;
 
+    /**
+     * Whether any patient analysis of a test completed on an analyzer strictly
+     * before the given time. Used to tell whether the 24h affected-samples floor
+     * actually excluded samples (OGC-728 cap-reason accuracy).
+     */
     boolean existsAnalysisCompletedBeforeByAnalyzerAndTest(String analyzerId, String testId, Timestamp before)
             throws LIMSRuntimeException;
 

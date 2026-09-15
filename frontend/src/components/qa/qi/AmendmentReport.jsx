@@ -1,18 +1,10 @@
 import React, { useCallback, useEffect, useState } from "react";
 import {
-  DataTable,
   DataTableSkeleton,
   DatePicker,
   DatePickerInput,
   Dropdown,
   Pagination,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableHeader,
-  TableRow,
   Tag,
 } from "@carbon/react";
 import { LineChart } from "@carbon/charts-react";
@@ -24,6 +16,7 @@ import {
   toLocalIsoDateTime,
 } from "../../utils/Utils";
 import PageBreadCrumb from "../../common/PageBreadCrumb";
+import QASimpleTable from "../common/QASimpleTable";
 import QAEmptyState from "../common/QAEmptyState";
 import { chartThresholds, rateTone } from "./qiThresholds";
 import "./QIDashboard.css";
@@ -309,41 +302,7 @@ const AmendmentReport = () => {
           <h4 className="amendment-section__title">
             <FormattedMessage id="qa.qi.amendment.breakdown.title" />
           </h4>
-          <DataTable
-            rows={breakdownRows}
-            headers={BREAKDOWN_HEADERS.map((h) => ({
-              key: h.key,
-              header: intl.formatMessage({ id: h.labelKey }),
-            }))}
-          >
-            {({ rows: tableRows, headers, getHeaderProps, getRowProps }) => (
-              <TableContainer>
-                <Table size="sm">
-                  <TableHead>
-                    <TableRow>
-                      {headers.map((header) => (
-                        <TableHeader
-                          {...getHeaderProps({ header })}
-                          key={header.key}
-                        >
-                          {header.header}
-                        </TableHeader>
-                      ))}
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {tableRows.map((row) => (
-                      <TableRow {...getRowProps({ row })} key={row.id}>
-                        {row.cells.map((cell) => (
-                          <TableCell key={cell.id}>{cell.value}</TableCell>
-                        ))}
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-            )}
-          </DataTable>
+          <QASimpleTable rows={breakdownRows} headers={BREAKDOWN_HEADERS} />
         </>
       )}
 
@@ -363,41 +322,7 @@ const AmendmentReport = () => {
           <h4 className="amendment-section__title">
             <FormattedMessage id="qa.qi.amendment.list.title" />
           </h4>
-          <DataTable
-            rows={rows}
-            headers={HEADERS.map((h) => ({
-              key: h.key,
-              header: intl.formatMessage({ id: h.labelKey }),
-            }))}
-          >
-            {({ rows: tableRows, headers, getHeaderProps, getRowProps }) => (
-              <TableContainer>
-                <Table size="sm">
-                  <TableHead>
-                    <TableRow>
-                      {headers.map((header) => (
-                        <TableHeader
-                          {...getHeaderProps({ header })}
-                          key={header.key}
-                        >
-                          {header.header}
-                        </TableHeader>
-                      ))}
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {tableRows.map((row) => (
-                      <TableRow {...getRowProps({ row })} key={row.id}>
-                        {row.cells.map((cell) => (
-                          <TableCell key={cell.id}>{cell.value}</TableCell>
-                        ))}
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-            )}
-          </DataTable>
+          <QASimpleTable rows={rows} headers={HEADERS} />
           <Pagination
             page={page + 1}
             pageSize={pageSize}

@@ -1,5 +1,5 @@
 /**
- * QC Westgard sigma-metric E2E seed helper (C.1 / OGC-704, OGC-705).
+ * QC Westgard sigma-metric E2E seed helper (OGC-704, OGC-705).
  *
  * The sigma tile on ControlChartDetail reads
  * `GET /rest/qc/charts/{lot}/statistics`, which needs (a) a control lot,

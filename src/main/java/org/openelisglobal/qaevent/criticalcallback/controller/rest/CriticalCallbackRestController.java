@@ -46,14 +46,14 @@ import org.springframework.web.server.ResponseStatusException;
  *
  * <p>
  * The body carries only {@code resultId}, {@code recipientName} and
- * {@code status}: a callback is logged against a PERSISTED result (per the C.4
- * outline §5 — the call is made and documented after the value is in the
- * record). Caller identity, time, the owning analysis, and the communicated
- * value ({@code result.value} snapshot) are all stamped server-side, never
- * client-supplied. The saved value must actually be critical (outside-band vs
- * the resolved ResultLimit) or the request is rejected — documentation cannot
- * be created for a value the record does not support. Repeat POSTs for the same
- * result are additional attempt rows by design.
+ * {@code status}: a callback is logged against a PERSISTED result (the call is
+ * made and documented after the value is in the record). Caller identity, time,
+ * the owning analysis, and the communicated value ({@code result.value}
+ * snapshot) are all stamped server-side, never client-supplied. The saved value
+ * must actually be critical (outside-band vs the resolved ResultLimit) or the
+ * request is rejected — documentation cannot be created for a value the record
+ * does not support. Repeat POSTs for the same result are additional attempt
+ * rows by design.
  */
 @RestController
 @RequestMapping("/rest/critical-callback")

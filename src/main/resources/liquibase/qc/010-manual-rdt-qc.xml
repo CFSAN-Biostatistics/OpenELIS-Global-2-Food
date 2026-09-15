@@ -18,7 +18,7 @@
     export, rule engine and auto-NCE bridge working with no adapter layer, and reduces
     "all QC for this test today" to a WHERE clause instead of a cross-table union.
 
-    D2: qualitative outcomes live in their own nullable column. No magic numbers in
+    Qualitative outcomes live in their own nullable column. No magic numbers in
     result_value.
 
     Migration posture: no row rewrites, no backfills. RDT outcomes have no numeric
@@ -56,7 +56,7 @@
             <column name="source" type="VARCHAR(10)" defaultValue="ASTM">
                 <constraints nullable="false"/>
             </column>
-            <!-- D2: VALID/INVALID for RDT control lines, PASS/FAIL for manual runs.
+            <!-- VALID/INVALID for RDT control lines, PASS/FAIL for manual runs.
                  NULL for ASTM rows, which carry a number instead. -->
             <column name="qualitative_outcome" type="VARCHAR(10)"/>
             <!-- Target snapshot: the effective target in force at capture, copied onto
@@ -168,7 +168,7 @@
         <!-- An RDT cassette lot is identified by control_label, not by a levelled
              control-material record, so a run can exist without a qc_control_lot row.
              Manual quantitative runs SHOULD carry one (that is where the fixed
-             mean/SD lives, per D3) but the store must not require it. -->
+             mean/SD lives) but the store must not require it. -->
         <dropNotNullConstraint schemaName="clinlims" tableName="qc_result"
             columnName="control_lot_id" columnDataType="varchar(36)"/>
         <rollback>
@@ -201,7 +201,7 @@
         </rollback>
     </changeSet>
 
-    <!-- D4: a MANUAL Fail creates a real violation so it enters the same
+    <!-- A MANUAL Fail creates a real violation so it enters the same
          corrective-action workflow as an analyzer rule hit. qc_rule_violation.rule_code
          is an unconstrained VARCHAR(20), so MANUAL_FAIL inserts cleanly alongside the
          Unicode-subscript Westgard codes (1₃ₛ, 2₂ₛ, …); a violation raised off a bench
@@ -210,7 +210,7 @@
         <preConditions onFail="MARK_RAN">
             <tableExists schemaName="clinlims" tableName="qc_rule_violation"/>
         </preConditions>
-        <comment>Violations raised from manual controls have no analyzer (D4)</comment>
+        <comment>Violations raised from manual controls have no analyzer</comment>
         <dropNotNullConstraint schemaName="clinlims" tableName="qc_rule_violation"
             columnName="instrument_id" columnDataType="NUMERIC(10,0)"/>
         <rollback>
@@ -267,14 +267,14 @@
          no update path, the generic audit trail would only ever record inserts, and every
          fact it would capture (acting user, technician, run time) is already columns on
          the row. In exchange it would add a history insert to every analyzer control run
-         — a change to the shipped ASTM write path for no present benefit, against NFR-1.
+         — a change to the shipped ASTM write path for no present benefit.
 
          Add it together with the first thing that edits or voids a QC result, not before,
          and add it as one changeset with the service change: AuditTrailServiceImpl
          .saveHistory THROWS and rolls back the write when a table has no reference_tables
          row, so a registration row and an audited service must land together. -->
 
-    <!-- GAP-5 (UAT 2026-08-10): repeated POSTs minted three identical UAT-BENCH-13 rows —
+    <!-- UAT 2026-08-10: repeated POSTs minted three identical UAT-BENCH-13 rows —
          nothing anywhere enforced lot uniqueness, for analyzer lots either. The rule:
          (lot_number, test_id, control_level) unique among non-retired lots. The same
          physical lot number legitimately recurs across different tests, and EXPIRED lots

@@ -1,18 +1,10 @@
 import React, { useCallback, useEffect, useState } from "react";
 import {
-  DataTable,
   DataTableSkeleton,
   DatePicker,
   DatePickerInput,
   Dropdown,
   Pagination,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableHeader,
-  TableRow,
   Tag,
 } from "@carbon/react";
 import { DonutChart, LineChart, SimpleBarChart } from "@carbon/charts-react";
@@ -26,6 +18,7 @@ import {
 } from "../../utils/Utils";
 import PageBreadCrumb from "../../common/PageBreadCrumb";
 import QAEmptyState from "../common/QAEmptyState";
+import QASimpleTable from "../common/QASimpleTable";
 import { chartThresholds, rateTone } from "./qiThresholds";
 import "./QIDashboard.css";
 
@@ -343,46 +336,6 @@ const RejectionReport = () => {
     heatCells.map((c) => [`${c.location}|${c.section}`, c]),
   );
 
-  const renderTable = (tableRows, headers) => (
-    <DataTable
-      rows={tableRows}
-      headers={headers.map((h) => ({
-        key: h.key,
-        header: intl.formatMessage({ id: h.labelKey }),
-      }))}
-    >
-      {({
-        rows: bodyRows,
-        headers: tableHeaders,
-        getHeaderProps,
-        getRowProps,
-      }) => (
-        <TableContainer>
-          <Table size="sm">
-            <TableHead>
-              <TableRow>
-                {tableHeaders.map((header) => (
-                  <TableHeader {...getHeaderProps({ header })} key={header.key}>
-                    {header.header}
-                  </TableHeader>
-                ))}
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {bodyRows.map((row) => (
-                <TableRow {...getRowProps({ row })} key={row.id}>
-                  {row.cells.map((cell) => (
-                    <TableCell key={cell.id}>{cell.value}</TableCell>
-                  ))}
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
-      )}
-    </DataTable>
-  );
-
   return (
     <div className="pageContent qi-dashboard">
       <PageBreadCrumb breadcrumbs={breadcrumbs} />
@@ -484,7 +437,7 @@ const RejectionReport = () => {
             </p>
           )}
           <DonutChart data={donutData} options={donutOptions} />
-          {renderTable(reasonRows, REASON_HEADERS)}
+          <QASimpleTable rows={reasonRows} headers={REASON_HEADERS} />
         </>
       )}
 
@@ -559,7 +512,7 @@ const RejectionReport = () => {
             <FormattedMessage id="qa.qi.rejection.breakdown.title" />
           </h4>
           <SimpleBarChart data={barData} options={barOptions} />
-          {renderTable(breakdownRows, BREAKDOWN_HEADERS)}
+          <QASimpleTable rows={breakdownRows} headers={BREAKDOWN_HEADERS} />
         </>
       )}
 
@@ -579,7 +532,7 @@ const RejectionReport = () => {
           <h4 className="amendment-section__title">
             <FormattedMessage id="qa.qi.rejection.list.title" />
           </h4>
-          {renderTable(rows, HEADERS)}
+          <QASimpleTable rows={rows} headers={HEADERS} />
           <Pagination
             page={page + 1}
             pageSize={pageSize}

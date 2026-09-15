@@ -12,8 +12,8 @@
     documented 3-step enum extension path (QiIndicator javadoc): new constant,
     new changeset swapping the CHECK (never edit qi-config-001..003), seed the
     default row. Seeded DISABLED — callback compliance is an opt-in program a
-    lab turns on in the OGC-709 QI Configuration page. Targets per the C.4
-    outline §4 ("every one, every time"): target 100%, action 95%.
+    lab turns on in the OGC-709 QI Configuration page. Targets follow "every
+    one, every time": target 100%, action 95%.
     -->
 
     <changeSet author="openelisglobal" id="callback-qi-001-extend-indicator-chk">

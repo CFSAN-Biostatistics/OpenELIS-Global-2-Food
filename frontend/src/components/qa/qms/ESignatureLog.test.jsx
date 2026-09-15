@@ -7,7 +7,8 @@ import messages from "../../../languages/en.json";
 import ESignatureLog from "./ESignatureLog";
 import { getFromOpenElisServer } from "../../utils/Utils";
 
-vi.mock("../../utils/Utils", () => ({
+vi.mock("../../utils/Utils", async (importOriginal) => ({
+  ...(await importOriginal()),
   getFromOpenElisServer: vi.fn(),
 }));
 

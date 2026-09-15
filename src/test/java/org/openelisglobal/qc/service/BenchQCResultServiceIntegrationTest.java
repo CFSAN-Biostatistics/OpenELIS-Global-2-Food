@@ -31,7 +31,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
  * quantitative control earns a z-score (so it plots on Levey-Jennings and
  * reaches the Westgard engine with no new wiring), an RDT control never does
  * (which is what makes the manual/RDT split arithmetic rather than a branch),
- * and the shipped analyzer path is untouched by widening its table (NFR-1).
+ * and the shipped analyzer path is untouched by widening its table.
  */
 public class BenchQCResultServiceIntegrationTest extends BaseWebContextSensitiveTest {
 
@@ -262,9 +262,9 @@ public class BenchQCResultServiceIntegrationTest extends BaseWebContextSensitive
     }
 
     /**
-     * NFR-1. The analyzer path writes through the same table this story widened, so
-     * assert it still lands as ASTM with its instrument and z-score intact — and
-     * that it still carries the automation user rather than picking up a bench-path
+     * The analyzer path writes through the same table this story widened, so assert
+     * it still lands as ASTM with its instrument and z-score intact — and that it
+     * still carries the automation user rather than picking up a bench-path
      * default.
      */
     @Test

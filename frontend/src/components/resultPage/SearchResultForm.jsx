@@ -1925,9 +1925,9 @@ export function SearchResults(props) {
                     }
                   }}
                 />
-                {/* Callback is documented against a PERSISTED result (C.4
-                    outline §5): the button only renders once the critical
-                    value has been saved (row.resultId), so the modal can
+                {/* Callback is documented against a PERSISTED result: the
+                    button only renders once the critical value has been
+                    saved (row.resultId), so the modal can
                     never substitute for Save. The modal itself is rendered
                     once at form level (pagination-proof for the banner). */}
                 {validationState[row.id]?.isCritical && row.resultId && (

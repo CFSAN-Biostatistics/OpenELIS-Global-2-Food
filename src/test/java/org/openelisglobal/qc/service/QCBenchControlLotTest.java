@@ -97,7 +97,7 @@ public class QCBenchControlLotTest extends BaseWebContextSensitiveTest {
 
         try {
             controlLotService.createControlLot(lot);
-            fail("expected a bench lot on INITIAL_RUNS to be refused — nothing accumulates runs for it (D3)");
+            fail("expected a bench lot on INITIAL_RUNS to be refused — nothing accumulates runs for it");
         } catch (IllegalArgumentException e) {
             assertTrue(e.getMessage(), e.getMessage().contains("must use the MANUFACTURER_FIXED"));
         }

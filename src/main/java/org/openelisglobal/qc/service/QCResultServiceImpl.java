@@ -198,7 +198,7 @@ public class QCResultServiceImpl extends BaseObjectServiceImpl<QCResult, String>
      * Record a bench control run (OGC-1147). See
      * {@link QCResultService#createBenchQCResult(BenchQCCaptureForm, int)} for the
      * contract; this method deliberately mirrors the ASTM path above rather than
-     * refactoring it, so the shipped analyzer flow is untouched (NFR-1).
+     * refactoring it, so the shipped analyzer flow is untouched.
      */
     @Override
     @Transactional
@@ -228,9 +228,9 @@ public class QCResultServiceImpl extends BaseObjectServiceImpl<QCResult, String>
             throw new IllegalArgumentException("An " + source + " control must not carry a measured value");
         }
 
-        // A control lot is optional for RDT (the cassette is named by controlLabel) but
-        // is
-        // what makes a manual quantitative run plottable, so validate it when present.
+        // A control lot is optional for RDT (the cassette is named by controlLabel)
+        // but is what makes a manual quantitative run plottable, so validate it when
+        // present.
         QCControlLot controlLot = null;
         if (capture.getControlLotId() != null) {
             controlLot = controlLotDAO.get(capture.getControlLotId()).orElseThrow(
@@ -252,9 +252,8 @@ public class QCResultServiceImpl extends BaseObjectServiceImpl<QCResult, String>
         }
 
         // Same z-score arithmetic as the analyzer path. Null when the lot has no
-        // statistics yet (establishment) or when there is no number at all (RDT) — and
-        // a
-        // null z-score is what keeps RDT runs out of Westgard evaluation, per D4.
+        // statistics yet (establishment) or when there is no number at all (RDT);
+        // a null z-score is what keeps RDT runs out of Westgard evaluation.
         BigDecimal zScore = null;
         if (controlLot != null && resultValue != null) {
             QCStatistics statistics = statisticsDAO.findLatestByControlLot(controlLot.getId());
@@ -279,15 +278,13 @@ public class QCResultServiceImpl extends BaseObjectServiceImpl<QCResult, String>
         result.setUncertainty(capture.getUncertainty());
         result.setZScore(zScore);
         result.setRunDateTime(Timestamp.valueOf(runAt));
-        // The tech has already judged this run, so it is not PENDING evaluation the way
-        // an
-        // analyzer result is: record their verdict directly.
+        // The tech has already judged this run, so it is not PENDING evaluation the
+        // way an analyzer result is: record their verdict directly.
         result.setResultStatus(outcome.isFailing() ? "REJECTED" : "ACCEPTED");
         result.setNonConformityFlag(outcome.isFailing());
         result.setExternalNotes(capture.getNotes());
-        // The acting technician, not SYSTEM_AUTOMATION_USER_ID — this is the seam that
-        // made
-        // a bench path impossible before OGC-1147.
+        // The acting technician, not SYSTEM_AUTOMATION_USER_ID: this is the seam
+        // that made a bench path impossible before OGC-1147.
         result.setSystemUserId(sysUserId);
         result.setSysUserId(String.valueOf(sysUserId));
         result.setTechnicianId(sysUserId);

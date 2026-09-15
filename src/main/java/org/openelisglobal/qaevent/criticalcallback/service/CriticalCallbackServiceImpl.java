@@ -34,11 +34,11 @@ import org.springframework.transaction.annotation.Transactional;
  * <p>
  * The compliance compute (OGC-714 read side) lives here rather than on a
  * parallel report service: the metric window and clock both anchor on
- * {@code analysis.released_date} (the C.4 outline §3.1/§3.3 — a callback made
- * before release counts as compliant via the negative delta), criticality is
- * recomputed from result_limits critical bounds with the same outside-band rule
- * the write side validates, and the numerator is EXISTS(CONFIRMED within SLA) —
- * immune to repeat attempt rows.
+ * {@code analysis.released_date} (a callback made before release counts as
+ * compliant via the negative delta), criticality is recomputed from
+ * result_limits critical bounds with the same outside-band rule the write side
+ * validates, and the numerator is EXISTS(CONFIRMED within SLA) — immune to
+ * repeat attempt rows.
  */
 @Service
 public class CriticalCallbackServiceImpl extends BaseObjectServiceImpl<CriticalCallback, String>

@@ -9,7 +9,7 @@ import org.openelisglobal.qc.service.SigmaMetrics.SigmaResult;
 
 /**
  * Exact-value checks for the Westgard sigma formula and its classification
- * bands. Pure function, so no Spring context. C.1 / OGC-704.
+ * bands. Pure function, so no Spring context. OGC-704.
  */
 public class SigmaMetricsTest {
 

@@ -39,7 +39,7 @@ import org.springframework.web.server.ResponseStatusException;
  * The seed builds the full chain the criticality check resolves through: test +
  * result_limits (critical band 10–90, default demographic row) + sample +
  * sample_item + analysis + a saved result. A callback can only be logged
- * against a persisted, actually-critical result (C.4 outline §5).
+ * against a persisted, actually-critical result.
  *
  * <p>
  * Gated by {@code qa.view.qi}; the 403 path is enforced by Spring Security's

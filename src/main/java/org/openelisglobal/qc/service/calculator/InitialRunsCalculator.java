@@ -48,7 +48,7 @@ public class InitialRunsCalculator implements StatisticsCalculator {
 
         // Calculate standard deviation — sample SD, ÷(N−1). Control limits are
         // established from a sample of runs, not the population (CLSI C24); ÷N
-        // understated the SD ~2.6% at N=20 and inflated every z-score (GAP-6).
+        // understated the SD ~2.6% at N=20 and inflated every z-score.
         BigDecimal varianceSum = BigDecimal.ZERO;
         for (QCResult result : initialResults) {
             BigDecimal diff = result.getResultValue().subtract(mean);

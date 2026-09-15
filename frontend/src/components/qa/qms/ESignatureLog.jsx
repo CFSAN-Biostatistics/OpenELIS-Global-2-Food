@@ -1,26 +1,19 @@
 import React, { useCallback, useEffect, useState } from "react";
 import {
   Button,
-  DataTable,
   DataTableSkeleton,
   DatePicker,
   DatePickerInput,
   Dropdown,
   Modal,
   Pagination,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableHeader,
-  TableRow,
 } from "@carbon/react";
 import { Download, DocumentPdf } from "@carbon/icons-react";
 import { FormattedMessage, useIntl } from "react-intl";
 import config from "../../../config.json";
-import { getFromOpenElisServer } from "../../utils/Utils";
+import { getFromOpenElisServer, toLocalIsoDate } from "../../utils/Utils";
 import PageBreadCrumb from "../../common/PageBreadCrumb";
+import QASimpleTable from "../common/QASimpleTable";
 import QAEmptyState from "../common/QAEmptyState";
 import "./ESignatureLog.css";
 
@@ -56,20 +49,13 @@ const RECORD_TYPES = [
   "REPORT",
 ];
 
-// Local-timezone yyyy-mm-dd (toISOString shifts to UTC and can be off by a day)
-function formatDate(d) {
-  const month = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${d.getFullYear()}-${month}-${day}`;
-}
-
 function defaultFilters() {
   const to = new Date();
   const from = new Date();
   from.setDate(from.getDate() - 30);
   return {
-    fromDate: formatDate(from),
-    toDate: formatDate(to),
+    fromDate: toLocalIsoDate(from),
+    toDate: toLocalIsoDate(to),
     signerId: "",
     meaning: "",
     recordType: "",
@@ -128,8 +114,8 @@ const ESignatureLog = () => {
     if (dates.length === 2) {
       setDraft({
         ...draft,
-        fromDate: formatDate(dates[0]),
-        toDate: formatDate(dates[1]),
+        fromDate: toLocalIsoDate(dates[0]),
+        toDate: toLocalIsoDate(dates[1]),
       });
     }
   };
@@ -323,41 +309,7 @@ const ESignatureLog = () => {
         />
       ) : (
         <>
-          <DataTable
-            rows={rows}
-            headers={HEADERS.map((h) => ({
-              key: h.key,
-              header: intl.formatMessage({ id: h.labelKey }),
-            }))}
-          >
-            {({ rows: tableRows, headers, getHeaderProps, getRowProps }) => (
-              <TableContainer>
-                <Table size="sm">
-                  <TableHead>
-                    <TableRow>
-                      {headers.map((header) => (
-                        <TableHeader
-                          {...getHeaderProps({ header })}
-                          key={header.key}
-                        >
-                          {header.header}
-                        </TableHeader>
-                      ))}
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {tableRows.map((row) => (
-                      <TableRow {...getRowProps({ row })} key={row.id}>
-                        {row.cells.map((cell) => (
-                          <TableCell key={cell.id}>{cell.value}</TableCell>
-                        ))}
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-            )}
-          </DataTable>
+          <QASimpleTable rows={rows} headers={HEADERS} />
           <Pagination
             page={page + 1}
             pageSize={pageSize}

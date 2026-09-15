@@ -9,7 +9,7 @@ import java.math.BigDecimal;
  *
  * <p>
  * Pure function of the stored control statistics plus the per-test TEa; no
- * state, so no service/bean. C.1 / OGC-704.
+ * state, so no service/bean. OGC-704.
  */
 public final class SigmaMetrics {
 

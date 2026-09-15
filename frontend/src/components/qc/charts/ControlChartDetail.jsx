@@ -38,7 +38,7 @@ import PageTitle from "../../common/PageTitle/PageTitle";
 import PageBreadCrumb from "../../common/PageBreadCrumb";
 import "./ControlChartDetail.css";
 
-// C.1 / OGC-704: sigma interpretation band -> Carbon Tag color
+// OGC-704: sigma interpretation band -> Carbon Tag color
 const SIGMA_TAG_TYPE = {
   WORLD_CLASS: "green",
   ACCEPTABLE: "teal",

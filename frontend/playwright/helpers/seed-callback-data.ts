@@ -1,5 +1,5 @@
 /**
- * Critical Callback E2E seed helper (C.4 / OGC-714, OGC-715).
+ * Critical Callback E2E seed helper (OGC-714, OGC-715).
  *
  * The callback flow needs a test with configured critical bounds, and
  * ResultLimit has NO REST create/update path — bounds are settable only in
@@ -48,7 +48,7 @@ export interface CriticalBandSeed {
 
 /**
  * Give `testId` a low/high critical band so a saved value at/beyond a bound
- * is critical (outside-band rule, D1). Updates every existing result_limits
+ * is critical (outside-band rule). Updates every existing result_limits
  * row for the test (any demographic variant) or inserts one default row.
  */
 export function seedCriticalBand(

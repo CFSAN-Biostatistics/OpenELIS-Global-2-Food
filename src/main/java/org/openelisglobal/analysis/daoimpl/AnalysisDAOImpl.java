@@ -1555,85 +1555,68 @@ public class AnalysisDAOImpl extends BaseDAOImpl<Analysis, String> implements An
     @Transactional(readOnly = true)
     public List<Object[]> getAffectedSampleItemIdsByAnalyzerAndTestCompletedInRange(String analyzerId, String testId,
             Timestamp lowDate, Timestamp highDate) throws LIMSRuntimeException {
-        String sql = "SELECT a.sampleItem.id, a.id FROM Analysis a"
-                + " WHERE a.analyzerId = :analyzerId AND a.test.id = :testId AND a.sampleItem IS NOT NULL"
-                + " AND a.completedDate >= :lowDate AND a.completedDate < :highDate"
-                + " ORDER BY a.completedDate DESC, a.id DESC";
-
-        try {
-            Query<Object[]> query = entityManager.unwrap(Session.class).createQuery(sql, Object[].class);
-            query.setParameter("analyzerId", analyzerId);
-            query.setParameter("testId", testId);
-            query.setParameter("lowDate", lowDate);
-            query.setParameter("highDate", highDate);
-            return query.list();
-        } catch (HibernateException e) {
-            handleException(e, "getAffectedSampleItemIdsByAnalyzerAndTestCompletedInRange");
-        }
-
-        return null;
+        return getAffectedSampleItemIds("a.analyzerId", analyzerId, testId, lowDate, highDate);
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<Object[]> getAffectedSampleItemIdsByTestSectionAndTestCompletedInRange(String testSectionId,
             String testId, Timestamp lowDate, Timestamp highDate) throws LIMSRuntimeException {
-        String sql = "SELECT a.sampleItem.id, a.id FROM Analysis a"
-                + " WHERE a.testSection.id = :testSectionId AND a.test.id = :testId AND a.sampleItem IS NOT NULL"
-                + " AND a.completedDate >= :lowDate AND a.completedDate < :highDate"
-                + " ORDER BY a.completedDate DESC, a.id DESC";
-
-        try {
-            Query<Object[]> query = entityManager.unwrap(Session.class).createQuery(sql, Object[].class);
-            query.setParameter("testSectionId", testSectionId);
-            query.setParameter("testId", testId);
-            query.setParameter("lowDate", lowDate);
-            query.setParameter("highDate", highDate);
-            return query.list();
-        } catch (HibernateException e) {
-            handleException(e, "getAffectedSampleItemIdsByTestSectionAndTestCompletedInRange");
-        }
-
-        return null;
+        return getAffectedSampleItemIds("a.testSection.id", testSectionId, testId, lowDate, highDate);
     }
 
     @Override
     @Transactional(readOnly = true)
     public boolean existsAnalysisCompletedBeforeByTestSectionAndTest(String testSectionId, String testId,
             Timestamp before) throws LIMSRuntimeException {
-        String sql = "SELECT a.id FROM Analysis a WHERE a.testSection.id = :testSectionId AND a.test.id = :testId"
-                + " AND a.sampleItem IS NOT NULL AND a.completedDate < :before";
-
-        try {
-            Query<String> query = entityManager.unwrap(Session.class).createQuery(sql, String.class);
-            query.setParameter("testSectionId", testSectionId);
-            query.setParameter("testId", testId);
-            query.setParameter("before", before);
-            query.setMaxResults(1);
-            return !query.list().isEmpty();
-        } catch (HibernateException e) {
-            handleException(e, "existsAnalysisCompletedBeforeByTestSectionAndTest");
-        }
-
-        return false;
+        return existsAnalysisCompletedBefore("a.testSection.id", testSectionId, testId, before);
     }
 
     @Override
     @Transactional(readOnly = true)
     public boolean existsAnalysisCompletedBeforeByAnalyzerAndTest(String analyzerId, String testId, Timestamp before)
             throws LIMSRuntimeException {
-        String sql = "SELECT a.id FROM Analysis a WHERE a.analyzerId = :analyzerId AND a.test.id = :testId"
+        return existsAnalysisCompletedBefore("a.analyzerId", analyzerId, testId, before);
+    }
+
+    /**
+     * {scopeField} is one of the two constant HQL paths above (analyzer or lab
+     * unit), never caller input.
+     */
+    private List<Object[]> getAffectedSampleItemIds(String scopeField, String scopeId, String testId, Timestamp lowDate,
+            Timestamp highDate) {
+        String sql = "SELECT a.sampleItem.id, a.id FROM Analysis a" + " WHERE " + scopeField
+                + " = :scopeId AND a.test.id = :testId AND a.sampleItem IS NOT NULL"
+                + " AND a.completedDate >= :lowDate AND a.completedDate < :highDate"
+                + " ORDER BY a.completedDate DESC, a.id DESC";
+
+        try {
+            Query<Object[]> query = entityManager.unwrap(Session.class).createQuery(sql, Object[].class);
+            query.setParameter("scopeId", scopeId);
+            query.setParameter("testId", testId);
+            query.setParameter("lowDate", lowDate);
+            query.setParameter("highDate", highDate);
+            return query.list();
+        } catch (HibernateException e) {
+            handleException(e, "getAffectedSampleItemIds");
+        }
+
+        return null;
+    }
+
+    private boolean existsAnalysisCompletedBefore(String scopeField, String scopeId, String testId, Timestamp before) {
+        String sql = "SELECT a.id FROM Analysis a WHERE " + scopeField + " = :scopeId AND a.test.id = :testId"
                 + " AND a.sampleItem IS NOT NULL AND a.completedDate < :before";
 
         try {
             Query<String> query = entityManager.unwrap(Session.class).createQuery(sql, String.class);
-            query.setParameter("analyzerId", analyzerId);
+            query.setParameter("scopeId", scopeId);
             query.setParameter("testId", testId);
             query.setParameter("before", before);
             query.setMaxResults(1);
             return !query.list().isEmpty();
         } catch (HibernateException e) {
-            handleException(e, "existsAnalysisCompletedBeforeByAnalyzerAndTest");
+            handleException(e, "existsAnalysisCompletedBefore");
         }
 
         return false;
