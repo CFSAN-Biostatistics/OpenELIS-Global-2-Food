@@ -10,16 +10,16 @@ one-PR-per-milestone branch packaging is superseded. The full MVP scope remains.
 **Inputs**: [spec.md](spec.md), [plan.md](plan.md),
 [data-model.md](data-model.md), [contract](contracts/export-api.md),
 [acceptance plan](quickstart.md), [UAT contract](uat.md).
-**Latest verified review checkpoint (September 14):** Application `8005e4cc0b`
-is public and its backend/frontend/full E2E gates passed. See the
-[revision-specific evidence](https://reporting.catalyst.openelis-global.org/reporting-evidence/20260914-review-8005/)
-and [public identity](https://reporting.catalyst.openelis-global.org/__review/target.json).
-A subsequent two-editor audit found a lingering conflict warning after a
-successful copy. Its one-line UI correction, component regression and desktop/phone
-workflow pass locally; publication and current-commit CI remain pending.
-Detailed evidence and remaining steps are in `code-qa.md`. Earlier deployment
-snapshots below retain their original qualification scope. No full-MVP task is
-closed by this focused correction.
+**Current review/UAT checkpoint (September 14, Pacific time):** All ten stack
+PRs are ready for review; none is merged. Public frontend `7cca586e58`, backend
+`8005e4cc0b` and review tooling `2048bc3cfd` remain deployed. The focused public
+run passed four checks covering both layouts at phone width and a saved report
+rerun across distinct periods. [Recordings and actual CSVs](https://reporting.catalyst.openelis-global.org/reporting-evidence/20260914-uat-checkpoint-2048/)
+are published. Submitted UI `568b745437` and navigation `9c1bfd713c` pass frontend
+and full E2E CI; backend checks remain running at this checkpoint.
+Grist publication is complete for currently executable stages: six stories and
+23 steps. Non-Conformance and human acceptance remain open. See the current
+receipt in `execution.md`; earlier snapshots below retain their historical scope.
 
 **Earlier Referral qualification**: Sample & Testing, Referrals, queue recovery and configurable
 navigation are publicly testable at frontend/backend/instance configuration
@@ -302,13 +302,14 @@ separate completion criterion. Repeat these delivery tasks for each stage.
       both Sample & Testing layouts, shared reuse, configured source reports and
       available queue behavior. Record failures and uncovered planned capabilities;
       they do not postpone access to other usable workflows.
-- [ ] T036 Create the `reporting` review in the central Grist document and apply
+- [x] T036 Create the `reporting` review in the central Grist document and apply
       the currently executable stages of the five stable UAT stories from `uat.md` through the review-tooling
       authoring path. Read before writing, inspect computed problems and verify
       the public checklist JSON after every change.
-      The baseline six stories and 17 steps remain live. Reopened for the
-      current stages: RPT-201, RPT-303 and RPT-504 still need authoring access;
-      their implementation and public workflow evidence are already available.
+      Verified public revision `8b87c62931a3`: six stories and 23 steps.
+      The newer split Referrals walkthrough was preserved; RPT-303 and RPT-504
+      were added without changing any of the 21 preexisting step objects or
+      reviewer results. Publication does not imply human acceptance.
 - [x] T037 Inject the established review overlay into the reporting UAT host;
       configure authenticated submission against that OpenELIS backend; verify
       checklist loading, target identity, route capture, retained answers and a
@@ -338,7 +339,7 @@ reporting scope while completing the navigation contract in `plan.md`.
       Liquibase migration. Use the same fields in JSON and the effective menu
       response. Make configuration-controlled values clear during editing and
       preserve deployments that do not supply the new fields. Make T039 pass.
-- [ ] T041 Verify two instance profiles without frontend changes, including
+- [x] T041 Verify two instance profiles without frontend changes, including
       persisted edits after restart and restoration after removing an override.
       Compare the effective sidebar with the mock at desktop and narrow widths,
       exercise route/history/draft behavior, and publish the working increment
@@ -347,8 +348,9 @@ reporting scope while completing the navigation contract in `plan.md`.
       Application publication, all 10 public browser checks and actual local
       restart/two-profile/default-restoration checks now pass at `22e3a66b6175`.
       Review-picker regression tests and live refresh/reload/two-tab checks now
-      pass at harness `54b99f8d76ba`. Only RPT-504 authoring remains open;
-      see the concrete connection/browser evidence in `execution.md`.
+      pass at harness `54b99f8d76ba`. RPT-504 authoring is now published and
+      read back at checklist revision `8b87c62931a3`; see `execution.md`.
+      Human acceptance remains separate.
 
 ## Dependencies
 

@@ -79,9 +79,10 @@ Before calling this checkpoint merge-ready:
   to declare a criterion complete.
 - Refresh CI for the exact submitted commits. Distinguish passing local tests,
   remote checks and public deployment evidence.
-- Publish and verify RPT-201 (Referrals), RPT-303 (queued cancellation) and
-  RPT-504 (menu editing) through the existing Grist authoring system. Backend
-  authoring tooling is separate work in the review-tooling repository.
+- Completed: publish and verify Referrals, queued cancellation and menu editing
+  through the existing Grist authoring system. Public checklist revision
+  `8b87c62931a3` contains six stories and 23 steps; all preexisting steps and
+  reviewer results were preserved. See the current receipt in `execution.md`.
 - Record reviewer feedback and its disposition. Keep human acceptance separate
   from automated validation. No merge is authorized by creating this stack.
 
