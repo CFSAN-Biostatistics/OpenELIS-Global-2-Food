@@ -6,11 +6,13 @@ import static org.junit.Assert.assertTrue;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
+import java.io.StringReader;
 import java.io.StringWriter;
 import java.sql.Date;
 import java.sql.Timestamp;
 import java.util.List;
 import java.util.Map;
+import org.apache.commons.csv.CSVFormat;
 import org.junit.Before;
 import org.junit.Test;
 import org.openelisglobal.BaseWebContextSensitiveTest;
@@ -456,23 +458,38 @@ public class SampleTestingMappingIntegrationTest extends BaseWebContextSensitive
         results.update(qualifier);
         reading(analysis, option, dictionary.get(0).getId(), "M", 7);
         reading(analysis, option, dictionary.get(1).getId(), "M", 7);
-        reading(analysis, option, "operator free text", "A", 0);
+        // Exercise the full persisted VALUE width without exceeding its 200-character
+        // limit.
+        String freeText = ("Operator says \"repeat, please\"\r\n<tag> & " + "untruncated text ".repeat(20)).substring(0,
+                200);
+        reading(analysis, option, freeText, "A", 0);
+        reading(analysis, option, freeText, "A", 0);
         entityManager.flush();
 
-        var field = source.catalog().stream().filter(v -> v.id().equals("resultValue")).findFirst().orElseThrow();
         ExportFilter filter = new ExportFilter("2026-08-20", "2026-08-20", List.of(analysis.getTestSection().getId()),
                 List.of("1"), List.of("FINALIZED"));
         ReportSourceConfig definition = new ReportSourceConfig("SAMPLE_TESTING", 1, "Sample & Testing",
-                "SAMPLE_TESTING", "collectionDate", List.of("RESULT_LIST"), List.of("resultValue"), List.of(),
-                List.of("testIds"), Map.of("RESULT_LIST", List.of("resultValue")));
-        StringWriter csv = new StringWriter();
-
-        assertEquals(3, source.write(csv, new ExportSnapshot(definition, "RESULT_LIST", List.of(field), filter,
-                java.time.ZoneId.systemDefault().getId(), List.of(analysis.getStatusId()))));
-        String exported = csv.toString();
-        assertTrue(exported.contains("\r\n" + dictionary.get(0).getDictEntry() + " (Confirmed)\r\n"));
-        assertTrue(exported.contains(
-                "\r\n" + dictionary.get(0).getDictEntry() + "; " + dictionary.get(1).getDictEntry() + "\r\n"));
-        assertTrue(exported.contains("\r\noperator free text\r\n"));
+                "SAMPLE_TESTING", "collectionDate", List.of("SPREADSHEET", "RESULT_LIST"),
+                List.of("accessionNumber", "resultValue"), List.of("tests"), List.of("testIds"),
+                Map.of("SPREADSHEET", List.of("accessionNumber"), "RESULT_LIST", List.of("resultValue")));
+        List<String> expected = List.of(freeText, freeText, dictionary.get(0).getDictEntry() + " (Confirmed)",
+                dictionary.get(0).getDictEntry() + "; " + dictionary.get(1).getDictEntry());
+        for (String layout : definition.layouts()) {
+            String fieldId = layout.equals("SPREADSHEET") ? "test:1" : "resultValue";
+            var field = source.catalog().stream().filter(v -> v.id().equals(fieldId)).findFirst().orElseThrow();
+            StringWriter csv = new StringWriter();
+            assertEquals(layout, 4, source.write(csv, new ExportSnapshot(definition, layout, List.of(field), filter,
+                    java.time.ZoneId.systemDefault().getId(), List.of(analysis.getStatusId()))));
+            assertEquals('\uFEFF', csv.toString().charAt(0));
+            // Parse with an independent CSV reader: embedded line breaks are not rows.
+            try (var parsed = CSVFormat.RFC4180.parse(new StringReader(csv.toString().substring(1)))) {
+                var records = parsed.getRecords();
+                assertEquals(layout, 5, records.size());
+                assertEquals(layout.equals("SPREADSHEET") ? "Blood Test" : "Result Value", records.get(0).get(0));
+                assertTrue(records.stream().allMatch(record -> record.size() == 1));
+                assertEquals(layout, expected.stream().sorted().toList(),
+                        records.subList(1, records.size()).stream().map(record -> record.get(0)).sorted().toList());
+            }
+        }
     }
 }
