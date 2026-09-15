@@ -4420,6 +4420,8 @@
   "notification.password.change.fail": "Password change failed",
   "notification.password.change.success": "Password changed successfully",
   "notification.response.syntax.error": "Error - Could not parse response to JSON",
+  "notification.resultSelectList.post.save.success": "Result select list saved successfully.",
+  "notification.resultSelectList.post.update.success": "Result select list updated successfully.",
   "notification.slideover.button.hideread": "Hide read",
   "notification.slideover.button.markallasread": "Mark all as Read",
   "notification.slideover.button.markasread": "Mark as Read",
