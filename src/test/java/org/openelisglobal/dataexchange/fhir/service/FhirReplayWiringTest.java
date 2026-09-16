@@ -36,7 +36,7 @@ public class FhirReplayWiringTest {
     @Test
     public void controllerResolvesTheWrappedTransformAfterCircularDependencyInitialization() throws Exception {
         try (AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext()) {
-            context.register(AsyncConfig.class, FhirReplayRestController.class, ReferralDependency.class,
+            context.register(TestConfig.class, FhirReplayRestController.class, ReferralDependency.class,
                     CircularTransformService.class);
             // Keep real transform logic and Spring async wiring; isolate its external
             // collaborators.
@@ -87,7 +87,9 @@ public class FhirReplayWiringTest {
 
     @Configuration
     @EnableAsync
-    static class AsyncConfig {
+    // AppTestConfig excludes nested TestConfig classes from its shared component
+    // scan.
+    static class TestConfig {
         @Bean
         Executor taskExecutor() {
             return new SyncTaskExecutor();

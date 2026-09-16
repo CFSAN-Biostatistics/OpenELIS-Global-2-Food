@@ -390,7 +390,9 @@ builder's completed functional scope. See [the contract](fhir-replay.md).
       and real asynchronous failure/completion. Format and build with the checks
       recorded: 13 focused tests and the Java 21 WAR build pass, including a
       regression for the circular referral/transform initialization found at
-      first local startup.
+      first local startup. After correcting that test's shared-context isolation,
+      all 13 replay checks and the 10 affected referral checks pass locally;
+      hosted CI remains a separate merge gate.
 - [x] T044 Publish [PR #4323](https://github.com/DIGI-UW/OpenELIS-Global-2/pull/4323)
       and replace only the local reporting app, preserving the database/report
       volumes, FHIR proxy connection and disabled startup imports. Native login

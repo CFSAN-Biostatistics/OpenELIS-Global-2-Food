@@ -74,6 +74,16 @@ passes afterward using the real transform implementation and Spring async proxy.
 The corrected WAR was rebuilt; native startup and integration acceptance remain
 separate from these focused checks.
 
+The first [full backend check](https://github.com/DIGI-UW/OpenELIS-Global-2/actions/runs/35035861477)
+ran 6,338 tests and reported six errors in `SubcontractAutoTransitionTest` while
+all 13 replay checks passed. The new wiring test's nested `AsyncConfig` escaped
+`AppTestConfig`'s established exclusion for nested `TestConfig` classes, enabling
+async proxies in the shared integration context. Renaming the test configuration
+to `TestConfig` fixes that isolation defect without changing production code.
+The six errors reproduced locally before the rename; afterward all 23 targeted
+tests passed (10 referral tests and 13 replay tests), with no failures, errors or
+skips. Full hosted CI must pass on the corrected PR head before merge.
+
 The agreed synthetic cohort is sample 1154 (`REPORTING-MVP-REPEAT`, two results)
 and sample 1157 (`REPORTING-MVP-TURNAROUND`, two results). The integration owner
 verified that these samples contain only the four intended results. Deployment
