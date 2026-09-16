@@ -1,6 +1,6 @@
 # OGC-1054 Analyzer Feature Roadmap
 
-**Updated:** 2026-09-07
+**Updated:** 2026-09-16
 
 **Product and ownership contract:** [feature specification](../OGC-1054-analyzer-qc-config/spec.md)
 
@@ -82,10 +82,10 @@ one E2E result for the current PR commit.
 - `[ ]` future: not started.
 
 Markers change only when a checkpoint starts, becomes review-ready, or merges.
-Exactly one checkpoint is `[*]` while implementation remains. Review-ready work
-may be stacked while predecessors are reviewed, but merge order is strict.
-Scope, architecture, contract, or acceptance changes require an approved
-roadmap amendment before production code follows them.
+Exactly one checkpoint is `[*]` while implementation is in progress.
+Review-ready work may be stacked while predecessors are reviewed, but merge
+order is strict. Scope, architecture, contract, or acceptance changes require an
+approved roadmap amendment before production code follows them.
 
 Every review deployment comes from an open checkpoint PR whose applicable
 automated gates are green. Branch-only builds are not review targets. Preview
@@ -103,28 +103,33 @@ removes it must also contain and test the replacement.
 
 ## Current Train
 
-- [x] **R0 - Canonical roadmap and architecture.** OpenELIS
-      [#4049](https://github.com/DIGI-UW/OpenELIS-Global-2/pull/4049).
-- [x] **F0 - Acceptance foundation.** OpenELIS
-      [#4053](https://github.com/DIGI-UW/OpenELIS-Global-2/pull/4053).
-- [x] **E0 - Versioned contracts and migration boundary.** OpenELIS
-      [#4055](https://github.com/DIGI-UW/OpenELIS-Global-2/pull/4055) and Bridge
-      [#45](https://github.com/DIGI-UW/openelis-analyzer-bridge/pull/45).
-- [x] **M1 - Bridge profiles and Analyzer Types.** OpenELIS
-      [#4056](https://github.com/DIGI-UW/OpenELIS-Global-2/pull/4056), Bridge
-      [#46](https://github.com/DIGI-UW/openelis-analyzer-bridge/pull/46), and mock
-      [#40](https://github.com/DIGI-UW/analyzer-mock-server/pull/40).
-- [x] **M2 - Local mapping and control-recognition verification.** OpenELIS
-      [#4118](https://github.com/DIGI-UW/OpenELIS-Global-2/pull/4118) and Bridge
-      [#47](https://github.com/DIGI-UW/openelis-analyzer-bridge/pull/47), and mock
-      [#43](https://github.com/DIGI-UW/analyzer-mock-server/pull/43).
-- [x] **M3 - Guided setup, durable connection, activation, and QC link.**
-      OpenELIS [#4125](https://github.com/DIGI-UW/OpenELIS-Global-2/pull/4125) and
-      Bridge [#48](https://github.com/DIGI-UW/openelis-analyzer-bridge/pull/48).
-- [*] **M4 - Safe result traffic and integrated MVP.** OpenELIS
+- [✓] **R0 - Canonical roadmap and architecture.** OpenELIS
+  [#4049](https://github.com/DIGI-UW/OpenELIS-Global-2/pull/4049).
+- [✓] **F0 - Acceptance foundation.** OpenELIS
+  [#4053](https://github.com/DIGI-UW/OpenELIS-Global-2/pull/4053).
+- [✓] **E0 - Versioned contracts and migration boundary.** OpenELIS
+  [#4055](https://github.com/DIGI-UW/OpenELIS-Global-2/pull/4055) and Bridge
+  [#45](https://github.com/DIGI-UW/openelis-analyzer-bridge/pull/45).
+- [✓] **M1 - Bridge profiles and Analyzer Types.** OpenELIS
+  [#4056](https://github.com/DIGI-UW/OpenELIS-Global-2/pull/4056), Bridge
+  [#46](https://github.com/DIGI-UW/openelis-analyzer-bridge/pull/46), and mock
+  [#40](https://github.com/DIGI-UW/analyzer-mock-server/pull/40).
+- [✓] **M2 - Local mapping and control-recognition verification.** OpenELIS
+  [#4118](https://github.com/DIGI-UW/OpenELIS-Global-2/pull/4118) and Bridge
+  [#47](https://github.com/DIGI-UW/openelis-analyzer-bridge/pull/47), and mock
+  [#43](https://github.com/DIGI-UW/analyzer-mock-server/pull/43).
+- [✓] **M3 - Guided setup, durable connection, activation, and QC link.**
+  OpenELIS [#4125](https://github.com/DIGI-UW/OpenELIS-Global-2/pull/4125) and
+  Bridge [#48](https://github.com/DIGI-UW/openelis-analyzer-bridge/pull/48).
+- [✓] **M4 - Safe result traffic and integrated MVP.** OpenELIS
   [#4138](https://github.com/DIGI-UW/OpenELIS-Global-2/pull/4138), Bridge
   [#49](https://github.com/DIGI-UW/openelis-analyzer-bridge/pull/49), and mock
   [#42](https://github.com/DIGI-UW/analyzer-mock-server/pull/42).
+- [ ] **OGC-1220 - Recover held results after mapping adoption.** Agreed
+      direction; implementation pending. Continue in OpenELIS
+      [#4256](https://github.com/DIGI-UW/OpenELIS-Global-2/pull/4256), retaining
+      receipt protection from
+      [#4241](https://github.com/DIGI-UW/OpenELIS-Global-2/pull/4241).
 - [ ] **G0 - Exact deployment and named human acceptance.** Review tooling
       [#17](https://github.com/DIGI-UW/openelis-review-tooling/pull/17) is
       merged; its exact release must be deployed before the acceptance build is
@@ -132,23 +137,117 @@ removes it must also contain and test the replacement.
 - [ ] **R1 - Full feature operations.** Future.
 - [ ] **R2 - Site rollout.** Future.
 
-All listed PRs are stacked and unmerged. `[x]` means review-ready, not merged or
-accepted. Keep review-ready lower branches intact unless a versioned companion
-contract requires an owning-repository correction; do not create a parallel
-remediation stack.
+The original R0 through M4 pull requests are merged (verified 2026-09-16). Merge
+does not establish deployment or human acceptance. Do not reopen their former
+stack for new corrections. G0 remains pending acceptance evidence.
 
-M4 is the active integrated checkpoint. Current acceptance corrections land in
-the existing M4 top PR so they do not create another remediation layer or churn
-review-ready lower branches. A correction that changes a versioned companion
-contract must still be made in its owning repository and carried into M4. These
-corrections do not change an `[x]` marker. M4 becomes `[x]` only after all four
-remediation slices below pass.
+## OGC-1220 held-result remediation
 
-The next analyzer deployment is the single M4 remediation candidate. Do not
-deploy it until every current actionable review finding is fixed or disproved
-against the current top, the required E2E checkpoint is green, and each
-actionable Grist answer links directly to the top PR. GitHub owns resolution
-state; neither Grist nor this roadmap duplicates it.
+**Agreed 2026-09-16; implementation and validation pending.** After the lab
+fixes a mapping and applies it to an analyzer, that analyzer's previously
+blocked results become available for ordinary review.
+
+This is the single remediation plan for
+[OGC-1220](https://uwdigi.atlassian.net/browse/OGC-1220) and
+[#4256](https://github.com/DIGI-UW/OpenELIS-Global-2/pull/4256).
+[Casey's September 15 decision](https://uwdigi.atlassian.net/browse/OGC-1220?focusedCommentId=37454)
+calls for automatic reevaluation followed by ordinary result review. The
+September 16 timing decision requires adoption by each analyzer. This
+supersedes both the earlier next-message-only rule and the draft's required
+manual reprocess action. The separate proposal is removed; Git retains its
+history.
+
+### Agreed behavior
+
+- Bridge already sends normalized FHIR with raw test identity and source
+  context, including unknown test codes. Bridge continues to own parsing and
+  transport. OpenELIS owns local catalog mapping and held-result recovery; no
+  Bridge change is currently indicated. Existing evidence:
+  [`FhirBundleBuilderLoincTest`](../../tools/openelis-analyzer-bridge/src/test/java/org/itech/ahb/fhir/FhirBundleBuilderLoincTest.java),
+  including `unknownCodeStillCarriesItsRawIdentityWithoutInventingLoinc`.
+- The existing Analyzer Types mapping editor must include received unknown tests
+  and values even when they are absent from the Bridge profile. These are local
+  mapping decisions, not edits to or copies of the Bridge profile. Test targets
+  must be active local catalog entries; value targets must be active Result
+  Options of the selected Test.
+- Incoming results and held-result reevaluation must use the exact local mapping
+  revision that the analyzer has adopted and a human has confirmed. Saving or
+  confirming a shared edit alone must not change an analyzer still using an
+  older revision.
+- Reevaluate eligible held rows automatically once both confirmation and
+  adoption are satisfied, in either order. Cover rows already held when this fix
+  is installed and safe repeated processing of the same revision. No analyzer
+  resend or per-result reprocess button is required.
+- Resolved patient rows enter ordinary Save / Retest / Ignore review; they are
+  not automatically accepted. Still-unresolved rows remain held with accurate
+  reasons and counts. Preserve source evidence and audit, including the actor
+  and applied mapping revision. Unrelated holds and reviewed results are not
+  candidates for this operation.
+- Preserve unsaved worklist edits. Report control processing as successful only
+  when its result was actually created. Apply existing exclusion and audit rules
+  without adding a separate discard action; the draft's deletion of excluded
+  rows is not an approved retention decision.
+
+### Implementation order
+
+Reuse #4256's stored Observation, ownership/profile checks, locking, and row
+update logic. Replace its manual trigger and latest-saved-mapping lookup. Keep
+#4241's duplicate-delivery receipt protection as a separate dependency:
+transport retries still return the original acceptance summary and must not
+become a second recovery path. Refresh the two branches against current
+`develop` before production edits while preserving that dependency.
+
+| Order | Bounded change                                                                                                                                     | Existing starting points                                                                                                           |
+| ----- | -------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| 1     | Make incoming processing and held recovery use the analyzer's exact confirmed, adopted mapping revision.                                           | `AnalyzerInstanceLocalStateServiceImpl`, `AnalyzerSiteBindingConfirmationServiceImpl`, `AnalyzerNormalizedResultImportServiceImpl` |
+| 2     | Compose the mapping editor from declared concepts plus observed unknown tests/values; enable the existing resolution link for both hold reasons.   | `AnalyzerTypeMappingServiceImpl`, held-result queries, `buildHeldResultResolutionUrl`                                              |
+| 3     | Invoke the shared recovery operation when confirmation and adoption become eligible; cover either event order, existing backlog, and safe repeats. | `confirmMapping`, `selectSiteBindingRevision`, `reprocessHeldResult`                                                               |
+| 4     | Refresh affected rows and counts without losing unsaved edits; remove the manual action and obsolete instructions.                                 | Analyzer results components, result state, `en.json`                                                                               |
+| 5     | Replace next-message-only and manual-action tests, then prove the complete mapping-to-review flow.                                                 | Focused service/security/router tests; `ogc-1054-analyzer-mvp.spec.ts`; the acceptance checks below                                |
+
+Start with failing tests for the exact revision rule and observed unknown test
+mapping. Check how confirmation handles unresolved rows: adding observed rows
+must not prevent unrelated mapped traffic or recovery of the resolved subset.
+Use the existing services and held rows; add background processing only if a
+measured workload or transaction constraint requires it.
+
+### Acceptance checks
+
+All checks below are pending. Existing tests for the draft manual action do not
+prove this behavior.
+
+- [ ] An unknown test absent from the profile and an unknown qualitative value
+      both open the same editor, accept only valid local targets, and survive
+      save, reopen, and confirmation.
+- [ ] Two analyzers sharing a mapping adopt independently. An unconfirmed edit
+      affects neither incoming nor held results. Both
+      adoption-before-confirmation and confirmation-before-adoption use only
+      each analyzer's eligible revision.
+- [ ] Both mapping-related hold reasons recover automatically. In a mixed batch,
+      resolved rows enter ordinary review, unresolved rows remain held, and
+      attention/worklist counts match persisted state.
+- [ ] Existing eligible backlog, repeated confirmation/adoption, concurrent
+      processing, and duplicate transport delivery create no duplicate results
+      and never overwrite already reviewed results or bypass delivery receipts.
+- [ ] Source and mapping audit survive; analyzer/connection/profile ownership
+      and permissions are enforced; unrelated hold reasons remain untouched;
+      explicit exclusions follow the existing audit and retention contract.
+- [ ] Worklist refresh preserves unsaved edits, and control outcomes reflect
+      actual persisted processing rather than unconditional success.
+- [ ] Focused JUnit 4, database, authorization, and real-router tests pass. The
+      assembled visible flow recovers the original held result without resend or
+      manual reprocessing. Inspect console, trace, and screenshots, then
+      complete the applicable PR gates and named review on an identified build.
+
+### Keeping one plan
+
+The specification and feature map link here instead of copying the plan. When
+publishing the amendment, update #4256's title/description and OGC-1220's
+cross-link to point here and remove the obsolete manual-action/product-decision
+wording. Those external descriptions have not yet been updated. Keep review
+state in GitHub and reviewer answers in Grist; do not create a second task list,
+proposal, or evidence ledger. Scope changes and implementation progress belong
+in this section.
 
 ## Execution Loop
 
@@ -324,7 +423,8 @@ Deliver:
 
 - known patient and recognized-control traffic through real Bridge transports;
 - durable hold and visible attention for unknown tests and values;
-- valid local resolution and deterministic handling of the next message;
+- local mapping resolution as amended by the
+  [OGC-1220 remediation](#ogc-1220-held-result-remediation);
 - analyzer result review and resolution use the same established analyzer
   permission at both page and endpoint boundaries;
 - priority ASTM and FILE mock stories plus a generic HL7 contract fixture;
@@ -333,10 +433,8 @@ Deliver:
 - removal of superseded OE plugin routing, raw import/parser paths, local
   `AnalyzerType` registry, and direct-to-OE mock acceptance modes after parity.
 
-Work these Grist-driven remediation slices in order. Start each behavior with a
-failing test at the owning layer, make the smallest complete change, remove any
-superseded behavior in the same slice, and carry the correction forward through
-the existing stack.
+The following slices record the original M4 delivery scope. Its PRs are merged;
+new held-result work follows the OGC-1220 section above, not the former stack.
 
 1. **Profile lifecycle.** In M1 and M2, complete Create Profile through an
    editable, publishable Bridge draft; prove duplicate is single-submit,
@@ -349,13 +447,12 @@ the existing stack.
    include both profile-declared concepts and observed unresolved tests/values,
    and recompute them after traffic or site-binding changes. Give unknown tests
    and unknown values one catalog-backed resolution workflow; allow only valid
-   active local targets, audit the decision, leave the original held result
-   unchanged, and apply it deterministically to the next matching message.
-   Expose the site-binding mapping history in that workflow with its actor,
-   time, profile revision, and mapping decisions; profile-publication history
-   must not masquerade as local mapping history. Prove domain behavior in OE
-   integration tests and visible behavior in real-router RTL before the
-   assembled story.
+   active local targets and audit the decision. Held-result recovery follows the
+   [OGC-1220 remediation](#ogc-1220-held-result-remediation). Expose the
+   site-binding mapping history in that workflow with its actor, time, profile
+   revision, and mapping decisions; profile-publication history must not
+   masquerade as local mapping history. Prove domain behavior in OE integration
+   tests and visible behavior in real-router RTL before the assembled story.
 3. **Connection and QC.** In M3, restore the Bridge-provided latest probe after
    reload. Starting Add Analyzer while another analyzer is open must clear the
    prior identity and create a new analyzer, while setup breadcrumbs and
@@ -369,19 +466,19 @@ the existing stack.
    Prove probe persistence in Bridge/OE consumer tests and QC behavior in OE
    integration tests plus real-router RTL. Operational QC remains separate and
    never gates verification or activation.
-4. **Result review.** In M4, show source analyzer identity and raw source context
-   for normal, held, control, and FILE traffic, including the source unit when
-   the analyzer supplied one. Use Bridge and analyzer-mock transport tests for
-   transmission and an external demo-operator action for resend; do not add an
-   OE mock control. Finish with the UI-only patient, control, unknown-test,
-   unknown-value, and FILE Playwright stories.
+4. **Result review.** In M4, show source analyzer identity and raw source
+   context for normal, held, control, and FILE traffic, including the source
+   unit when the analyzer supplied one. Use Bridge and analyzer-mock transport
+   tests for transmission and an external demo-operator action for resend; do
+   not add an OE mock control. Finish with the UI-only patient, control,
+   unknown-test, unknown-value, and FILE Playwright stories.
 
-Exit: all four remediation slices are green in the M4 top and any required
+Original exit: all four remediation slices are green in M4 and any required
 companion PRs; patient/control/unknown behavior is proven in owning tests and
 UI-only assembled Playwright stories; focused console, trace, runtime,
 accessibility, and desktop/mobile screenshot review passes; and no old analyzer
-runtime path survives. The resulting M4 tip is then deployed for updated Grist
-review.
+runtime path survives. Current deployment and acceptance follow G0 after the
+OGC-1220 correction; merging the original M4 PR does not close that gate.
 
 ### G0 - Exact Deployment And Human Acceptance
 
@@ -428,7 +525,7 @@ observability, backup/restore, operator guides, and representative site rollout.
 | MVP-017 | Connection commands are concurrency-safe/idempotent and Bridge restart restores the exact active revision; OE performs no full-state replay.                                                                                                                                                                    | Bridge restart/contract + OE service integration                       |
 | MVP-018 | Known patient and recognized-control traffic reaches the correct OE workflow; normal, held, control, and FILE review show source analyzer identity and raw source context.                                                                                                                                      | Bridge/mock transport + OE assembled integration + UI E2E              |
 | MVP-019 | Unknown tests/values are durably held, visibly flagged, included in Analyzer Type completeness/attention, and never clinically posted or dropped.                                                                                                                                                               | OE persistence/integration + real-router RTL + UI E2E                  |
-| MVP-020 | Authorized analyzer users can resolve unknown tests and unknown values only to valid active local catalog targets; resolution is audited, leaves the original held result unchanged, and changes the next matching result deterministically, while unrelated roles are denied.                                  | OE security/integration + real-router RTL + UI E2E                     |
+| MVP-020 | Unknown-test and unknown-value resolution satisfies the [OGC-1220 acceptance checks](#acceptance-checks).                                                                                                                                                                                                       | OE security/integration + real-router RTL + UI E2E                     |
 | MVP-021 | ASTM, HL7, and FILE fixtures prove patient/control/nonmatch/unknown behavior; FILE watching exists only in Bridge.                                                                                                                                                                                              | Bridge/mock suites + assembled integration                             |
 | MVP-022 | New UI uses reusable Carbon components, React Intl, one semantic heading, keyboard/focus behavior, and no overlapping text at desktop/mobile sizes.                                                                                                                                                             | RTL/a11y + inspected screenshots                                       |
 | MVP-023 | Analyzer dashboard, Analyzer Types, setup, mapping, and QC links form one consistent visual workflow compared with `openelis-work@main`.                                                                                                                                                                        | Desktop/mobile visual review + named human UAT                         |
@@ -471,13 +568,13 @@ format/lint checks, assembled contracts where applicable, and `digi-uw/code-qa`.
 10. `AN-MVP-010` Review blockers, activate, deactivate, and reopen the analyzer.
 11. `AN-MVP-011` Send a known patient result through the mock and Bridge and
     confirm normal review shows its analyzer/source context.
-12. `AN-MVP-012` Send an unknown test, confirm it is held and affects attention,
-    resolve it to a valid active Test, resend externally, and confirm the next
-    result follows the decision.
+12. `AN-MVP-012` Prove the unknown-test flow in the
+    [OGC-1220 acceptance checks](#acceptance-checks).
 13. `AN-MVP-013` Send a recognized control, open linked operational QC, and
     prove a control lot can be saved using only a mapped Test.
 14. `AN-MVP-014` Send an unknown qualitative value and confirm it is held.
-15. `AN-MVP-015` Resolve the held value and verify the next matching result.
+15. `AN-MVP-015` Prove the unknown-value recovery flow in the
+    [OGC-1220 acceptance checks](#acceptance-checks).
 16. `AN-MVP-016` Repeat the visible traffic story with a priority FILE type and
     confirm row-level analyzer/source context without an OE FILE configuration
     or import path.
@@ -491,7 +588,8 @@ changes require their own PR only when a failing harness contract proves a gap.
 
 ## Final Gate
 
-G0 completes only when R0 through G0 are `[✓]`, `MVP-001` through `MVP-024`
-pass, the exact OE/Bridge/mock/profile-catalog/review-tooling revisions are
-deployed, all 17 Grist steps pass under a named human product reviewer, and the
-inspected evidence bundle describes one unchanged deployment.
+G0 completes only when R0 through M4 and the OGC-1220 correction are merged,
+`MVP-001` through `MVP-024` pass, the exact
+OE/Bridge/mock/profile-catalog/review-tooling revisions are deployed, all 17
+Grist steps pass under a named human product reviewer, and the inspected
+evidence bundle describes one unchanged deployment.
