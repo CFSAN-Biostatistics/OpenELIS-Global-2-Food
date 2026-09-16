@@ -10,6 +10,14 @@ one-PR-per-milestone branch packaging is superseded. The full MVP scope remains.
 
 **Evidence index:** [All published recordings, CSVs and QA checkpoints](https://reporting.catalyst.openelis-global.org/reporting-evidence/).
 
+**September 15 merge preparation:** Existing replay PR #4323 is linked to the
+same official stack 4306, which now contains twelve existing PRs. Current
+`develop` was merged through those branches without rewriting submitted history.
+The dashboard reconciliation preserves upstream paging and metric retry/abort
+behavior. Local validation passes; refreshed required CI and code-owner approval
+remain merge gates. Public UAT and the shared local runtime were not changed.
+See the [reconciliation receipt](execution.md#existing-stack-reconciliation--september-15-2026).
+
 **Inputs**: [spec.md](spec.md), [plan.md](plan.md),
 [data-model.md](data-model.md), [contract](contracts/export-api.md),
 [acceptance plan](quickstart.md), [UAT contract](uat.md).
@@ -401,6 +409,22 @@ builder's completed functional scope. See [the contract](fhir-replay.md).
       matched, and full source rows were unchanged. See the
       [verified native result](fhir-replay.md#verified-native-result).
       Downstream Spark/Catalyst validation remains owned by the integration task.
+
+- [x] T045 Consolidate the existing reporting/replay delivery in official stack
+      4306. Append existing #4323, merge current `develop` through the existing
+      branches, and resolve the dashboard overlap in navigation #4315 while
+      preserving both server paging/request identity and metric abort/retry.
+      No replacement branches, replacement PRs, rebases or force pushes.
+- [x] T046 Validate the reconciled source locally with the available runtime:
+      84 focused frontend tests, 13 replay tests, frontend build and Java 21 WAR
+      build pass. Dependency pins are unchanged. These checks do not establish
+      database integration, recorded browser behavior or public deployment of
+      the new revision; those require their own evidence.
+- [ ] T047 Obtain the three required hosted checkpoints for the updated stack
+      heads and required code-owner review. Use the existing E2E workflow for
+      branch bases it does not trigger on automatically. Stop before merge
+      while approval is absent; do not bypass rules or change shared runtimes,
+      deployment or database roles as part of this preparation.
 
 ## Dependencies
 
