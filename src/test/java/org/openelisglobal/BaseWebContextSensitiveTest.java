@@ -507,44 +507,6 @@ public abstract class BaseWebContextSensitiveTest extends AbstractTransactionalJ
     }
 
     /**
-     * Idempotently ensure at least one {@code clinlims.site_information} row
-     * exists, inserting one (with a domain row for the FK) via raw JDBC if the
-     * table is empty. For audit tests that update a seed-provided site_information
-     * row but do not own that seed — a sibling fixture's
-     * {@code TRUNCATE ... CASCADE} can wipe it.
-     */
-    protected void ensureSiteInformationPresent() {
-        try (Connection conn = dataSource.getConnection(); Statement stmt = conn.createStatement()) {
-            try (java.sql.ResultSet rs = stmt.executeQuery("SELECT COUNT(*) FROM clinlims.site_information")) {
-                rs.next();
-                if (rs.getInt(1) > 0) {
-                    return;
-                }
-            }
-            String domainId;
-            try (java.sql.ResultSet rs = stmt.executeQuery("SELECT id FROM clinlims.site_information_domain LIMIT 1")) {
-                if (rs.next()) {
-                    domainId = rs.getString(1);
-                } else {
-                    stmt.execute("INSERT INTO clinlims.site_information_domain (id, name, description) VALUES "
-                            + "(nextval('clinlims.site_information_domain_seq'), 'auditRegressionDomain', "
-                            + "'ensured by test')");
-                    try (java.sql.ResultSet r2 = stmt
-                            .executeQuery("SELECT id FROM clinlims.site_information_domain LIMIT 1")) {
-                        r2.next();
-                        domainId = r2.getString(1);
-                    }
-                }
-            }
-            stmt.execute("INSERT INTO clinlims.site_information (id, name, value, value_type, domain_id, lastupdated) "
-                    + "VALUES (nextval('clinlims.site_information_seq'), 'auditRegressionMarker', 'seed', 'text', "
-                    + domainId + ", now())");
-        } catch (SQLException e) {
-            throw new RuntimeException("Failed to ensure a site_information row", e);
-        }
-    }
-
-    /**
      * Idempotently ensure the named {@code clinlims.site_information} row exists
      * with the given value, inserting it (value_type {@code 'text'}, null domain)
      * via raw JDBC if absent. For config-backed tests that read a migration-seeded
