@@ -651,24 +651,24 @@ can be closed by explicit scoping plus the missing higher-level proof; it does
 not require deleting useful narrow tests. Keep this table current after each
 milestone rather than rewriting the historical audit as though it were current.
 
-| Finding                                            | Owning change | Status                    | Evidence                                                                                            | Remaining limitation                                                                                               |
-| -------------------------------------------------- | ------------- | ------------------------- | --------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| 1. Shared internal substitutes                     | T1            | Validated                 | #4332, `23be6e97d4`; T1 evidence below                                                              | History and parsing are real; mapping lifecycle coverage remains T2.                                               |
-| 2. Shared-instance dependency swaps                | T1            | Validated                 | #4332 removes four history overrides and parser replacements                                        | Manually assembled mapping persistence services remain tracked in finding 4.                                       |
-| 3. Mapping changes bypass lifecycle                | T2            | Open                      | Catalogue source links                                                                              | Same-revision SQL changes and replacement confirmations remain.                                                    |
-| 4. Manually assembled persistence services         | T2            | Open                      | Catalogue source links                                                                              | Does not yet prove ordinary injected service wiring.                                                               |
-| 5. Isolated tests using broad database setup       | T1            | Validated                 | Eight isolated request/selection checks pass without database startup                               | Standalone request checks do not establish deployed authorization.                                                 |
-| 6. Queries tested with substituted results         | T2            | Open                      | Catalogue source links                                                                              | Database discrimination cases not established.                                                                     |
-| 7. Shared fixture/cached-state isolation           | T1            | In progress — unvalidated | Reopened: 680-check mixed run has 11 context errors; 15-check status reproduction corrected locally | Ordinary fixture writers, committed ownership, seed repair and caches still need the role-based corrections above. |
-| 8. Request/permission test boundaries              | T2            | Open                      | Catalogue source links                                                                              | Real mutation authorization and explicit scope still need verification.                                            |
-| 9. Superseded manual/browser expectations          | T3            | Open                      | Catalogue source links                                                                              | Replacement workflow not yet implemented/proved.                                                                   |
-| 10. Unresolved rows treated as excluded by harness | T3            | Open                      | Catalogue source links                                                                              | Partial-mapping harness case not exercised.                                                                        |
-| 11. Missing automatic-recovery acceptance          | T3            | Open                      | Acceptance checks below                                                                             | All product acceptance checks remain open.                                                                         |
-| 12. Inconsistent fixture-helper connections        | T1            | Open                      | Fixture load joins transaction; cleanup opens a separate connection; 33 callers                     | Reproduce suspected blocking and prove one helper ownership contract before further migration.                     |
-| 13. Retained cross-context services/caches         | T1            | Open                      | Static TestServiceImpl collaborators/maps and base context reset remain                             | Trace reached dependencies and prove context/cache isolation; no blanket global resets.                            |
-| 14. Incomplete regression selection                | T1            | Open                      | Eight concrete core classes plus catalog neighbor omitted                                           | Derive selection from the inventory and verify discovered/executed coverage.                                       |
-| 15. Guidance perpetuates fixture/context problems  | T1            | Open                      | Testing guide mandates broad controller base and destructive fixture default                        | Correct the specific guide/templates with reviewed foundation ownership rules.                                     |
-| 16. Weak persisted query assertions                | T1            | Open                      | AnalyzerResultsServiceTest paging checks allow empty output                                         | Assert exact scoped membership, ordering and boundaries using owned data.                                          |
+| Finding                                            | Owning change | Status                            | Evidence                                                                                                                 | Remaining limitation                                                                                                         |
+| -------------------------------------------------- | ------------- | --------------------------------- | ------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------- |
+| 1. Shared internal substitutes                     | T1            | Validated                         | #4332, `23be6e97d4`; T1 evidence below                                                                                   | History and parsing are real; mapping lifecycle coverage remains T2.                                                         |
+| 2. Shared-instance dependency swaps                | T1            | Validated                         | #4332 removes four history overrides and parser replacements                                                             | Manually assembled mapping persistence services remain tracked in finding 4.                                                 |
+| 3. Mapping changes bypass lifecycle                | T2            | Open                              | Catalogue source links                                                                                                   | Same-revision SQL changes and replacement confirmations remain.                                                              |
+| 4. Manually assembled persistence services         | T2            | Open                              | Catalogue source links                                                                                                   | Does not yet prove ordinary injected service wiring.                                                                         |
+| 5. Isolated tests using broad database setup       | T1            | Validated                         | Eight isolated request/selection checks pass without database startup                                                    | Standalone request checks do not establish deployed authorization.                                                           |
+| 6. Queries tested with substituted results         | T2            | Open                              | Catalogue source links                                                                                                   | Database discrimination cases not established.                                                                               |
+| 7. Shared fixture/cached-state isolation           | T1            | In progress                       | Status and analyzer-result writers now roll back; 538 checks in 38 classes pass in both orders                           | Ordinary fixture writers, committed ownership, seed repair and caches still need the role-based corrections above.           |
+| 8. Request/permission test boundaries              | T2            | Open                              | Catalogue source links                                                                                                   | Real mutation authorization and explicit scope still need verification.                                                      |
+| 9. Superseded manual/browser expectations          | T3            | Open                              | Catalogue source links                                                                                                   | Replacement workflow not yet implemented/proved.                                                                             |
+| 10. Unresolved rows treated as excluded by harness | T3            | Open                              | Catalogue source links                                                                                                   | Partial-mapping harness case not exercised.                                                                                  |
+| 11. Missing automatic-recovery acceptance          | T3            | Open                              | Acceptance checks below                                                                                                  | All product acceptance checks remain open.                                                                                   |
+| 12. Inconsistent fixture-helper connections        | T1            | In progress                       | Local lock/thread reproduction confirms separate cleanup connection blocking; cleanup now joins the transaction          | Other reference/sequence/seed helpers still need connection-ownership review.                                                |
+| 13. Retained cross-context services/caches         | T1            | Open                              | Static TestServiceImpl collaborators/maps and base context reset remain                                                  | Trace reached dependencies and prove context/cache isolation; no blanket global resets.                                      |
+| 14. Incomplete regression selection                | T1            | Open                              | Eight concrete core classes plus catalog neighbor omitted                                                                | Derive selection from the inventory and verify discovered/executed coverage.                                                 |
+| 15. Guidance perpetuates fixture/context problems  | T1            | Validated — active guidance scope | #4332 corrects root instructions, active guides, agent sources and reusable templates; documented backend example passes | Historical specifications were not rewritten; generic templates require substitution and browser examples were not executed. |
+| 16. Weak persisted query assertions                | T1            | Validated                         | #4332 asserts exact membership, order, offsets and empty boundaries across 26 analyzer-result service tests              | Mapping-specific database query discrimination remains finding 6 in T2.                                                      |
 
 #### T1 execution evidence — 2026-09-17
 
@@ -794,10 +794,10 @@ or application behavior and does not rerun or reclassify earlier failures as pas
 
 **Next implementation order within the existing milestones:**
 
-1. T1: establish the fixture/helper connection contract and reproduce the CI
-   stall with bounded diagnostics; correct shared ownership and affected callers.
-2. T1: remove reached seed-repair/cache workarounds, correct ordinary fixture
-   ownership and weak query assertions, and align the misleading guide sections.
+1. T1: finish connection ownership review for reference/sequence/seed helpers;
+   cleanup blocking is reproduced and corrected as recorded below.
+2. T1: remove reached seed-repair/cache workarounds and correct remaining
+   ordinary fixture ownership. Active guidance and weak query assertions are corrected.
 3. T1: run the complete inventoried analyzer set plus affected callers in both
    class orders, then full backend CI. Record exact selection and saved evidence.
 4. T2: evaluate the preserved mapping code against that foundation, complete
@@ -808,6 +808,49 @@ or application behavior and does not rerun or reclassify earlier failures as pas
 Do not expand into unrelated OE2 module remediation to avoid these gates. The
 small broader specification records reusable design and follow-up boundaries;
 it does not introduce another active analyzer checklist.
+
+#### Cleanup ownership and active guidance correction — 2026-09-17
+
+Published in [foundation PR #4332](https://github.com/DIGI-UW/OpenELIS-Global-2/pull/4332),
+head `084e0942f8`: code correction `6d1537894a`; documentation corrections
+`851d6c61e4`, `84f4f59304` and `084e0942f8`.
+
+- A bounded local reproduction captured the fixture transaction holding a lock
+  while the same test waited for cleanup on another connection. This reproduces
+  the class at which earlier CI stopped; it is not a captured CI thread dump.
+  Cleanup now joins the active transaction, or owns an atomic transaction when
+  none exists. Tests verify rollback, independently visible commit, and rollback
+  after cleanup failure. A query timeout bounds future lock failures.
+- Analyzer-result and status service fixtures now roll back with their writes.
+  Exact query assertions exposed three previously unnoticed wrong analyzer IDs.
+  Sequence regression coverage now verifies advancement without ID reuse rather
+  than requiring a sequence to rewind to a fixed value.
+- The explicit 38-class selection covers 33 direct cleanup callers and five
+  ownership/query/sequence neighbors: **538 tests, zero failures, errors or skips
+  in each of alphabetical and reverse alphabetical order**. XML reports verify
+  the executed class set. Scoped formatting and the clean build passed. This
+  selection does not close finding 14's complete analyzer inventory requirement.
+- The bounded documentation audit corrected root agent instructions, active
+  testing guides, backend-testing skill sources and reusable templates. They
+  now distinguish unit, component, integration and end-to-end tests; use actual
+  Maven/Vitest/Playwright runners; avoid unsupported Spring Boot test patterns;
+  and explain rollback ownership, committed fixtures and cascading cleanup.
+  Active guidance was checked against current code and configuration. Historical
+  specifications and constitutional policy were not rewritten.
+- Validation of the documentation included formatting, relative links,
+  temporary agent-command compilation and execution of the documented backend
+  example against PostgreSQL (**one passing test**). Placeholder templates were
+  not all instantiated, and browser examples were not executed. No dependency
+  pins changed. Full CI and maintainer approval on the published head are pending.
+
+Local evidence is retained in `/private/tmp/ogc-1220-fixture-ownership/`, including
+explicit class selection, reports for both orders, build and example logs.
+The initial lock/thread capture is in `/private/tmp/ogc-1220-fixture-locks.json`
+and `/private/tmp/ogc-1220-fixture-threads.txt`.
+
+**T1 remains open:** finish remaining fixture owners, reached seed/cache repairs,
+other helper connection paths, complete analyzer selection and full CI. T2 local
+work remains preserved separately; T3 automatic recovery remains unimplemented.
 
 #### Iteration and evidence rules
 
