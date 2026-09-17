@@ -651,24 +651,24 @@ can be closed by explicit scoping plus the missing higher-level proof; it does
 not require deleting useful narrow tests. Keep this table current after each
 milestone rather than rewriting the historical audit as though it were current.
 
-| Finding                                            | Owning change | Status                            | Evidence                                                                                                                           | Remaining limitation                                                                                                         |
-| -------------------------------------------------- | ------------- | --------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| 1. Shared internal substitutes                     | T1            | Validated                         | #4332, `23be6e97d4`; T1 evidence below                                                                                             | History and parsing are real; mapping lifecycle coverage remains T2.                                                         |
-| 2. Shared-instance dependency swaps                | T1            | Validated                         | #4332 removes four history overrides and parser replacements                                                                       | Manually assembled mapping persistence services remain tracked in finding 4.                                                 |
-| 3. Mapping changes bypass lifecycle                | T2            | Open                              | Catalogue source links                                                                                                             | Same-revision SQL changes and replacement confirmations remain.                                                              |
-| 4. Manually assembled persistence services         | T2            | Open                              | Catalogue source links                                                                                                             | Does not yet prove ordinary injected service wiring.                                                                         |
-| 5. Isolated tests using broad database setup       | T1            | Validated                         | Eight isolated request/selection checks pass without database startup                                                              | Standalone request checks do not establish deployed authorization.                                                           |
-| 6. Queries tested with substituted results         | T2            | Open                              | Catalogue source links                                                                                                             | Database discrimination cases not established.                                                                               |
-| 7. Shared fixture/cached-state isolation           | T1            | In progress                       | Status, analyzer-result and QC-chart writers now roll back; 883 executed checks in 70 classes pass in both orders                  | Ordinary fixture writers, committed ownership, seed repair and caches still need the role-based corrections above.           |
-| 8. Request/permission test boundaries              | T2            | Open                              | Catalogue source links                                                                                                             | Real mutation authorization and explicit scope still need verification.                                                      |
-| 9. Superseded manual/browser expectations          | T3            | Open                              | Catalogue source links                                                                                                             | Replacement workflow not yet implemented/proved.                                                                             |
-| 10. Unresolved rows treated as excluded by harness | T3            | Open                              | Catalogue source links                                                                                                             | Partial-mapping harness case not exercised.                                                                                  |
-| 11. Missing automatic-recovery acceptance          | T3            | Open                              | Acceptance checks below                                                                                                            | All product acceptance checks remain open.                                                                                   |
-| 12. Inconsistent fixture-helper connections        | T1            | Validated — connection ownership  | #4332, `960b178842`: all base helper paths join the active transaction; real PostgreSQL rollback/sequence checks and 70-class runs | Legacy seed repairs and missing analyzer sequence mappings remain fixture work under finding 7.                              |
-| 13. Retained cross-context services/caches         | T1            | Open                              | Static TestServiceImpl collaborators/maps and base context reset remain                                                            | Trace reached dependencies and prove context/cache isolation; no blanket global resets.                                      |
-| 14. Incomplete regression selection                | T1            | Open                              | Eight concrete core classes plus catalog neighbor omitted                                                                          | Derive selection from the inventory and verify discovered/executed coverage.                                                 |
-| 15. Guidance perpetuates fixture/context problems  | T1            | Validated — active guidance scope | #4332 corrects root instructions, active guides, agent sources and reusable templates; documented backend example passes           | Historical specifications were not rewritten; generic templates require substitution and browser examples were not executed. |
-| 16. Weak persisted query assertions                | T1            | Validated                         | #4332 asserts exact membership, order, offsets and empty boundaries across 26 analyzer-result service tests                        | Mapping-specific database query discrimination remains finding 6 in T2.                                                      |
+| Finding                                            | Owning change | Status                                   | Evidence                                                                                                                           | Remaining limitation                                                                                                         |
+| -------------------------------------------------- | ------------- | ---------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| 1. Shared internal substitutes                     | T1            | Validated                                | #4332, `23be6e97d4`; T1 evidence below                                                                                             | History and parsing are real; mapping lifecycle coverage remains T2.                                                         |
+| 2. Shared-instance dependency swaps                | T1            | Validated                                | #4332 removes four history overrides and parser replacements                                                                       | Manually assembled mapping persistence services remain tracked in finding 4.                                                 |
+| 3. Mapping changes bypass lifecycle                | T2            | Open                                     | Catalogue source links                                                                                                             | Same-revision SQL changes and replacement confirmations remain.                                                              |
+| 4. Manually assembled persistence services         | T2            | Open                                     | Catalogue source links                                                                                                             | Does not yet prove ordinary injected service wiring.                                                                         |
+| 5. Isolated tests using broad database setup       | T1            | Validated                                | Eight isolated request/selection checks pass without database startup                                                              | Standalone request checks do not establish deployed authorization.                                                           |
+| 6. Queries tested with substituted results         | T2            | Open                                     | Catalogue source links                                                                                                             | Database discrimination cases not established.                                                                               |
+| 7. Shared fixture/cached-state isolation           | T1            | In progress                              | `c7df5bf49f`: analyzer fixture sequences and QC rollback; 1,237 executed checks in 133 classes pass in both orders                 | Ordinary fixture writers, committed ownership, seed repair and caches still need the role-based corrections above.           |
+| 8. Request/permission test boundaries              | T2            | Open                                     | Catalogue source links                                                                                                             | Real mutation authorization and explicit scope still need verification.                                                      |
+| 9. Superseded manual/browser expectations          | T3            | Open                                     | Catalogue source links                                                                                                             | Replacement workflow not yet implemented/proved.                                                                             |
+| 10. Unresolved rows treated as excluded by harness | T3            | Open                                     | Catalogue source links                                                                                                             | Partial-mapping harness case not exercised.                                                                                  |
+| 11. Missing automatic-recovery acceptance          | T3            | Open                                     | Acceptance checks below                                                                                                            | All product acceptance checks remain open.                                                                                   |
+| 12. Inconsistent fixture-helper connections        | T1            | Validated — connection ownership         | #4332, `960b178842`: all base helper paths join the active transaction; real PostgreSQL rollback/sequence checks and 70-class runs | Legacy seed repairs and remaining fixture owners are tracked under finding 7; analyzer sequence mappings are fixed.          |
+| 13. Retained cross-context services/caches         | T1            | Open                                     | Static TestServiceImpl collaborators/maps and base context reset remain                                                            | Trace reached dependencies and prove context/cache isolation; no blanket global resets.                                      |
+| 14. Incomplete regression selection                | T1            | Validated — current foundation selection | All 57 current core classes (312 checks) plus 76 neighbors pass both orders; exact 133-class selection is committed below          | Extend for three preserved T2 classes after restoration; full CI and browser acceptance remain separate.                     |
+| 15. Guidance perpetuates fixture/context problems  | T1            | Validated — active guidance scope        | #4332 corrects root instructions, active guides, agent sources and reusable templates; documented backend example passes           | Historical specifications were not rewritten; generic templates require substitution and browser examples were not executed. |
+| 16. Weak persisted query assertions                | T1            | Validated                                | #4332 asserts exact membership, order, offsets and empty boundaries across 26 analyzer-result service tests                        | Mapping-specific database query discrimination remains finding 6 in T2.                                                      |
 
 #### T1 execution evidence — 2026-09-17
 
@@ -897,6 +897,79 @@ The complete analyzer selection remains open: 57 core concrete classes exist
 on the foundation branch, and three catalogued lifecycle/query/security classes
 remain in the separately preserved T2 work. Remaining fixture owners, retained
 service/cache state, T2/T3, full CI and maintainer approval are still open.
+
+#### Analyzer sequences, QC isolation and complete foundation selection — 2026-09-17
+
+[Foundation PR #4332](https://github.com/DIGI-UW/OpenELIS-Global-2/pull/4332)
+contains fixture commit `bffec5bc14` and branding correction `c7df5bf49f`.
+The preceding documentation follow-up is `5be73151f8`.
+
+- **Sequence ownership:** a real-service regression failed when a device fixture
+  was followed by profile assignment: the next profile-binding ID collided with
+  an imported row. The loader now advances the four analyzer graph sequences.
+  The regression creates and rereads the analyzer, profile, mapping and revision
+  after flushing/clearing persistence state, preserving the imported analyzers.
+  Four callers no longer repair sequences themselves. The unused
+  `AnalyzerTestCleanup` helper, which swallowed cleanup failures and could rewind
+  IDs, is deleted. All 35 focused sequence/caller checks passed.
+- **QC fixture ownership:** the expanded run exposed eight referral failures
+  caused by a QC dashboard fixture leaving an invalid shared user behind. A
+  two-class reproduction passed all 22 dashboard checks then failed all eight
+  referral checks. The dashboard now rolls back fixture rows and timestamp
+  updates, uses inherited database wiring, and refreshes its name cache after
+  rollback. It does not repair the later referral test's prerequisites.
+- **Production failure exposed by CI:** all 18 branding controller checks failed
+  because first access attempted to create defaults inside a read-only service
+  transaction. The service now uses its writable transaction. The existing
+  first-access check also reads the committed default from the database after
+  the request. This correction is a separate commit from fixture cleanup.
+- **Focused correction validation:** all 83 checks across the nine affected
+  classes passed. The initial expanded report counted 1,238 checks, including
+  three failures, 23 errors and one pre-existing ignore; after correction, both
+  alphabetical and reverse alphabetical runs executed every one of the 133
+  selected classes: **1,237 checks passed, zero failures/errors, one pre-existing
+  ignored check per run**. All 57 current analyzer core classes account for 312
+  passing checks in each order. The ignored generic-sample test concerns the
+  existing notebook sample-item identifier type mismatch; no skip was added.
+  Class coverage and unchanged source hashes were checked against the reports;
+  scoped formatting and the clean build passed. No dependency pins changed.
+- **Documentation follow-up:** `5be73151f8` corrects remaining wrong Maven/Vitest
+  selectors, a nonexistent Playwright project, duplicate asynchronous-testing
+  advice, broken links and local setup instructions. Twenty command sources
+  compile, the three changed generated commands match their sources, launcher
+  options and edited claims/links were checked, and formatting/build passed.
+  This remains a bounded active-guidance review, not an exhaustive historical
+  specification rewrite or browser execution claim.
+
+The [exact tested class selection](evidence/ogc-1220-t1-regression-selection.txt)
+is committed with this ledger. From the tested foundation checkout, with the
+roadmap branch fetched, reproduce either order using:
+
+```sh
+analyzer_selection=$(mktemp)
+git show origin/feat/ogc-1054-held-result-reprocessing:specs/roadmaps/evidence/ogc-1220-t1-regression-selection.txt > "$analyzer_selection"
+mvn test "-Dtest=$(paste -sd, "$analyzer_selection")" -Dsurefire.runOrder=alphabetical
+# Repeat with -Dsurefire.runOrder=reversealphabetical.
+rm "$analyzer_selection"
+```
+
+Use the machine's Docker/Testcontainers environment for these database tests.
+Detailed local reports, red/green logs, selection manifests and source hashes are
+retained under `/private/tmp/ogc-1220-analyzer-sequences/`. The published commit
+and committed selection identify the tested source/scope independently of those
+local files. The older published-head backend CI run
+[35245448815](https://github.com/DIGI-UW/OpenELIS-Global-2/actions/runs/35245448815)
+was still active when inspected and reproduced the branding failure; new-head CI
+must establish its final disposition.
+
+**T1 remains incomplete.** Remaining result-review/acceptance/QC-result fixture
+owners, catalog seed repairs and retained service/cache dependencies are still
+open. The previously observed result-option test's ambient-catalog dependency
+remains a remediation item even though it passed this selection. The three new
+T2 lifecycle/query/security classes remain preserved separately and must be added
+when that work is restored. T2/T3 implementation, complete CI, browser evidence,
+stack restacking and maintainer approval remain pending. These local passes do
+not establish automatic recovery or human product acceptance.
 
 #### Iteration and evidence rules
 
