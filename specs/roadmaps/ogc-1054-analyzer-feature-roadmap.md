@@ -1002,8 +1002,36 @@ mapping lifecycle or T3 recovery scope.
   `mvn clean install -DskipTests -Dmaven.test.skip=true` passed. New-head CI is
   required before this evidence is a CI pass.
 
-**T1 remains incomplete.** The analyzer acceptance test still repairs missing
-global seeds and sequences, the result-option test still borrows ambient catalog
+#### Acceptance-fixture ownership iteration — 2026-09-17
+
+[Foundation PR #4332](https://github.com/DIGI-UW/OpenELIS-Global-2/pull/4332)
+now includes `223d84b3d1`. This is a T1 correction; it does not change the T2
+mapping lifecycle or T3 recovery scope.
+
+- **Demonstrated interference:** removing the acceptance test's repair SQL and
+  running the 137-class selection exposed a real foreign-key failure: a prior
+  fixture had left the shared status catalog without the sample status required
+  by the reviewer-choice path. An isolated run had hidden that dependency.
+- **Correction:** the acceptance test now owns the required status catalog using
+  the existing transactional fixture loader. It removes direct recreation of
+  global statuses, history types, unknown-patient records, sequence resets, and
+  manual cleanup. The test clears only the static patient and sample-type caches
+  before setup and after transaction rollback; production services create the
+  ordinary records exercised by the scenario.
+- **Persisted outcomes:** the test continues to query the database for the held
+  staged row, hold reason, absence of an unchosen sample, and the reviewer-chosen
+  sample type. Those checks run after the real acceptance service; they are not
+  assertions on a substituted collaborator or an in-memory return value.
+- **Validation:** the focused acceptance/service set passed 28 checks. The
+  137-class selection passed in alphabetical and reverse alphabetical orders:
+  1,273 executed checks, zero failures/errors, and one unchanged ignored
+  generic-sample check per run. Reports, source hashes, and logs are under
+  `/private/tmp/ogc-1220-review-fixture-ownership/` and
+  `/private/tmp/ogc-1220-accept-fixture/`. Scoped formatting and
+  `mvn clean install -DskipTests -Dmaven.test.skip=true` passed. New-head CI is
+  required before this evidence is a CI pass.
+
+**T1 remains incomplete.** The result-option test still borrows ambient catalog
 rows, and `TestServiceImpl` retains cross-context static collaborators and maps.
 Those are the next bounded T1 corrections; then restore and validate T2 before
 implementing T3.
