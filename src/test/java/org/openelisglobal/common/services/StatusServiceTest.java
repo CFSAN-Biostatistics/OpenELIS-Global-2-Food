@@ -124,7 +124,7 @@ public class StatusServiceTest extends BaseWebContextSensitiveTest {
         patient.setId("5000");
 
         statusService.persistRecordStatusForSample(sample, RecordStatus.InitialRegistration, patient,
-                RecordStatus.ValidationRegistration, "sys123");
+                RecordStatus.ValidationRegistration, TEST_SYS_USER_ID);
 
         List<ObservationHistory> obsList = observationHistoryService.getAll(patient, sample);
         Assert.assertEquals(2, obsList.size());
@@ -160,12 +160,12 @@ public class StatusServiceTest extends BaseWebContextSensitiveTest {
         patient.setId("5000");
 
         statusService.persistRecordStatusForSample(sample, RecordStatus.InitialRegistration, patient,
-                RecordStatus.ValidationRegistration, "sys123");
+                RecordStatus.ValidationRegistration, TEST_SYS_USER_ID);
 
         List<ObservationHistory> beforeDelete = observationHistoryService.getAll(patient, sample);
         Assert.assertEquals(2, beforeDelete.size());
 
-        statusService.deleteRecordStatus(sample, patient, "sys123");
+        statusService.deleteRecordStatus(sample, patient, TEST_SYS_USER_ID);
 
         List<ObservationHistory> afterDelete = observationHistoryService.getAll(patient, sample);
         Assert.assertEquals(0, afterDelete.size());

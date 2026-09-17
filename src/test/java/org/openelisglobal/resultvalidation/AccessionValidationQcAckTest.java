@@ -66,19 +66,8 @@ public class AccessionValidationQcAckTest extends BaseWebContextSensitiveTest {
         // The fixture CLEAN_INSERTs system_user with only testUser, wiping the
         // baseline admin row the base-class principal resolves to.
         authenticateAs("testUser");
-        // QAService has a static initializer that resolves SAMPLE_QAEVENT in
-        // reference_tables. The Postgres seed SQL ships this row, but CI's fresh
-        // Testcontainers DB doesn't always have it visible by the time our test
-        // first touches QAService. Seed it defensively if absent.
-        Integer existing = jdbcTemplate.queryForObject(
-                "SELECT COUNT(*) FROM clinlims.reference_tables WHERE LOWER(TRIM(name)) = 'sample_qaevent'",
-                Integer.class);
-        if (existing == null || existing == 0) {
-            jdbcTemplate.update(
-                    "INSERT INTO clinlims.reference_tables (id, name, keep_history, is_hl7_encoded, lastupdated)"
-                            + " VALUES ((SELECT COALESCE(MAX(id), 0) + 1 FROM clinlims.reference_tables),"
-                            + " 'SAMPLE_QAEVENT', 'Y', 'N', CURRENT_TIMESTAMP)");
-        }
+        assertNotNull("SAMPLE_QAEVENT must be provided by the database migrations",
+                referenceTablesService.getReferenceTableByName("SAMPLE_QAEVENT"));
     }
 
     @Test
@@ -205,35 +194,29 @@ public class AccessionValidationQcAckTest extends BaseWebContextSensitiveTest {
         assertNotNull("Client analysis released_date must persist", clientAfter.getReleasedDate());
     }
 
-    /**
-     * The actual {@code clinlims.history} INSERT cannot be asserted here because
-     * {@code AuditTrailService} is mocked in the Spring test profile
-     * ({@code AppTestConfig.auditTrailService}). What we can — and should — verify
-     * is that our service correctly delegates to it with the right parameters when
-     * persisting an ack. The real DB write is exercised in dev.
-     */
     @Test
-    public void persistQcAcknowledgment_delegatesToAuditTrailService() {
-        org.openelisglobal.audittrail.dao.AuditTrailService auditMock = org.springframework.test.util.AopTestUtils
-                .getTargetObject(auditTrailServiceMock);
-        org.mockito.Mockito.reset(auditMock);
-
+    public void persistQcAcknowledgment_recordsTheSavedAcknowledgmentAndActorInHistory() {
         ValidationQcAcknowledgment ack = new ValidationQcAcknowledgment();
         ack.setAnalysisId(Integer.valueOf(QC_ANALYSIS_ID));
-        ack.setAcknowledgedBy(1);
+        ack.setAcknowledgedBy(Integer.valueOf(TEST_SYS_USER_ID));
         ack.setAcknowledgedAt(new Timestamp(System.currentTimeMillis()));
         ack.setJustification("auditable note");
         resultValidationService.persistQcAcknowledgment(ack);
 
-        org.mockito.ArgumentCaptor<org.openelisglobal.common.valueholder.BaseObject> objectCaptor = org.mockito.ArgumentCaptor
-                .forClass(org.openelisglobal.common.valueholder.BaseObject.class);
-        org.mockito.Mockito.verify(auditMock).saveNewHistory(objectCaptor.capture(), org.mockito.Mockito.eq("1"),
-                org.mockito.Mockito.eq("validation_qc_acknowledgment"));
-        // Auto-generated id should be assigned by the time saveNewHistory is invoked.
-        assertNotNull(objectCaptor.getValue().getStringId());
+        assertNotNull(ack.getId());
+        var rows = historyService.getHistoryByRefIdAndRefTableId(ack.getId().toString(),
+                referenceTablesService.getReferenceTableByName("validation_qc_acknowledgment").getId());
+        assertEquals(1, rows.size());
+        var history = rows.get(0);
+        assertEquals(ack.getId().toString(), history.getReferenceId());
+        assertEquals(TEST_SYS_USER_ID, history.getSysUserId());
+        assertEquals("I", history.getActivity());
+        assertNotNull(history.getTimestamp());
+        assertEquals("auditable note", qcAckDAO.get(ack.getId()).orElseThrow().getJustification());
     }
 
-    @org.springframework.beans.factory.annotation.Autowired
-    @org.springframework.beans.factory.annotation.Qualifier("auditTrailService")
-    private org.openelisglobal.audittrail.dao.AuditTrailService auditTrailServiceMock;
+    @Autowired
+    private org.openelisglobal.history.service.HistoryService historyService;
+    @Autowired
+    private org.openelisglobal.referencetables.service.ReferenceTablesService referenceTablesService;
 }
