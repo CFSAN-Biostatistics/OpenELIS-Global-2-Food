@@ -425,11 +425,11 @@ and the product acceptance checks open rather than claiming the workflow done.
 
 #### Ordered milestones and validation gates
 
-| Milestone                                      | Scope and finding ownership                                                                                                                                                                                                                                                                                                                                                                             | Validation gate before completion                                                                                                                                                                                                                                                                                                                                                                                             | Initial status                                          |
-| ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------- |
-| **T1 — Consolidate the test foundation**       | Findings **1, 2, 5, 7**. Provide real history recording and FHIR parsing for analyzer database integration; remove repeated dependency swaps; move isolated controller/selection tests out of the broad database context. Consolidate the fixture ownership and cache/cleanup behavior needed by this regression group. Audit other shared substitutes only when the actual analyzer path reaches them. | The real injected services parse messages and persist history without per-test repairs. Affected analyzer and audit suites pass together in normal and reversed class order. Test-owned state is cleaned up and required seed records survive. Run affected neighboring suites if a shared default changes. No new mock hides a discovered internal failure.                                                                  | **Locally validated in #4332; CI/review pending.** |
-| **T2 — Prove the real mapping lifecycle**      | Findings **3, 4, 6, 8**. Use injected local services and real catalog/user data for mapping revision creation, confirmation, independent adoption and import. Replace in-place changes to an existing mapping revision and add database query cases. Keep request/security tests explicitly scoped.                                                                                                     | Two analyzers genuinely adopt revisions independently; unconfirmed mappings remain ineligible; old revisions and confirmation history survive reload. Actual queries distinguish profiles/revisions. Save/confirm/adopt reject unauthorized requests without writes. Existing receipt replay, concurrency and rollback assertions still pass. Database tests run without fake internal mapping/confirmation/history services. | **Ready after T1 local validation.**                                         |
-| **T3 — Complete recovery and assembled proof** | Findings **9, 10, 11**. Implement the agreed automatic recovery, replace manual/obsolete expectations, preserve unsaved edits, report actual control outcomes and correct harness confirmation preparation. Use the existing implementation order above for production changes.                                                                                                                         | All existing held-result acceptance checks below pass, including either event order, partial recovery, existing backlog, repeats/concurrency, source history and unsaved edits. The real-browser story recovers the original held rows after adoption without resend or a reprocess button. Review stored outcomes, console/trace/screenshots and the exact build; fix actionable review findings and rerun affected checks.  | **Pending T2.**                                         |
+| Milestone                                      | Scope and finding ownership                                                                                                                                                                                                                                                                                                                                                                             | Validation gate before completion                                                                                                                                                                                                                                                                                                                                                                                             | Initial status                                      |
+| ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------- |
+| **T1 — Consolidate the test foundation**       | Findings **1, 2, 5, 7**. Provide real history recording and FHIR parsing for analyzer database integration; remove repeated dependency swaps; move isolated controller/selection tests out of the broad database context. Consolidate the fixture ownership and cache/cleanup behavior needed by this regression group. Audit other shared substitutes only when the actual analyzer path reaches them. | The real injected services parse messages and persist history without per-test repairs. Affected analyzer and audit suites pass together in normal and reversed class order. Test-owned state is cleaned up and required seed records survive. Run affected neighboring suites if a shared default changes. No new mock hides a discovered internal failure.                                                                  | **Locally validated in #4332; CI/review pending.**  |
+| **T2 — Prove the real mapping lifecycle**      | Findings **3, 4, 6, 8**. Use injected local services and real catalog/user data for mapping revision creation, confirmation, independent adoption and import. Replace in-place changes to an existing mapping revision and add database query cases. Keep request/security tests explicitly scoped.                                                                                                     | Two analyzers genuinely adopt revisions independently; unconfirmed mappings remain ineligible; old revisions and confirmation history survive reload. Actual queries distinguish profiles/revisions. Save/confirm/adopt reject unauthorized requests without writes. Existing receipt replay, concurrency and rollback assertions still pass. Database tests run without fake internal mapping/confirmation/history services. | **In progress; foundation CI follow-up published.** |
+| **T3 — Complete recovery and assembled proof** | Findings **9, 10, 11**. Implement the agreed automatic recovery, replace manual/obsolete expectations, preserve unsaved edits, report actual control outcomes and correct harness confirmation preparation. Use the existing implementation order above for production changes.                                                                                                                         | All existing held-result acceptance checks below pass, including either event order, partial recovery, existing backlog, repeats/concurrency, source history and unsaved edits. The real-browser story recovers the original held rows after adoption without resend or a reprocess button. Review stored outcomes, console/trace/screenshots and the exact build; fix actionable review findings and rerun affected checks.  | **Pending T2.**                                     |
 
 Keep T1 independently reviewable from recovery production changes. Use one
 bounded PR per milestone where required by the repository workflow, with small
@@ -450,19 +450,19 @@ can be closed by explicit scoping plus the missing higher-level proof; it does
 not require deleting useful narrow tests. Keep this table current after each
 milestone rather than rewriting the historical audit as though it were current.
 
-| Finding                                            | Owning change | Status                    | Evidence                                   | Remaining limitation                                                    |
-| -------------------------------------------------- | ------------- | ------------------------- | ------------------------------------------ | ----------------------------------------------------------------------- |
-| 1. Shared internal substitutes | T1 | Validated | #4332, `23be6e97d4`; T1 evidence below | History and parsing are real; mapping lifecycle coverage remains T2. |
-| 2. Shared-instance dependency swaps | T1 | Validated | #4332 removes four history overrides and parser replacements | Manually assembled mapping persistence services remain tracked in finding 4. |
-| 3. Mapping changes bypass lifecycle                | T2            | Open                      | Catalogue source links                     | Same-revision SQL changes and replacement confirmations remain.         |
-| 4. Manually assembled persistence services         | T2            | Open                      | Catalogue source links                     | Does not yet prove ordinary injected service wiring.                    |
-| 5. Isolated tests using broad database setup | T1 | Validated | Eight isolated request/selection checks pass without database startup | Standalone request checks do not establish deployed authorization. |
-| 6. Queries tested with substituted results         | T2            | Open                      | Catalogue source links                     | Database discrimination cases not established.                          |
-| 7. Shared fixture/cached-state isolation | T1 | Validated | 284 checks pass in each class order; audit rollback and seed snapshots checked | Scoped to this regression group; the legacy fixture loader elsewhere still uses truncation, and mapping fixture construction continues in T2. |
-| 8. Request/permission test boundaries              | T2            | Open                      | Catalogue source links                     | Real mutation authorization and explicit scope still need verification. |
-| 9. Superseded manual/browser expectations          | T3            | Open                      | Catalogue source links                     | Replacement workflow not yet implemented/proved.                        |
-| 10. Unresolved rows treated as excluded by harness | T3            | Open                      | Catalogue source links                     | Partial-mapping harness case not exercised.                             |
-| 11. Missing automatic-recovery acceptance          | T3            | Open                      | Acceptance checks below                    | All product acceptance checks remain open.                              |
+| Finding                                            | Owning change | Status    | Evidence                                                                       | Remaining limitation                                                                                                                          |
+| -------------------------------------------------- | ------------- | --------- | ------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1. Shared internal substitutes                     | T1            | Validated | #4332, `23be6e97d4`; T1 evidence below                                         | History and parsing are real; mapping lifecycle coverage remains T2.                                                                          |
+| 2. Shared-instance dependency swaps                | T1            | Validated | #4332 removes four history overrides and parser replacements                   | Manually assembled mapping persistence services remain tracked in finding 4.                                                                  |
+| 3. Mapping changes bypass lifecycle                | T2            | Open      | Catalogue source links                                                         | Same-revision SQL changes and replacement confirmations remain.                                                                               |
+| 4. Manually assembled persistence services         | T2            | Open      | Catalogue source links                                                         | Does not yet prove ordinary injected service wiring.                                                                                          |
+| 5. Isolated tests using broad database setup       | T1            | Validated | Eight isolated request/selection checks pass without database startup          | Standalone request checks do not establish deployed authorization.                                                                            |
+| 6. Queries tested with substituted results         | T2            | Open      | Catalogue source links                                                         | Database discrimination cases not established.                                                                                                |
+| 7. Shared fixture/cached-state isolation           | T1            | Validated | 284 checks pass in each class order; audit rollback and seed snapshots checked | Scoped to this regression group; the legacy fixture loader elsewhere still uses truncation, and mapping fixture construction continues in T2. |
+| 8. Request/permission test boundaries              | T2            | Open      | Catalogue source links                                                         | Real mutation authorization and explicit scope still need verification.                                                                       |
+| 9. Superseded manual/browser expectations          | T3            | Open      | Catalogue source links                                                         | Replacement workflow not yet implemented/proved.                                                                                              |
+| 10. Unresolved rows treated as excluded by harness | T3            | Open      | Catalogue source links                                                         | Partial-mapping harness case not exercised.                                                                                                   |
+| 11. Missing automatic-recovery acceptance          | T3            | Open      | Acceptance checks below                                                        | All product acceptance checks remain open.                                                                                                    |
 
 #### T1 execution evidence — 2026-09-17
 
@@ -500,6 +500,7 @@ CI and required maintainer approvals remain pending for the new commits.
   Both runs used the machine's verified Docker/Testcontainers socket settings.
   Spotless was restricted to changed files in the main checkout. Frontend
   formatting and `mvn clean install -DskipTests -Dmaven.test.skip=true` passed.
+
 - **Preservation:** the unfinished recovery work remains saved separately. The
   four old stack commits were compared with their remote rebased equivalents
   before restacking; no recovery changes were discarded. No dependency pins
@@ -507,6 +508,54 @@ CI and required maintainer approvals remain pending for the new commits.
 
 T1 does not establish automatic recovery, the real mapping lifecycle, assembled
 browser acceptance, or human product acceptance. Those remain T2/T3 work below.
+
+#### T1 full-CI follow-up — 2026-09-17
+
+The first full backend run on `23be6e97d4` executed 6,344 tests and exposed 14
+errors in neighboring suites ([failed run](https://github.com/DIGI-UW/OpenELIS-Global-2/actions/runs/35184997864)).
+[PR #4332](https://github.com/DIGI-UW/OpenELIS-Global-2/pull/4332), now at
+`2a4edb138f512f9f757b0ea29056e539a9695fe6`, corrects those causes:
+
+- Replace the remaining QC-acknowledgment mock verification with persisted
+  acknowledgment/history/actor assertions. Remove its conditional seed repair;
+  require the migration-owned seed instead.
+- Use actual fixture actors for status and pathology changes. Check saved
+  pathology records instead of the input form. Advance the patient identity
+  sequence when the fixture loader imports explicit IDs; audit tests do not
+  repair it themselves.
+- Fix the production UUID audit failure exposed by real control-lot updates.
+  The shared history reference is now text, preserving numeric identifiers and
+  accepting UUID identifiers. Entity-history and system-history queries both
+  exercise UUID references; numeric history remains covered.
+- Execute the actual Liquibase migration on an empty history table and 100,000
+  existing records. Exact reference/content checksums survive upgrade and
+  numeric rollback. After UUID history is recorded, rollback to the numeric
+  schema fails without changing or discarding history. This migration requires
+  maintainer review before deployment; it has not been deployed.
+
+The following selection passes **573 tests in 91 classes, zero failures or
+errors**, with both `alphabetical` and `reversealphabetical` execution order:
+
+```sh
+mvn test \
+  '-Dtest=Analyzer*Test,*AuditTrail*Test,*History*Test,P0AuditEmitSmokeTest,TaskInterpreterImplNullPatientTest,SpecimenAwareResolutionIntegrationTest,QC*Test,AccessionValidation*Test,StatusServiceTest,PathologySampleServiceTest,PatientIdentityServiceTest' \
+  -Dsurefire.runOrder=alphabetical
+```
+
+The log verifies reversed first/last classes in the second run. Retained local
+logs and XML reports are in
+`/private/tmp/ogc-1220-validation/t1-ci-remediation/`. Scoped Spotless, frontend
+formatting, and the required clean build pass. These results describe the code
+committed as `2a4edb138f`; full CI on that published commit and maintainer approval
+remain pending ([current backend run](https://github.com/DIGI-UW/OpenELIS-Global-2/actions/runs/35189332931)).
+The stack still starts at current `develop` (`6e381be504`).
+
+T2 work is preserved separately while the foundation correction runs in CI.
+Its local checkpoint passes 63 checks covering mapping eligibility, real query
+discrimination, receipt replay/concurrency/rollback, and partial persistence-test
+cleanup. It is not yet published or complete: activation/probe service wiring,
+authorization with real mutation services, and the complete ordering/regression
+checks remain. T3 automatic recovery and assembled acceptance remain pending.
 
 #### Iteration and evidence rules
 
