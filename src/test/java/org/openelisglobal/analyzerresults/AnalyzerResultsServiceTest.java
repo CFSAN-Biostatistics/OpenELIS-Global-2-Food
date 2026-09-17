@@ -90,9 +90,12 @@ public class AnalyzerResultsServiceTest extends BaseWebContextSensitiveTest {
         analyzerResults.setIsControl(false);
         List<AnalyzerResults> insertAnalyzerResults = new ArrayList<>();
         insertAnalyzerResults.add(analyzerResults);
-        analyzerResultsService.insertAnalyzerResults(insertAnalyzerResults, "1006");
-        assertFalse(insertAnalyzerResults.isEmpty());
-        assertEquals(1, insertAnalyzerResults.size());
+        analyzerResultsService.insertAnalyzerResults(insertAnalyzerResults, TEST_SYS_USER_ID);
+        List<AnalyzerResults> persisted = analyzerResultsService.getAll();
+        assertEquals(1, persisted.size());
+        assertEquals("QAN23L", persisted.get(0).getAccessionNumber());
+        assertEquals("278", persisted.get(0).getResult());
+        assertTrue("Insertion must record the real audit actor", historyCount(persisted.get(0).getId(), "I") > 0);
     }
 
     @Test
@@ -127,7 +130,7 @@ public class AnalyzerResultsServiceTest extends BaseWebContextSensitiveTest {
         List<Note> notes = noteService.getAll();
         noteService.deleteAll(notes);
         Note note = new Note();
-        note.setSysUserId("2001");
+        note.setSysUserId(TEST_SYS_USER_ID);
         note.setReferenceId("3001");
         note.setReferenceTableId("1");
         note.setNoteType("G");
@@ -166,7 +169,9 @@ public class AnalyzerResultsServiceTest extends BaseWebContextSensitiveTest {
         sampleGrouping.addSampleItem = true;
 
         sampleGroupingList.add(sampleGrouping);
-        analyzerResultsService.persistAnalyzerResults(deletableAnalyzerResults, sampleGroupingList, "2001");
+        int priorDeleteHistory = historyCount(analyzerResult.getId(), "D");
+        analyzerResultsService.persistAnalyzerResults(deletableAnalyzerResults, sampleGroupingList, TEST_SYS_USER_ID);
+        assertEquals(priorDeleteHistory + 1, historyCount(analyzerResult.getId(), "D"));
         List<AnalyzerResults> analyzerResults = analyzerResultsService.getAll();
         assertFalse(analyzerResults.contains(analyzerResult));
 
@@ -344,4 +349,12 @@ public class AnalyzerResultsServiceTest extends BaseWebContextSensitiveTest {
         List<AnalyzerResults> updatedAnalyzerResultsList = analyzerResultsService.getAll();
         assertTrue(updatedAnalyzerResultsList.isEmpty());
     }
+
+    private int historyCount(String resultId, String activity) {
+        return jdbcTemplate.queryForObject("SELECT COUNT(*) FROM clinlims.history h"
+                + " JOIN clinlims.reference_tables r ON r.id = h.reference_table"
+                + " WHERE LOWER(r.name) = 'analyzer_results' AND h.reference_id = ? AND h.activity = ? AND h.sys_user_id = ?",
+                Integer.class, Long.valueOf(resultId), activity, Integer.valueOf(TEST_SYS_USER_ID));
+    }
+
 }
