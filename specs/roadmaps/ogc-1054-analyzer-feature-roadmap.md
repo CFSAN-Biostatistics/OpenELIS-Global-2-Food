@@ -1031,10 +1031,35 @@ mapping lifecycle or T3 recovery scope.
   `mvn clean install -DskipTests -Dmaven.test.skip=true` passed. New-head CI is
   required before this evidence is a CI pass.
 
-**T1 remains incomplete.** The result-option test still borrows ambient catalog
-rows, and `TestServiceImpl` retains cross-context static collaborators and maps.
-Those are the next bounded T1 corrections; then restore and validate T2 before
-implementing T3.
+#### Result-options fixture ownership iteration — 2026-09-17
+
+[Foundation PR #4332](https://github.com/DIGI-UW/OpenELIS-Global-2/pull/4332)
+now includes `0d35e7569a`. This is a T1 correction; it does not change the T2
+mapping lifecycle or T3 recovery scope.
+
+- **Demonstrated dependency:** `ResultSelectListOptionsTest` selected the lowest
+  existing dictionary-category and test IDs solely to satisfy its foreign keys,
+  then manually deleted only some of the rows it created. Its result was tied to
+  ambient catalog state rather than records it owned.
+- **Correction:** the test now creates its own minimal category, test, dictionary,
+  and result rows inside a rollback transaction. It retains the real service and
+  database assertions: a valid option remains visible while missing and blank
+  dictionary references are safely omitted. Manual cleanup is removed.
+- **Validation:** the focused options/service pair passed six checks in both
+  alphabetical and reverse alphabetical orders. The complete 137-class selection
+  also passed in both orders: 1,273 executed checks, zero failures/errors, and
+  one unchanged ignored generic-sample check per run. Source hashes match the
+  published test source. Reports, source hashes, and logs are under
+  `/private/tmp/ogc-1220-review-fixture-ownership/`. Scoped formatting and
+  `mvn clean install -DskipTests -Dmaven.test.skip=true` passed. New-head CI is
+  required before this evidence is a CI pass.
+
+**T1 remains incomplete.** `TestServiceImpl` retains cross-context static
+collaborators and maps. Its public static naming API is used by result reporting,
+worklists, catalog screens, and scheduled work, so its correction needs a
+separate migration boundary and behavior-focused regression plan. Do not hide it
+with cache resets or a blanket test annotation. After that correction, restore
+and validate T2 before implementing T3.
 
 #### Iteration and evidence rules
 
