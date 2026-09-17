@@ -16,6 +16,11 @@ import { Page, expect } from "@playwright/test";
  * needed. The register reads completion from the parent NCE status (not the
  * action-log row), which is why `resolve` drives the legacy MVC endpoint.
  *
+ * The server allocates the NCE number and ignores any the caller sends, so the
+ * seed posts under its own unique labOrderNumber, reads the allocated number
+ * back through the search endpoint, and writes it onto `seed.nceNumber` for the
+ * spec to assert against.
+ *
  * All calls run through `page.request` so they share the browser's
  * authenticated session; the CSRF token is lifted from stored auth state
  * (mirrors electronic-signature.spec.ts).
@@ -25,7 +30,10 @@ const REST = "/api/OpenELIS-Global/rest";
 const RESOLVE = "/api/OpenELIS-Global/ResolveNonConformingEvent";
 
 export interface CapaSeed {
-  /** Deterministic, unique per run so the register can be filtered to this seed. */
+  /**
+   * Unique per run. Goes out as the labOrderNumber the seed is found by, and is
+   * overwritten with the NCE number the server allocates.
+   */
   nceNumber: string;
   title: string;
   correctiveAction: string;
@@ -48,6 +56,43 @@ async function csrfToken(page: Page): Promise<string> {
   return "";
 }
 
+/** yyyy -> MM/dd/yyyy, the format the NCE create path parses. */
+function usDate(d: Date): string {
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${mm}/${dd}/${d.getFullYear()}`;
+}
+
+/** First id from a display-list style endpoint. */
+async function firstId(page: Page, url: string): Promise<string> {
+  const res = await page.request.get(url);
+  expect(res.status(), `${url} should answer`).toBe(200);
+  const rows = await res.json();
+  expect(Array.isArray(rows) && rows.length > 0, `${url} must have rows`).toBe(
+    true,
+  );
+  return String(rows[0].id ?? rows[0].value);
+}
+
+/** The NCE number the server chose, found by the labOrderNumber we sent. */
+async function allocatedNceNumber(
+  page: Page,
+  labOrderNumber: string,
+): Promise<string> {
+  const res = await page.request.get(
+    `${REST}/viewNonConformEvents?labNumber=${encodeURIComponent(labOrderNumber)}`,
+  );
+  expect(res.status()).toBe(200);
+  const body = await res.json();
+  const rows = Array.isArray(body) ? body : [body];
+  const found = rows.find((r) => r?.nceNumber)?.nceNumber;
+  expect(
+    found,
+    `created NCE for ${labOrderNumber} must be findable`,
+  ).toBeTruthy();
+  return String(found);
+}
+
 export async function seedCapa(page: Page, seed: CapaSeed): Promise<void> {
   const csrf = await csrfToken(page);
   const jsonHeaders = {
@@ -55,13 +100,30 @@ export async function seedCapa(page: Page, seed: CapaSeed): Promise<void> {
     "Content-Type": "application/json",
   };
 
-  // 1. Create the parent NCE (worker sets status = "Pending").
+  // The create path validates against real reference data, so read an active
+  // category and reporting unit rather than guessing ids that vary per stack.
+  const categoryId = await firstId(page, `${REST}/nce/categories`);
+  const reportingUnit = await firstId(
+    page,
+    `${REST}/displayList/TEST_SECTION_ACTIVE`,
+  );
+
+  // The seed is found again by this, since the NCE number is the server's to
+  // choose. Captured before seed.nceNumber is overwritten below.
+  const labOrderNumber = seed.nceNumber;
+
+  // 1. Create the parent NCE (worker sets status = "Pending"). specimenId is
+  //    required but this register never asserts specimens, and the worker skips
+  //    linking an id it cannot parse, so a marker keeps the seed order-free.
   const created = await page.request.post(`${REST}/reportnonconformingevent`, {
     headers: jsonHeaders,
     data: {
-      nceNumber: seed.nceNumber,
-      labOrderNumber: seed.nceNumber,
-      specimenId: "",
+      labOrderNumber,
+      specimenId: "no-specimen",
+      dateOfEvent: usDate(new Date()),
+      reportingUnit,
+      severity: "MINOR",
+      nceCategoryId: categoryId,
       name: seed.personResponsible,
       title: seed.title,
       description: seed.title,
@@ -69,8 +131,11 @@ export async function seedCapa(page: Page, seed: CapaSeed): Promise<void> {
   });
   expect(
     created.status(),
-    `create NCE ${seed.nceNumber} should succeed`,
+    `create NCE for ${labOrderNumber} should succeed`,
   ).toBeLessThan(300);
+
+  // 1b. Read back the number the server allocated and use it from here on.
+  seed.nceNumber = await allocatedNceNumber(page, labOrderNumber);
 
   // 2. Read back the form for its generated id + any existing action logs.
   const formRes = await page.request.get(
