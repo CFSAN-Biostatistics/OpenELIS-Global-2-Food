@@ -659,7 +659,7 @@ milestone rather than rewriting the historical audit as though it were current.
 | 4. Manually assembled persistence services         | T2            | Open                                     | Catalogue source links                                                                                                             | Does not yet prove ordinary injected service wiring.                                                                         |
 | 5. Isolated tests using broad database setup       | T1            | Validated                                | Eight isolated request/selection checks pass without database startup                                                              | Standalone request checks do not establish deployed authorization.                                                           |
 | 6. Queries tested with substituted results         | T2            | Open                                     | Catalogue source links                                                                                                             | Database discrimination cases not established.                                                                               |
-| 7. Shared fixture/cached-state isolation           | T1            | In progress                              | `c7df5bf49f`: analyzer fixture sequences and QC rollback; 1,237 executed checks in 133 classes pass in both orders                 | Ordinary fixture writers, committed ownership, seed repair and caches still need the role-based corrections above.           |
+| 7. Shared fixture/cached-state isolation           | T1            | In progress                              | `027416ebf0`: rollback-owned review/QC fixtures and real permission setup; 1,273 checks in 137 classes pass in both orders         | Acceptance-test seed repair and retained catalog/cache state remain.                                                         |
 | 8. Request/permission test boundaries              | T2            | Open                                     | Catalogue source links                                                                                                             | Real mutation authorization and explicit scope still need verification.                                                      |
 | 9. Superseded manual/browser expectations          | T3            | Open                                     | Catalogue source links                                                                                                             | Replacement workflow not yet implemented/proved.                                                                             |
 | 10. Unresolved rows treated as excluded by harness | T3            | Open                                     | Catalogue source links                                                                                                             | Partial-mapping harness case not exercised.                                                                                  |
@@ -970,6 +970,43 @@ T2 lifecycle/query/security classes remain preserved separately and must be adde
 when that work is restored. T2/T3 implementation, complete CI, browser evidence,
 stack restacking and maintainer approval remain pending. These local passes do
 not establish automatic recovery or human product acceptance.
+
+#### Review permission and persisted-outcome iteration — 2026-09-17
+
+[Foundation PR #4332](https://github.com/DIGI-UW/OpenELIS-Global-2/pull/4332)
+now includes `027416ebf0`. This is a T1 correction; it does not change the T2
+mapping lifecycle or T3 recovery scope.
+
+- **Demonstrated fixture interference:** `RoleModuleServiceTest`,
+  `UserRoleServiceTest`, and `PermissionModuleServiceTest` could replace the
+  role catalog before validation review tests ran. The old review helper then
+  silently re-created a missing Validation role and SQL join rows. The selected
+  reverse-order run failed all 14 review checks when that helper was removed,
+  proving that the permission fixtures leaked state.
+- **Correction:** those three permission suites and `RoleServiceTest` now own
+  their fixtures in rollback transactions. The validation review fixtures own
+  their Validation role, and review setup creates user-to-lab-unit grants through
+  the real `UserService` instead of repairing tables directly. The obsolete
+  `ValidationLabUnitRoles` SQL helper is deleted.
+- **Persisted outcomes:** review mutation checks flush and clear before reading
+  saved analyses, notes, history, and acknowledgments. The QC-result integration
+  checks likewise reload the saved row before asserting its value and z-score.
+  This proves stored outcomes instead of in-memory objects returned by the
+  service call.
+- **Validation:** the focused set of 71 checks passed. A 137-class selection
+  (the committed 133-class foundation list plus the four role-fixture owners)
+  passed in alphabetical and reverse alphabetical orders: 1,273 executed checks,
+  zero failures/errors, and one unchanged ignored generic-sample check per run.
+  Reports, source hashes, and logs are under
+  `/private/tmp/ogc-1220-review-fixture-ownership/`. Scoped formatting and
+  `mvn clean install -DskipTests -Dmaven.test.skip=true` passed. New-head CI is
+  required before this evidence is a CI pass.
+
+**T1 remains incomplete.** The analyzer acceptance test still repairs missing
+global seeds and sequences, the result-option test still borrows ambient catalog
+rows, and `TestServiceImpl` retains cross-context static collaborators and maps.
+Those are the next bounded T1 corrections; then restore and validate T2 before
+implementing T3.
 
 #### Iteration and evidence rules
 
