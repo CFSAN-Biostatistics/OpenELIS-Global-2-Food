@@ -74,7 +74,7 @@ public class AnalyzerNormalizedResultImportIntegrationTest extends BaseWebContex
 
     @Test
     public void reprocessingPersistsTheNextUnresolvedMappingState() throws Exception {
-        Bundle bundle = REAL_FHIR.newJsonParser().parseResource(Bundle.class, Files.readString(FIXTURE));
+        Bundle bundle = fhirContext.newJsonParser().parseResource(Bundle.class, Files.readString(FIXTURE));
         importService.importBundle(bundle, "1");
         String resultId = jdbc.queryForObject("SELECT id::text FROM clinlims.analyzer_results WHERE analyzer_id = ?",
                 String.class, ANALYZER_ID);
@@ -123,7 +123,7 @@ public class AnalyzerNormalizedResultImportIntegrationTest extends BaseWebContex
 
     @Test
     public void retryCannotAdvanceAHeldResultButExplicitReprocessingCan() throws Exception {
-        Bundle bundle = REAL_FHIR.newJsonParser().parseResource(Bundle.class, Files.readString(FIXTURE));
+        Bundle bundle = fhirContext.newJsonParser().parseResource(Bundle.class, Files.readString(FIXTURE));
         importService.importBundle(bundle, "1");
         String resultId = jdbc.queryForObject("SELECT id::text FROM clinlims.analyzer_results WHERE analyzer_id = ?",
                 String.class, ANALYZER_ID);

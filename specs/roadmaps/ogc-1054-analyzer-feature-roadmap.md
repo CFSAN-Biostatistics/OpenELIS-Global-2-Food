@@ -427,8 +427,8 @@ and the product acceptance checks open rather than claiming the workflow done.
 
 | Milestone                                      | Scope and finding ownership                                                                                                                                                                                                                                                                                                                                                                             | Validation gate before completion                                                                                                                                                                                                                                                                                                                                                                                             | Initial status                                          |
 | ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------- |
-| **T1 — Consolidate the test foundation**       | Findings **1, 2, 5, 7**. Provide real history recording and FHIR parsing for analyzer database integration; remove repeated dependency swaps; move isolated controller/selection tests out of the broad database context. Consolidate the fixture ownership and cache/cleanup behavior needed by this regression group. Audit other shared substitutes only when the actual analyzer path reaches them. | The real injected services parse messages and persist history without per-test repairs. Affected analyzer and audit suites pass together in normal and reversed class order. Test-owned state is cleaned up and required seed records survive. Run affected neighboring suites if a shared default changes. No new mock hides a discovered internal failure.                                                                  | **Started; unvalidated.** Partial local cleanup exists. |
-| **T2 — Prove the real mapping lifecycle**      | Findings **3, 4, 6, 8**. Use injected local services and real catalog/user data for mapping revision creation, confirmation, independent adoption and import. Replace in-place changes to an existing mapping revision and add database query cases. Keep request/security tests explicitly scoped.                                                                                                     | Two analyzers genuinely adopt revisions independently; unconfirmed mappings remain ineligible; old revisions and confirmation history survive reload. Actual queries distinguish profiles/revisions. Save/confirm/adopt reject unauthorized requests without writes. Existing receipt replay, concurrency and rollback assertions still pass. Database tests run without fake internal mapping/confirmation/history services. | **Pending T1.**                                         |
+| **T1 — Consolidate the test foundation**       | Findings **1, 2, 5, 7**. Provide real history recording and FHIR parsing for analyzer database integration; remove repeated dependency swaps; move isolated controller/selection tests out of the broad database context. Consolidate the fixture ownership and cache/cleanup behavior needed by this regression group. Audit other shared substitutes only when the actual analyzer path reaches them. | The real injected services parse messages and persist history without per-test repairs. Affected analyzer and audit suites pass together in normal and reversed class order. Test-owned state is cleaned up and required seed records survive. Run affected neighboring suites if a shared default changes. No new mock hides a discovered internal failure.                                                                  | **Locally validated in #4332; CI/review pending.** |
+| **T2 — Prove the real mapping lifecycle**      | Findings **3, 4, 6, 8**. Use injected local services and real catalog/user data for mapping revision creation, confirmation, independent adoption and import. Replace in-place changes to an existing mapping revision and add database query cases. Keep request/security tests explicitly scoped.                                                                                                     | Two analyzers genuinely adopt revisions independently; unconfirmed mappings remain ineligible; old revisions and confirmation history survive reload. Actual queries distinguish profiles/revisions. Save/confirm/adopt reject unauthorized requests without writes. Existing receipt replay, concurrency and rollback assertions still pass. Database tests run without fake internal mapping/confirmation/history services. | **Ready after T1 local validation.**                                         |
 | **T3 — Complete recovery and assembled proof** | Findings **9, 10, 11**. Implement the agreed automatic recovery, replace manual/obsolete expectations, preserve unsaved edits, report actual control outcomes and correct harness confirmation preparation. Use the existing implementation order above for production changes.                                                                                                                         | All existing held-result acceptance checks below pass, including either event order, partial recovery, existing backlog, repeats/concurrency, source history and unsaved edits. The real-browser story recovers the original held rows after adoption without resend or a reprocess button. Review stored outcomes, console/trace/screenshots and the exact build; fix actionable review findings and rerun affected checks.  | **Pending T2.**                                         |
 
 Keep T1 independently reviewable from recovery production changes. Use one
@@ -452,17 +452,61 @@ milestone rather than rewriting the historical audit as though it were current.
 
 | Finding                                            | Owning change | Status                    | Evidence                                   | Remaining limitation                                                    |
 | -------------------------------------------------- | ------------- | ------------------------- | ------------------------------------------ | ----------------------------------------------------------------------- |
-| 1. Shared internal substitutes                     | T1            | Open                      | Catalogue source links                     | Shared setup still substitutes history and parsing.                     |
-| 2. Shared-instance dependency swaps                | T1            | In progress — unvalidated | Local removals described in audit baseline | Shared setup incomplete; no successful post-cleanup run.                |
+| 1. Shared internal substitutes | T1 | Validated | #4332, `23be6e97d4`; T1 evidence below | History and parsing are real; mapping lifecycle coverage remains T2. |
+| 2. Shared-instance dependency swaps | T1 | Validated | #4332 removes four history overrides and parser replacements | Manually assembled mapping persistence services remain tracked in finding 4. |
 | 3. Mapping changes bypass lifecycle                | T2            | Open                      | Catalogue source links                     | Same-revision SQL changes and replacement confirmations remain.         |
 | 4. Manually assembled persistence services         | T2            | Open                      | Catalogue source links                     | Does not yet prove ordinary injected service wiring.                    |
-| 5. Isolated tests using broad database setup       | T1            | Open                      | Catalogue source links                     | Unnecessary context and dependency replacement remain.                  |
+| 5. Isolated tests using broad database setup | T1 | Validated | Eight isolated request/selection checks pass without database startup | Standalone request checks do not establish deployed authorization. |
 | 6. Queries tested with substituted results         | T2            | Open                      | Catalogue source links                     | Database discrimination cases not established.                          |
-| 7. Shared fixture/cached-state isolation           | T1            | Open                      | Catalogue source links                     | Order independence after consolidation unproved.                        |
+| 7. Shared fixture/cached-state isolation | T1 | Validated | 284 checks pass in each class order; audit rollback and seed snapshots checked | Scoped to this regression group; the legacy fixture loader elsewhere still uses truncation, and mapping fixture construction continues in T2. |
 | 8. Request/permission test boundaries              | T2            | Open                      | Catalogue source links                     | Real mutation authorization and explicit scope still need verification. |
 | 9. Superseded manual/browser expectations          | T3            | Open                      | Catalogue source links                     | Replacement workflow not yet implemented/proved.                        |
 | 10. Unresolved rows treated as excluded by harness | T3            | Open                      | Catalogue source links                     | Partial-mapping harness case not exercised.                             |
 | 11. Missing automatic-recovery acceptance          | T3            | Open                      | Acceptance checks below                    | All product acceptance checks remain open.                              |
+
+#### T1 execution evidence — 2026-09-17
+
+[PR #4332](https://github.com/DIGI-UW/OpenELIS-Global-2/pull/4332), commit
+`23be6e97d4`, owns the independently reviewable foundation change. The stack is
+#4241 → #4332 → #4256 while T2 is prepared. These are local validation results;
+CI and required maintainer approvals remain pending for the new commits.
+
+- **Demonstrated failure:** removing per-test substitutes first produced five
+  missing-history assertions and seven null-parser errors in 13 checks. Docker
+  and the migrated database were working. With real shared history and parsing,
+  all 25 affected history/import/interpreter checks passed.
+- **Isolation:** the controller now parses a real message and verifies its source
+  identity and actor in a fresh controller. Result selection runs without an
+  application context. Its initial failure exposed a static global configuration
+  lookup; constructor injection removes that dependency. Eight isolated checks
+  pass. These tests do not claim database or security-filter coverage.
+- **Fixture ownership:** the four history suites create their own records inside
+  rollback transactions. They no longer truncate tables, recreate missing
+  reference rows, or modify an arbitrary configuration seed. Before/after
+  database checks verify row counts and reference-table history settings. The
+  now-unused configuration-seed repair helper was removed.
+- **Failures exposed by the real recorder:** two analyzer-results tests used
+  nonexistent actor IDs. They now use the seeded test user and assert saved
+  results/history; the insert test previously checked only its input list.
+- **Regression:** the following command passed **284 tests, zero failures or
+  errors**, once with `alphabetical` and once with `reversealphabetical`:
+
+  ```sh
+  mvn test \
+    '-Dtest=Analyzer*Test,*AuditTrail*Test,P0AuditEmitSmokeTest,TaskInterpreterImplNullPatientTest,SpecimenAwareResolutionIntegrationTest' \
+    -Dsurefire.runOrder=alphabetical
+  ```
+
+  Both runs used the machine's verified Docker/Testcontainers socket settings.
+  Spotless was restricted to changed files in the main checkout. Frontend
+  formatting and `mvn clean install -DskipTests -Dmaven.test.skip=true` passed.
+- **Preservation:** the unfinished recovery work remains saved separately. The
+  four old stack commits were compared with their remote rebased equivalents
+  before restacking; no recovery changes were discarded. No dependency pins
+  changed in T1.
+
+T1 does not establish automatic recovery, the real mapping lifecycle, assembled
+browser acceptance, or human product acceptance. Those remain T2/T3 work below.
 
 #### Iteration and evidence rules
 
