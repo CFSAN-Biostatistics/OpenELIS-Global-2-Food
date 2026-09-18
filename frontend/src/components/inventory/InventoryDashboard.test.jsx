@@ -11,6 +11,7 @@ import {
   InventoryLotStorageAPI,
 } from "./InventoryService";
 import messages from "../../languages/en.json";
+import { resolveMessagesForLocale } from "../../languages";
 
 vi.mock("./InventoryService", () => ({
   InventoryItemAPI: {
@@ -472,6 +473,26 @@ describe("InventoryDashboard barcode search", () => {
     const table = document.querySelector("table");
     expect(within(table).getByText("LOT-200")).toBeInTheDocument();
     expect(within(table).queryByText("LOT-100")).not.toBeInTheDocument();
+  });
+
+  // A reworded pre-existing key never reaches en_US; a new key id does.
+  it("tells a regional English user the box searches barcodes", async () => {
+    InventoryLotAPI.getAll.mockResolvedValue([barcodedLot]);
+    render(
+      <IntlProvider
+        locale="en-US"
+        messages={resolveMessagesForLocale("en_US").messages}
+      >
+        <NotificationContext.Provider value={mockNotificationContext}>
+          <InventoryDashboard />
+        </NotificationContext.Provider>
+      </IntlProvider>,
+    );
+    await screen.findByText("LOT-100");
+
+    expect(
+      document.querySelector("input.cds--search-input").placeholder,
+    ).toMatch(/barcode/i);
   });
 
   it("does not match a barcodeless lot on an empty-ish query", async () => {

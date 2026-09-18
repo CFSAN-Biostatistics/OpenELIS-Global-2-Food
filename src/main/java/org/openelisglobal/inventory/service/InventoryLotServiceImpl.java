@@ -115,7 +115,9 @@ public class InventoryLotServiceImpl extends AuditableBaseObjectServiceImpl<Inve
         return itemCode + "-" + lotNumber;
     }
 
-    /** Same shape CodeGenerator applies, so the prefix check sees final form. */
+    /**
+     * Same shape CodeGenerator applies, so prefix check and lookup see final form.
+     */
     private static String toComparable(String value) {
         return value.trim().toUpperCase(Locale.ROOT).replaceAll("[^A-Z0-9]+", "-").replaceAll("^-+|-+$", "");
     }
@@ -160,7 +162,13 @@ public class InventoryLotServiceImpl extends AuditableBaseObjectServiceImpl<Inve
         if (barcode == null || barcode.trim().isEmpty()) {
             return null;
         }
-        return inventoryLotDAO.getByBarcode(barcode.trim());
+        InventoryLot exact = inventoryLotDAO.getByBarcode(barcode.trim());
+        if (exact != null) {
+            return exact;
+        }
+        // Retry rather than replace: older rows need not be upper-kebab.
+        String normalized = toComparable(barcode);
+        return normalized.isEmpty() ? null : inventoryLotDAO.getByBarcode(normalized);
     }
 
     @Override

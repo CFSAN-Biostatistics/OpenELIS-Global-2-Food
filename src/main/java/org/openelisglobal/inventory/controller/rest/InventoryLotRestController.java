@@ -278,6 +278,11 @@ public class InventoryLotRestController extends BaseRestController {
                 lot.setFhirUuid(existingLot.getFhirUuid());
             }
 
+            // A body that omits barcode must not orphan the label already printed.
+            if (existingLot.getBarcode() != null) {
+                lot.setBarcode(existingLot.getBarcode());
+            }
+
             // Fetch managed InventoryItem entity to avoid transient instance error
             if (lot.getInventoryItem() != null && lot.getInventoryItem().getId() != null) {
                 Long itemId = lot.getInventoryItem().getId();

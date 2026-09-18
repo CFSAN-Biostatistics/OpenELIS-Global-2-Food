@@ -59,11 +59,18 @@ public class InventoryLotServiceIntegrationTest extends BaseWebContextSensitiveT
 
     @Test
     public void getByBarcode_shouldTrimSurroundingWhitespace() {
-        // Handheld scanners commonly append a carriage return or trailing space.
+        // A barcode pasted into the search box can carry surrounding spaces.
         InventoryLot lot = inventoryLotService.getByBarcode("  LOT-BC-1000  ");
 
         assertNotNull("Should find lot despite surrounding whitespace", lot);
         assertEquals(Long.valueOf(1000L), lot.getId());
+    }
+
+    @Test
+    public void getByBarcode_shouldMatchTheStoredFormWhenCaseOrSeparatorsDiffer() {
+        // Hand-keyed from a damaged label; every stored barcode is upper-kebab.
+        assertEquals(Long.valueOf(1000L), inventoryLotService.getByBarcode("lot-bc-1000").getId());
+        assertEquals(Long.valueOf(1000L), inventoryLotService.getByBarcode("lot bc 1000").getId());
     }
 
     @Test

@@ -653,7 +653,7 @@ const InventoryDashboard = ({ active = true }) => {
               <TableToolbarContent>
                 <TableToolbarSearch
                   placeholder={intl.formatMessage({
-                    id: "inventory.search.placeholder",
+                    id: "inventory.lot.search.placeholder",
                   })}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   value={searchTerm}

@@ -18,6 +18,7 @@ import java.util.Map;
 import org.hibernate.ObjectNotFoundException;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
@@ -131,6 +132,37 @@ public class InventoryLotRestControllerTest {
 
         assertEquals(404, response.getStatusCode().value());
         assertEquals("InventoryLot 999 not found", body(response).get("error"));
+    }
+
+    @Test
+    public void update_keepsTheStoredBarcode_whenTheBodyOmitsIt() {
+        stubSession();
+        InventoryLot stored = lot(6L);
+        stored.setBarcode("PAR-500-001-LOT-6");
+        when(inventoryLotService.get(6L)).thenReturn(stored);
+
+        controller.update("6", lot(null), request);
+
+        assertEquals("PAR-500-001-LOT-6", updatedLot().getBarcode());
+    }
+
+    @Test
+    public void update_assignsABarcode_whenTheStoredLotHasNone() {
+        stubSession();
+        when(inventoryLotService.get(6L)).thenReturn(lot(6L));
+        InventoryLot body = lot(null);
+        body.setBarcode("PAR-500-001-LOT-6");
+
+        controller.update("6", body, request);
+
+        assertEquals("A lot that carries no barcode can still be given one", "PAR-500-001-LOT-6",
+                updatedLot().getBarcode());
+    }
+
+    private InventoryLot updatedLot() {
+        ArgumentCaptor<InventoryLot> captor = ArgumentCaptor.forClass(InventoryLot.class);
+        verify(inventoryLotService).update(captor.capture());
+        return captor.getValue();
     }
 
     private void stubSession() {

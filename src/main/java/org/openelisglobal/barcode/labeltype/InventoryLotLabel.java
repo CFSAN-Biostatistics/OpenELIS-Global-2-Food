@@ -2,11 +2,14 @@ package org.openelisglobal.barcode.labeltype;
 
 import java.util.ArrayList;
 import org.openelisglobal.barcode.LabelField;
+import org.openelisglobal.barcode.util.BarcodeConfigUtil;
+import org.openelisglobal.common.util.ConfigurationProperties;
+import org.openelisglobal.common.util.ConfigurationProperties.Property;
 import org.openelisglobal.internationalization.MessageUtil;
 
 /**
  * Label for an inventory lot: the barcode, with item name and lot number above
- * and expiry below, on the fixed 3x1 inch stock storage labels already use.
+ * and expiry below, on the label stock configured for storage labels.
  */
 public class InventoryLotLabel extends Label {
 
@@ -18,8 +21,13 @@ public class InventoryLotLabel extends Label {
      * @param barcodeCode The lot's internal barcode — the value that is encoded
      */
     public InventoryLotLabel(String itemName, String lotNumber, String expiryDate, String barcodeCode) {
-        width = 3.0f;
-        height = 1.0f;
+        // Prints on the storage-label stock, like ShippingBoxLabel.
+        width = BarcodeConfigUtil.parseFloatSafe(
+                ConfigurationProperties.getInstance().getPropertyValue(Property.STORAGE_LOCATION_LABEL_BARCODE_WIDTH),
+                3.0f);
+        height = BarcodeConfigUtil.parseFloatSafe(
+                ConfigurationProperties.getInstance().getPropertyValue(Property.STORAGE_LOCATION_LABEL_BARCODE_HEIGHT),
+                1.0f);
 
         aboveFields = new ArrayList<>();
         belowFields = new ArrayList<>();
