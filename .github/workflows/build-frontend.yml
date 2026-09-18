@@ -25,10 +25,7 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: Build and push Docker image
-        uses: docker/build-push-action@v6
-        with:
-          context: frontend
-          file: frontend/Dockerfile
-          target: runtime
-          push: true
-          tags: quay.io/estrain/openelis-frontend-food:latest
+        working-directory: frontend
+        run: |
+          docker build --target runtime -t quay.io/estrain/openelis-frontend-food:latest .
+          docker push quay.io/estrain/openelis-frontend-food:latest
