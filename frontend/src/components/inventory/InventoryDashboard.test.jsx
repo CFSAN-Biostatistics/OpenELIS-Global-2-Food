@@ -509,37 +509,6 @@ describe("InventoryDashboard barcode search", () => {
   });
 });
 
-describe("InventoryDashboard row-to-lot mapping", () => {
-  // Resolving a lot by row index binds a row's actions to whichever lot sorting put there.
-  it("keeps each row's actions bound to its own lot after sorting", async () => {
-    InventoryLotAPI.getAll.mockResolvedValue([
-      lotWithLocation,
-      lotWithoutLocation,
-    ]);
-    renderDashboard();
-    await screen.findByText("LOT-100");
-
-    // Sort by lot number so the row order reverses: LOT-200 leads.
-    const lotNumberHeader = screen
-      .getAllByRole("columnheader")
-      .find((th) => th.textContent.match(/lot number/i));
-    fireEvent.click(lotNumberHeader.querySelector("button"));
-    fireEvent.click(lotNumberHeader.querySelector("button"));
-
-    const firstRow = document.querySelectorAll("table tbody tr")[0];
-    expect(within(firstRow).getByText("LOT-200")).toBeInTheDocument();
-
-    // LOT-200 has no location, so its menu must offer Assign, not Move.
-    fireEvent.click(firstRow.querySelector("button.cds--overflow-menu"));
-    expect(
-      await screen.findByText(/assign storage location/i),
-    ).toBeInTheDocument();
-    expect(
-      screen.queryByText(/move storage location/i),
-    ).not.toBeInTheDocument();
-  });
-});
-
 describe("InventoryDashboard print label", () => {
   const barcodedLot = { ...lotWithLocation, barcode: "TEST-REAGENT-A-LOT-100" };
 

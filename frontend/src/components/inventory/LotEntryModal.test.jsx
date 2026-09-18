@@ -417,3 +417,57 @@ describe("LotEntryModal — system-generated barcode", () => {
     ).toBeInTheDocument();
   });
 });
+
+describe("LotEntryModal — barcode on a lot that has none", () => {
+  const barcodelessLot = {
+    id: 13,
+    inventoryItem: { id: "MALARIA_RDT" },
+    lotNumber: "LOT-13",
+    barcode: null,
+    currentQuantity: 4,
+    status: "ACTIVE",
+    qcStatus: "PENDING",
+  };
+
+  it("lets an operator give an existing lot its first barcode", () => {
+    renderWithIntl(
+      <LotEntryModal
+        open
+        onClose={vi.fn()}
+        onSave={vi.fn()}
+        lot={barcodelessLot}
+      />,
+    );
+
+    const barcode = screen.getByLabelText(/barcode/i);
+    expect(barcode).toBeEnabled();
+    expect(screen.getByText(/has no barcode yet/i)).toBeInTheDocument();
+    expect(
+      screen.queryByText(/barcode is locked once saved/i),
+    ).not.toBeInTheDocument();
+  });
+
+  it("sends the barcode typed on a barcodeless lot to the server", async () => {
+    InventoryLotAPI.update.mockResolvedValue({});
+    renderWithIntl(
+      <LotEntryModal
+        open
+        onClose={vi.fn()}
+        onSave={vi.fn()}
+        lot={barcodelessLot}
+      />,
+    );
+
+    fireEvent.change(screen.getByLabelText(/barcode/i), {
+      target: { value: "BC-GIVEN-13" },
+    });
+    fireEvent.click(screen.getByText("Save"));
+
+    await waitFor(() => {
+      expect(InventoryLotAPI.update).toHaveBeenCalledWith(
+        13,
+        expect.objectContaining({ barcode: "BC-GIVEN-13" }),
+      );
+    });
+  });
+});
