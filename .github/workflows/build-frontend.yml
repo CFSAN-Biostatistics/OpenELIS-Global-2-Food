@@ -27,5 +27,5 @@ jobs:
       - name: Build and push Docker image
         working-directory: frontend
         run: |
-          docker build --target runtime -t quay.io/estrain/openelis-frontend-food:latest .
-          docker push quay.io/estrain/openelis-frontend-food:latest
+          docker build --target runtime -t quay.io/galaxytrakr/openelis-frontend-food:latest .
+          docker push quay.io/galaxytrakr/openelis-frontend-food:latest
