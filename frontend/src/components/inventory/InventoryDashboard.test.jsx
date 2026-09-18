@@ -495,13 +495,15 @@ describe("InventoryDashboard barcode search", () => {
     ).toMatch(/barcode/i);
   });
 
-  it("does not match a barcodeless lot on an empty-ish query", async () => {
+  it("does not match a barcodeless lot on a query a stringified null would hit", async () => {
+    const ultraLot = { ...lotWithLocation, barcode: "BC-ULTRA-9" };
     const noBarcode = { ...lotWithoutLocation, barcode: null };
-    InventoryLotAPI.getAll.mockResolvedValue([barcodedLot, noBarcode]);
+    InventoryLotAPI.getAll.mockResolvedValue([ultraLot, noBarcode]);
     renderDashboard();
     await screen.findByText("LOT-100");
 
-    typeSearch("BC-");
+    // "ul" is inside "null": reading the barcode without ?. would match LOT-200.
+    typeSearch("ul");
 
     const table = document.querySelector("table");
     expect(within(table).getByText("LOT-100")).toBeInTheDocument();

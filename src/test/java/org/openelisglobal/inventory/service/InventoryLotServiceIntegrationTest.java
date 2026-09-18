@@ -68,7 +68,7 @@ public class InventoryLotServiceIntegrationTest extends BaseWebContextSensitiveT
 
     @Test
     public void getByBarcode_shouldMatchTheStoredFormWhenCaseOrSeparatorsDiffer() {
-        // Hand-keyed from a damaged label; every stored barcode is upper-kebab.
+        // Hand-keyed from a damaged label; barcodes this service writes are kebab.
         assertEquals(Long.valueOf(1000L), inventoryLotService.getByBarcode("lot-bc-1000").getId());
         assertEquals(Long.valueOf(1000L), inventoryLotService.getByBarcode("lot bc 1000").getId());
     }
@@ -155,6 +155,50 @@ public class InventoryLotServiceIntegrationTest extends BaseWebContextSensitiveT
         inventoryLotService.update(saved);
 
         assertEquals("Re-saving a lot must not reject its own barcode", "TEST-REAGENT-A-LOT-2025-906",
+                inventoryLotService.get(saved.getId()).getBarcode());
+    }
+
+    @Test
+    public void update_shouldNormalizeTheFirstBarcodeGivenToABarcodelessLot() {
+        // Lot 1002 predates minting on insert, so the edit modal enables its field.
+        InventoryLot barcodeless = inventoryLotService.get(1002L);
+        barcodeless.setBarcode("ph 001");
+        barcodeless.setSysUserId("1");
+
+        inventoryLotService.update(barcodeless);
+
+        assertEquals("PH-001", inventoryLotService.get(1002L).getBarcode());
+    }
+
+    @Test
+    public void update_shouldRejectAFirstBarcodeThatNormalizesOntoAnotherLot() {
+        // Lot 1000 holds LOT-BC-1000; the duplicate check must see the final form.
+        InventoryLot barcodeless = inventoryLotService.get(1002L);
+        barcodeless.setBarcode("lot bc 1000");
+        barcodeless.setSysUserId("1");
+
+        try {
+            inventoryLotService.update(barcodeless);
+            fail("Expected the normalized barcode to collide with lot 1000");
+        } catch (LocalizedValidationException expected) {
+            assertEquals("inventory.lot.error.duplicateBarcode", expected.getErrorCode());
+        }
+
+        // Fixture 1002 stands in for a barcodeless lot with '', so it stays blank.
+        assertEquals("", inventoryLotService.get(1002L).getBarcode());
+    }
+
+    @Test
+    public void update_shouldNotReshapeABarcodeTheLotAlreadyHolds() {
+        InventoryLot saved = inventoryLotService.get(inventoryLotService.insert(newLot("LOT-2025-910", null)));
+        saved.setBarcode("legacy bc 910");
+        inventoryLotService.update(saved);
+
+        InventoryLot reloaded = inventoryLotService.get(saved.getId());
+        reloaded.setCurrentQuantity(5.0);
+        inventoryLotService.update(reloaded);
+
+        assertEquals("A stored barcode must survive an unrelated save", "legacy bc 910",
                 inventoryLotService.get(saved.getId()).getBarcode());
     }
 

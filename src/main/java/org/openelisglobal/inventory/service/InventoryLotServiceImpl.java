@@ -76,8 +76,23 @@ public class InventoryLotServiceImpl extends AuditableBaseObjectServiceImpl<Inve
             lot.setBarcode(null);
             return;
         }
+        if (isFirstBarcode(lot)) {
+            barcode = CodeGenerator.normalize(barcode, BARCODE_MAX_LENGTH);
+        }
         lot.setBarcode(barcode);
         rejectIfHeldByAnotherLot(barcode, lot.getId());
+    }
+
+    /**
+     * True when the stored row carries no barcode, so update reshapes a first
+     * assignment the way insert does and leaves every later save alone.
+     */
+    private boolean isFirstBarcode(InventoryLot lot) {
+        if (lot.getId() == null) {
+            return true;
+        }
+        String stored = inventoryLotDAO.get(lot.getId()).map(InventoryLot::getBarcode).orElse(null);
+        return stored == null || stored.trim().isEmpty();
     }
 
     private void rejectIfHeldByAnotherLot(String barcode, Long lotId) {

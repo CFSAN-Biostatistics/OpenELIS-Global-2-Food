@@ -230,6 +230,10 @@ const LotEntryModal = ({ open, onClose, onSave, lot = null }) => {
         });
         lotId = savedLot?.id ?? null;
         setCreatedLotId(lotId);
+        // The field locks here, so show the barcode the server minted, not a blank.
+        if (savedLot?.barcode) {
+          setFormData((prev) => ({ ...prev, barcode: savedLot.barcode }));
+        }
       }
 
       if (pendingAssignment && lotId !== null) {

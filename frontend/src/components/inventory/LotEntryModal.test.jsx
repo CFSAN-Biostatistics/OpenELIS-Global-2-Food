@@ -290,6 +290,30 @@ describe("LotEntryModal — partial save recovery", () => {
     expect(InventoryLotStorageAPI.assignLocation).toHaveBeenCalledTimes(2);
   });
 
+  it("shows the barcode the server minted rather than a blank locked field", async () => {
+    InventoryManagementAPI.receive.mockResolvedValue({
+      id: 79,
+      barcode: "MALARIA-RDT-LOT-1",
+    });
+    InventoryLotStorageAPI.assignLocation.mockRejectedValue(
+      new Error("Position A1 is already occupied"),
+    );
+
+    renderWithIntl(
+      <LotEntryModal open onClose={vi.fn()} onSave={vi.fn()} lot={null} />,
+    );
+    await fillRequiredFieldsExceptLocation();
+
+    fireEvent.click(screen.getByText(/assign storage location/i));
+    fireEvent.click(await screen.findByText("mock-confirm-location"));
+    fireEvent.click(screen.getByText("Save"));
+    await screen.findByText(/the lot was created, but assigning/i);
+
+    const barcode = document.getElementById("barcode");
+    expect(barcode).toBeDisabled();
+    expect(barcode).toHaveValue("MALARIA-RDT-LOT-1");
+  });
+
   it("refreshes the caller's list on close when a lot was already committed", async () => {
     InventoryManagementAPI.receive.mockResolvedValue({ id: 78 });
     InventoryLotStorageAPI.assignLocation.mockRejectedValue(
