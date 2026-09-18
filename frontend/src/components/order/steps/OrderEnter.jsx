@@ -75,7 +75,7 @@ const OrderEnter = () => {
   );
   const [workflowType, setWorkflowType] = useState(
     orderData?.sampleOrderItems?.environmentalFields?.workflowType ||
-      "clinical",
+      "environmental",
   ); // "clinical" | "environmental" | "vector"
   const [labUnitConfig, setLabUnitConfig] = useState(null);
   const [isGeneratingLabNo, setIsGeneratingLabNo] = useState(false);
@@ -343,9 +343,7 @@ const OrderEnter = () => {
   };
 
   // Check if lab unit supports both workflow types
-  const showWorkflowToggle =
-    labUnitConfig?.workflowType === "Both" ||
-    configurationProperties?.LAB_WORKFLOW_TYPE === "Both";
+  const showWorkflowToggle = false;
 
   return (
     <OrderWorkflowLayout
