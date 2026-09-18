@@ -43,15 +43,30 @@ public class InventoryLotServiceImpl extends AuditableBaseObjectServiceImpl<Inve
     @Override
     @Transactional
     public Long insert(InventoryLot lot) {
-        normalizeBarcode(lot);
+        lot.setBarcode(resolveBarcode(lot));
         return super.insert(lot);
     }
 
+    // Minting a replacement here would orphan the label already printed.
     @Override
     @Transactional
     public InventoryLot update(InventoryLot lot) {
         normalizeBarcode(lot);
         return super.update(lot);
+    }
+
+    /**
+     * The lot barcode is the lab's own scannable label, so insert mints one from
+     * the item code and lot number when the user supplies none.
+     */
+    private String resolveBarcode(InventoryLot lot) {
+        String supplied = lot.getBarcode();
+        if (supplied == null || supplied.trim().isEmpty()) {
+            return CodeGenerator.generateFromName(barcodeSeed(lot), BARCODE_MAX_LENGTH, "LOT", this::barcodeExists);
+        }
+        String barcode = CodeGenerator.normalize(supplied, BARCODE_MAX_LENGTH);
+        rejectIfHeldByAnotherLot(barcode, lot.getId());
+        return barcode;
     }
 
     // barcode is UNIQUE and nullable: '' would make barcode-less lots collide.
@@ -62,8 +77,12 @@ public class InventoryLotServiceImpl extends AuditableBaseObjectServiceImpl<Inve
             return;
         }
         lot.setBarcode(barcode);
+        rejectIfHeldByAnotherLot(barcode, lot.getId());
+    }
+
+    private void rejectIfHeldByAnotherLot(String barcode, Long lotId) {
         InventoryLot holder = inventoryLotDAO.getByBarcode(barcode);
-        if (holder != null && !holder.getId().equals(lot.getId())) {
+        if (holder != null && !holder.getId().equals(lotId)) {
             throw new LocalizedValidationException("inventory.lot.error.duplicateBarcode",
                     "Barcode " + barcode + " is already assigned to lot " + holder.getLotNumber(),
                     Map.of("barcode", barcode, "lotNumber", holder.getLotNumber()));
@@ -76,36 +95,9 @@ public class InventoryLotServiceImpl extends AuditableBaseObjectServiceImpl<Inve
         return inventoryLotDAO.getForUpdate(lotId);
     }
 
-    @Override
-    @Transactional
-    public Long insert(InventoryLot lot) {
-        lot.setBarcode(resolveBarcode(lot));
-        return super.insert(lot);
-    }
-
-    /**
-     * The lot barcode is the lab's own scannable label, so the system mints one
-     * when the user does not supply it. Mirrors InventoryItemServiceImpl's code
-     * handling: generate from a readable seed when blank, normalize an explicit
-     * value otherwise, and reject a duplicate rather than letting the UNIQUE index
-     * surface a raw constraint error.
-     */
-    private String resolveBarcode(InventoryLot lot) {
-        String supplied = lot.getBarcode();
-        String barcode = (supplied == null || supplied.trim().isEmpty())
-                ? CodeGenerator.generateFromName(barcodeSeed(lot), BARCODE_MAX_LENGTH, "LOT", this::barcodeExists)
-                : CodeGenerator.normalize(supplied, BARCODE_MAX_LENGTH);
-        if (barcodeExists(barcode)) {
-            throw new LocalizedValidationException("inventory.lot.error.duplicateBarcode",
-                    "Inventory lot barcode already exists: " + barcode, Map.of("barcode", barcode));
-        }
-        return barcode;
-    }
-
     /**
      * Item code plus lot number, so a human can still identify the lot when the
-     * printed barcode is damaged. Falls back to whichever half is available when
-     * the other is missing.
+     * printed barcode is damaged; falls back to whichever half is present.
      */
     private String barcodeSeed(InventoryLot lot) {
         String itemCode = lot.getInventoryItem() != null ? lot.getInventoryItem().getCode() : null;
@@ -116,18 +108,16 @@ public class InventoryLotServiceImpl extends AuditableBaseObjectServiceImpl<Inve
         if (lotNumber == null || lotNumber.trim().isEmpty()) {
             return itemCode;
         }
-        // An auto-generated lot number is already "{itemCode}-{yyyyMMdd}" (see
-        // InventoryManagementServiceImpl.generateLotNumber), so prefixing the item
-        // code again repeats it: FOR_TESTING_FOR_TESTING_20260810.
+        // A lot number generated from the item code must not be prefixed again.
         if (toComparable(lotNumber).startsWith(toComparable(itemCode))) {
             return lotNumber;
         }
-        return itemCode + "_" + lotNumber;
+        return itemCode + "-" + lotNumber;
     }
 
     /** Same shape CodeGenerator applies, so the prefix check sees final form. */
     private static String toComparable(String value) {
-        return value.trim().toUpperCase(Locale.ROOT).replaceAll("[^A-Z0-9]+", "_").replaceAll("^_+|_+$", "");
+        return value.trim().toUpperCase(Locale.ROOT).replaceAll("[^A-Z0-9]+", "-").replaceAll("^-+|-+$", "");
     }
 
     private boolean barcodeExists(String barcode) {

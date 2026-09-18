@@ -116,7 +116,7 @@ describe("LotDetailsPanel — barcode visibility", () => {
   const baseLot = {
     id: 7001,
     lotNumber: "LOT-2025-001",
-    barcode: "TEST_REAGENT_A_LOT_2025_001",
+    barcode: "TEST-REAGENT-A-LOT-2025-001",
     inventoryItem: { name: "Test Reagent A", itemType: "REAGENT", units: "mL" },
     qcStatus: "PASSED",
     initialQuantity: 10,
@@ -129,7 +129,22 @@ describe("LotDetailsPanel — barcode visibility", () => {
     renderWithIntl(<LotDetailsPanel open lot={baseLot} onClose={vi.fn()} />);
 
     expect(
-      await screen.findByText("TEST_REAGENT_A_LOT_2025_001"),
+      await screen.findByText("TEST-REAGENT-A-LOT-2025-001"),
     ).toBeInTheDocument();
+  });
+
+  it("shows a dash rather than a blank row for a lot with no barcode", async () => {
+    const { container } = renderWithIntl(
+      <LotDetailsPanel
+        open
+        lot={{ ...baseLot, barcode: null }}
+        onClose={vi.fn()}
+      />,
+    );
+
+    await screen.findByText("LOT-2025-001");
+    expect(container.querySelector(".lot-details-barcode").textContent).toBe(
+      "-",
+    );
   });
 });

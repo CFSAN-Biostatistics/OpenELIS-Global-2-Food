@@ -731,8 +731,6 @@ const InventoryDashboard = ({ active = true }) => {
                   </TableRow>
                 ) : (
                   rows.map((row) => {
-                    // Match by id, not by index: the table is sortable, so
-                    // Carbon's row order need not track paginatedLots.
                     const lot = lotsById.get(row.id);
                     // DataTable syncs `rows` into its state in an effect, so
                     // for one render it can still list a just-filtered row.

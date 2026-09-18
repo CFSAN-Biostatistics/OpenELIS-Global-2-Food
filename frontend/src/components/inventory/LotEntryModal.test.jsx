@@ -400,7 +400,7 @@ describe("LotEntryModal — system-generated barcode", () => {
       id: 12,
       inventoryItem: { id: "MALARIA_RDT" },
       lotNumber: "LOT-12",
-      barcode: "TEST_REAGENT_A_LOT_12",
+      barcode: "TEST-REAGENT-A-LOT-12",
       currentQuantity: 4,
       status: "ACTIVE",
       qcStatus: "PENDING",
@@ -410,7 +410,7 @@ describe("LotEntryModal — system-generated barcode", () => {
     );
 
     const barcode = screen.getByLabelText(/barcode/i);
-    expect(barcode).toHaveValue("TEST_REAGENT_A_LOT_12");
+    expect(barcode).toHaveValue("TEST-REAGENT-A-LOT-12");
     expect(barcode).toBeDisabled();
     expect(
       screen.getByText(/barcode is locked once saved/i),

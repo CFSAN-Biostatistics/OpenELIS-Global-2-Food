@@ -14,7 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.annotation.Rollback;
 
 @Rollback
-public class InventoryLotLabelServiceIT extends BaseWebContextSensitiveTest {
+public class InventoryLotLabelServiceIntegrationTest extends BaseWebContextSensitiveTest {
 
     @Autowired
     InventoryLotLabelService inventoryLotLabelService;
@@ -42,9 +42,7 @@ public class InventoryLotLabelServiceIT extends BaseWebContextSensitiveTest {
 
     @Test
     public void label_shouldResolveEveryFieldNameToRealText() {
-        // MessageUtil.getMessage falls back to the key itself, so a key that is
-        // missing from message_en.properties prints "barcode.label.info.itemName"
-        // on the label instead of "Item".
+        // A missing message key prints as the key itself on the label.
         InventoryLotLabel label = new InventoryLotLabel("Test Reagent A", "LOT-2025-001", "2099-12-31", "LOT-BC-1000");
 
         for (LabelField field : label.getAboveFields()) {

@@ -172,9 +172,8 @@ public class InventoryLotRestController extends BaseRestController {
     }
 
     /**
-     * Render the lot's barcode as a printable PDF label. POST rather than GET
-     * because printing is an action the lab takes, matching the storage location
-     * print-label endpoint.
+     * Render the lot's barcode as a printable PDF label; POST like the storage
+     * location print-label endpoint, since printing is an action.
      */
     @PostMapping(value = "/{id}/print-label", produces = MediaType.APPLICATION_PDF_VALUE)
     public void printLabel(@PathVariable String id, HttpServletResponse response) throws IOException {

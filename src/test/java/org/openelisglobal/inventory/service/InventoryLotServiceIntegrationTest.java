@@ -15,7 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.annotation.Rollback;
 
 @Rollback
-public class InventoryLotServiceIT extends BaseWebContextSensitiveTest {
+public class InventoryLotServiceIntegrationTest extends BaseWebContextSensitiveTest {
 
     @Autowired
     InventoryLotService inventoryLotService;
@@ -30,7 +30,7 @@ public class InventoryLotServiceIT extends BaseWebContextSensitiveTest {
 
     @Test
     public void get_shouldReturnInventoryLotWhenExists() {
-        InventoryLot lot = inventoryLotService.get(1L);
+        InventoryLot lot = inventoryLotService.get(1000L);
 
         assertNotNull("Lot should be loaded from dataset", lot);
         assertEquals("LOT-2025-001", lot.getLotNumber());
@@ -44,7 +44,7 @@ public class InventoryLotServiceIT extends BaseWebContextSensitiveTest {
         InventoryLot lot = inventoryLotService.getByLotNumber("LOT-2025-002");
 
         assertNotNull("Should find lot by lot number", lot);
-        assertEquals(Long.valueOf(2L), lot.getId());
+        assertEquals(Long.valueOf(1001L), lot.getId());
         assertEquals(Double.valueOf(50.0), lot.getCurrentQuantity());
     }
 
@@ -73,7 +73,7 @@ public class InventoryLotServiceIT extends BaseWebContextSensitiveTest {
 
     @Test
     public void getByBarcode_shouldReturnNullForBlankInputRatherThanMatchingABarcodelessLot() {
-        // Lot 1002 has a NULL barcode. A blank scan must not resolve to it.
+        // Lot 1002 carries no usable barcode; a blank scan must not resolve to it.
         assertNull("Null barcode should not match", inventoryLotService.getByBarcode(null));
         assertNull("Empty barcode should not match", inventoryLotService.getByBarcode(""));
         assertNull("Whitespace barcode should not match", inventoryLotService.getByBarcode("   "));
@@ -81,8 +81,7 @@ public class InventoryLotServiceIT extends BaseWebContextSensitiveTest {
 
     private InventoryLot newLot(String lotNumber, String barcode) {
         InventoryLot lot = new InventoryLot();
-        // The REST controller mints the FHIR UUID before handing the lot to the
-        // service, so a direct service-level insert has to supply one.
+        // The REST controller mints the FHIR UUID; a service-level insert must too.
         lot.setFhirUuid(java.util.UUID.randomUUID());
         lot.setInventoryItem(inventoryItemService.get(1000L));
         lot.setLotNumber(lotNumber);
@@ -101,32 +100,31 @@ public class InventoryLotServiceIT extends BaseWebContextSensitiveTest {
     public void insert_shouldGenerateBarcodeFromItemCodeAndLotNumberWhenBlank() {
         InventoryLot saved = inventoryLotService.get(inventoryLotService.insert(newLot("LOT-2025-900", null)));
 
-        // Item 1000's code is TEST_REAGENT_A.
-        assertEquals("TEST_REAGENT_A_LOT_2025_900", saved.getBarcode());
+        // Item 1000's code is TEST_REAGENT_A; CodeGenerator separates with hyphens.
+        assertEquals("TEST-REAGENT-A-LOT-2025-900", saved.getBarcode());
     }
 
     @Test
     public void insert_shouldGenerateBarcodeWhenSuppliedValueIsBlank() {
         InventoryLot saved = inventoryLotService.get(inventoryLotService.insert(newLot("LOT-2025-901", "   ")));
 
-        assertEquals("TEST_REAGENT_A_LOT_2025_901", saved.getBarcode());
+        assertEquals("TEST-REAGENT-A-LOT-2025-901", saved.getBarcode());
     }
 
     @Test
     public void insert_shouldNotRepeatTheItemCodeWhenTheLotNumberAlreadyCarriesIt() {
-        // Auto-generated lot numbers are "{itemCode}-{yyyyMMdd}", so a naive
-        // itemCode + lotNumber seed produced TEST_REAGENT_A_TEST_REAGENT_A_20260810.
+        // A naive seed produced TEST-REAGENT-A-TEST-REAGENT-A-20260810.
         InventoryLot saved = inventoryLotService
                 .get(inventoryLotService.insert(newLot("TEST_REAGENT_A-20260810", null)));
 
-        assertEquals("TEST_REAGENT_A_20260810", saved.getBarcode());
+        assertEquals("TEST-REAGENT-A-20260810", saved.getBarcode());
     }
 
     @Test
     public void insert_shouldNormalizeAnExplicitlySuppliedBarcode() {
         InventoryLot saved = inventoryLotService.get(inventoryLotService.insert(newLot("LOT-2025-902", "my-own bc/1")));
 
-        assertEquals("MY_OWN_BC_1", saved.getBarcode());
+        assertEquals("MY-OWN-BC-1", saved.getBarcode());
     }
 
     @Test
@@ -134,21 +132,39 @@ public class InventoryLotServiceIT extends BaseWebContextSensitiveTest {
         inventoryLotService.insert(newLot("LOT-2025-903", null));
         InventoryLot second = inventoryLotService.get(inventoryLotService.insert(newLot("LOT-2025-903", null)));
 
-        assertEquals("TEST_REAGENT_A_LOT_2025_903_2", second.getBarcode());
+        assertEquals("TEST-REAGENT-A-LOT-2025-903-2", second.getBarcode());
     }
 
     @Test(expected = LocalizedValidationException.class)
     public void insert_shouldRejectAnExplicitBarcodeThatAlreadyExists() {
-        // LOT-BC-1000 normalizes to LOT_BC_1000, so use the stored form directly.
-        inventoryLotService.insert(newLot("LOT-2025-904", "LOT_BC_9999"));
-        inventoryLotService.insert(newLot("LOT-2025-905", "LOT_BC_9999"));
+        inventoryLotService.insert(newLot("LOT-2025-904", "LOT-BC-9999"));
+        inventoryLotService.insert(newLot("LOT-2025-905", "LOT-BC-9999"));
+    }
+
+    @Test
+    public void update_shouldKeepTheGeneratedBarcodeWhenTheLotIsSavedUnchanged() {
+        InventoryLot saved = inventoryLotService.get(inventoryLotService.insert(newLot("LOT-2025-906", null)));
+
+        inventoryLotService.update(saved);
+
+        assertEquals("Re-saving a lot must not reject its own barcode", "TEST-REAGENT-A-LOT-2025-906",
+                inventoryLotService.get(saved.getId()).getBarcode());
+    }
+
+    @Test
+    public void update_shouldStoreNullWhenTheBarcodeIsClearedRatherThanMintingANewOne() {
+        InventoryLot saved = inventoryLotService.get(inventoryLotService.insert(newLot("LOT-2025-907", null)));
+        saved.setBarcode("   ");
+
+        inventoryLotService.update(saved);
+
+        assertNull("Update must not mint a replacement barcode", inventoryLotService.get(saved.getId()).getBarcode());
     }
 
     @Test
     public void getAvailableLotsByItemFEFO_shouldReturnLotsInFEFOOrder() {
-        // test-lot-2 expires 2025-06-30 (earlier)
-        // test-lot-1 expires 2025-12-31 (later)
-        List<InventoryLot> lots = inventoryLotService.getAvailableLotsByItemFEFO(1L);
+        // Lot 1001 expires 2025-06-30 (earlier), lot 1000 expires 2025-12-31 (later).
+        List<InventoryLot> lots = inventoryLotService.getAvailableLotsByItemFEFO(1000L);
 
         assertNotNull("Lots should not be null", lots);
         assertEquals("Should have 2 active lots", 2, lots.size());
@@ -160,54 +176,54 @@ public class InventoryLotServiceIT extends BaseWebContextSensitiveTest {
 
     @Test
     public void updateQCStatus_shouldUpdateLotQCStatus() {
-        InventoryLot lot = inventoryLotService.get(1L);
+        InventoryLot lot = inventoryLotService.get(1000L);
         assertEquals(QCStatus.PASSED, lot.getQcStatus());
 
-        InventoryLot updatedLot = inventoryLotService.updateQCStatus(1L, QCStatus.FAILED, "QC test failed", "1");
+        InventoryLot updatedLot = inventoryLotService.updateQCStatus(1000L, QCStatus.FAILED, "QC test failed", "1");
 
         assertNotNull("Updated lot should not be null", updatedLot);
         assertEquals(QCStatus.FAILED, updatedLot.getQcStatus());
 
         // Verify persisted
-        assertEquals(QCStatus.FAILED, inventoryLotService.get(1L).getQcStatus());
+        assertEquals(QCStatus.FAILED, inventoryLotService.get(1000L).getQcStatus());
     }
 
     @Test
     public void updateLotStatus_shouldUpdateLotStatus() {
-        InventoryLot lot = inventoryLotService.get(1L);
+        InventoryLot lot = inventoryLotService.get(1000L);
         assertEquals(LotStatus.ACTIVE, lot.getStatus());
 
-        InventoryLot updatedLot = inventoryLotService.updateLotStatus(1L, LotStatus.IN_USE, "1");
+        InventoryLot updatedLot = inventoryLotService.updateLotStatus(1000L, LotStatus.IN_USE, "1");
 
         assertNotNull("Updated lot should not be null", updatedLot);
         assertEquals(LotStatus.IN_USE, updatedLot.getStatus());
 
         // Verify persisted
-        assertEquals(LotStatus.IN_USE, inventoryLotService.get(1L).getStatus());
+        assertEquals(LotStatus.IN_USE, inventoryLotService.get(1000L).getStatus());
     }
 
     @Test
     public void adjustLotQuantity_shouldUpdateQuantity() {
-        InventoryLot lot = inventoryLotService.get(1L);
+        InventoryLot lot = inventoryLotService.get(1000L);
         assertEquals(Double.valueOf(100.0), lot.getCurrentQuantity());
 
-        InventoryLot updatedLot = inventoryLotService.adjustLotQuantity(1L, 75.0, "Test adjustment", "1");
+        InventoryLot updatedLot = inventoryLotService.adjustLotQuantity(1000L, 75.0, "Test adjustment", "1");
 
         assertNotNull("Updated lot should not be null", updatedLot);
         assertEquals(Double.valueOf(75.0), updatedLot.getCurrentQuantity());
 
         // Verify persisted
-        assertEquals(Double.valueOf(75.0), inventoryLotService.get(1L).getCurrentQuantity());
+        assertEquals(Double.valueOf(75.0), inventoryLotService.get(1000L).getCurrentQuantity());
     }
 
     @Test
     public void openLot_shouldSetDateOpenedAndStatus() {
-        InventoryLot lot = inventoryLotService.get(1L);
+        InventoryLot lot = inventoryLotService.get(1000L);
         assertNull("Lot should not be opened yet", lot.getDateOpened());
         assertEquals(LotStatus.ACTIVE, lot.getStatus());
 
         Timestamp openDate = new Timestamp(System.currentTimeMillis());
-        InventoryLot openedLot = inventoryLotService.openLot(1L, openDate, "1");
+        InventoryLot openedLot = inventoryLotService.openLot(1000L, openDate, "1");
 
         assertNotNull("Opened lot should not be null", openedLot);
         assertEquals(LotStatus.IN_USE, openedLot.getStatus());
@@ -216,29 +232,36 @@ public class InventoryLotServiceIT extends BaseWebContextSensitiveTest {
 
     @Test
     public void disposeLot_shouldSetStatusToDisposed() {
-        InventoryLot lot = inventoryLotService.get(1L);
+        InventoryLot lot = inventoryLotService.get(1000L);
         assertEquals(LotStatus.ACTIVE, lot.getStatus());
 
-        InventoryLot disposedLot = inventoryLotService.disposeLot(1L, "Expired", null, "1");
+        InventoryLot disposedLot = inventoryLotService.disposeLot(1000L, "Expired", null, "1");
 
         assertNotNull("Disposed lot should not be null", disposedLot);
         assertEquals(LotStatus.DISPOSED, disposedLot.getStatus());
         assertEquals(Double.valueOf(0.0), disposedLot.getCurrentQuantity());
     }
 
+    // Every fixture lot has expired by now, so the test owns its lot.
+    private Long insertPassedLot(String lotNumber) {
+        InventoryLot lot = newLot(lotNumber, null);
+        lot.setQcStatus(QCStatus.PASSED);
+        return inventoryLotService.insert(lot);
+    }
+
     @Test
     public void isAvailableForUse_shouldReturnTrueForActivePassedLot() {
-        InventoryLot lot = inventoryLotService.get(1L);
+        Long id = insertPassedLot("LOT-2025-908");
 
-        assertTrue("Lot should be available for use", lot.isAvailableForUse());
+        assertTrue("Lot should be available for use", inventoryLotService.get(id).isAvailableForUse());
     }
 
     @Test
     public void isAvailableForUse_shouldReturnFalseForDisposedLot() {
-        // Dispose the lot first
-        inventoryLotService.disposeLot(1L, "Test disposal", null, "1");
+        Long id = insertPassedLot("LOT-2025-909");
 
-        InventoryLot lot = inventoryLotService.get(1L);
-        assertFalse("Disposed lot should not be available", lot.isAvailableForUse());
+        inventoryLotService.disposeLot(id, "Test disposal", null, "1");
+
+        assertFalse("Disposed lot should not be available", inventoryLotService.get(id).isAvailableForUse());
     }
 }

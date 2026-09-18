@@ -489,9 +489,7 @@ describe("InventoryDashboard barcode search", () => {
 });
 
 describe("InventoryDashboard row-to-lot mapping", () => {
-  // The table is sortable, so Carbon's row order need not match the order of
-  // the lots array. Resolving the lot by row index made every row action —
-  // move, dispose, QC — target whichever lot happened to sit at that index.
+  // Resolving a lot by row index binds a row's actions to whichever lot sorting put there.
   it("keeps each row's actions bound to its own lot after sorting", async () => {
     InventoryLotAPI.getAll.mockResolvedValue([
       lotWithLocation,
@@ -522,7 +520,7 @@ describe("InventoryDashboard row-to-lot mapping", () => {
 });
 
 describe("InventoryDashboard print label", () => {
-  const barcodedLot = { ...lotWithLocation, barcode: "TEST_REAGENT_A_LOT_100" };
+  const barcodedLot = { ...lotWithLocation, barcode: "TEST-REAGENT-A-LOT-100" };
 
   const openRowMenu = async () => {
     await screen.findByText("LOT-100");
@@ -534,7 +532,7 @@ describe("InventoryDashboard print label", () => {
     InventoryLotAPI.printLabel.mockResolvedValue({
       data: new Blob(["%PDF-1.4"], { type: "application/pdf" }),
       contentType: "application/pdf",
-      filename: "lot-TEST_REAGENT_A_LOT_100.pdf",
+      filename: "lot-TEST-REAGENT-A-LOT-100.pdf",
     });
     const createObjectURL = vi.fn(() => "blob:mock");
     const revokeObjectURL = vi.fn();

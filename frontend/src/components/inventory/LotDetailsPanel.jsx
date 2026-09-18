@@ -132,7 +132,7 @@ const LotDetailsPanel = ({ open, onClose, lot }) => {
                         </StructuredListCell>
                         <StructuredListCell>
                           <code className="lot-details-barcode">
-                            {lot.barcode}
+                            {lot.barcode || "-"}
                           </code>
                         </StructuredListCell>
                       </StructuredListRow>

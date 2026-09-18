@@ -26,9 +26,8 @@ import org.openelisglobal.inventory.valueholder.InventoryEnums.TransactionType;
 import org.openelisglobal.inventory.valueholder.InventoryLot;
 
 /**
- * inventory_lot.barcode is UNIQUE and nullable, so "no barcode" has to reach
- * the database as NULL from every write path, and a real collision has to be a
- * translatable 400 rather than a constraint violation.
+ * inventory_lot.barcode is UNIQUE and nullable: insert mints a barcode, update
+ * clears a blank one to NULL, and a real collision is a translatable 400.
  */
 @RunWith(MockitoJUnitRunner.class)
 public class InventoryLotServiceTest {
@@ -56,13 +55,14 @@ public class InventoryLotServiceTest {
     }
 
     @Test
-    public void insert_storesNullForBlankBarcode() {
+    public void insert_generatesBarcodeForBlankBarcode() {
         InventoryLot lot = lot(null, "   ", LotStatus.ACTIVE);
+        lot.setLotNumber("LOT-2025-001");
 
         inventoryLotService.insert(lot);
 
-        assertNull("blank barcode must not reach the UNIQUE column as ''", lot.getBarcode());
-        verify(inventoryLotDAO).insert(argThat(saved -> saved.getBarcode() == null));
+        assertEquals("a blank barcode is minted from the lot number", "LOT-2025-001", lot.getBarcode());
+        verify(inventoryLotDAO).insert(argThat(saved -> "LOT-2025-001".equals(saved.getBarcode())));
     }
 
     @Test
