@@ -806,12 +806,12 @@ export default function App() {
                 <Route
                   path="/order/enter"
                   exact
-                  render={() => <Redirect to="/order/clinical/enter" />}
+                  render={() => <Redirect to="/order/environmental/enter" />}
                 />
                 <Route
                   path="/order"
                   exact
-                  render={() => <Redirect to="/order/clinical" />}
+                  render={() => <Redirect to="/order/environmental" />}
                 />
                 <SecureRoute
                   path="/vector/identification"
