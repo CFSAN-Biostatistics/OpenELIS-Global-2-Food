@@ -1,0 +1,53 @@
+/* Food & Environmental Lab Theme */
+
+/* Header background - dark navy */
+.cds--header {
+  background-color: #222C67 !important;
+  border-bottom: none !important;
+}
+
+/* Header name/logo area */
+.cds--header__name {
+  color: #ffffff !important;
+}
+
+/* Header action buttons (search, notifications, user) */
+.cds--header__action {
+  color: #a8b4d8 !important;
+}
+.cds--header__action:hover {
+  background-color: rgba(255,255,255,0.1) !important;
+  color: #ffffff !important;
+}
+
+/* Side nav background */
+.cds--side-nav {
+  background-color: #1a2254 !important;
+}
+.cds--side-nav__item {
+  color: #cce8f6 !important;
+}
+.cds--side-nav__link:hover {
+  background-color: rgba(255,255,255,0.1) !important;
+  color: #ffffff !important;
+}
+.cds--side-nav__link--current {
+  background-color: #007CBA !important;
+  color: #ffffff !important;
+}
+
+/* Interactive blue elements */
+.cds--link {
+  color: #007CBA !important;
+}
+.cds--btn--primary {
+  background-color: #007CBA !important;
+}
+.cds--btn--primary:hover {
+  background-color: #005f8e !important;
+}
+
+/* Page background */
+.cds--content {
+  background-color: #f0f2f5 !important;
+}

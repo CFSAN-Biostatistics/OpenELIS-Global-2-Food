@@ -42,6 +42,8 @@ import SearchBar from "./search/searchBar";
 import { getBranding } from "../utils/BrandingUtils";
 import config from "../../config.json";
 
+import "./food-theme.css";
+
 function OEHeader({
   onChangeLanguage,
   navOpen = true,
