@@ -51,3 +51,15 @@
 .cds--content {
   background-color: #f0f2f5 !important;
 }
+
+.cds--side-nav__link > .cds--side-nav__link-text {
+  color: #cce8f6 !important;
+}
+
+.cds--side-nav__menu-item .cds--side-nav__link-text {
+  color: #cce8f6 !important;
+}
+
+.cds--side-nav__submenu-title {
+  color: #cce8f6 !important;
+}
