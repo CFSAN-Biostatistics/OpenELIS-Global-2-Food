@@ -492,13 +492,13 @@ function OEHeader({
       }
 
       if (menuItem.menu.actionURL) {
-        // Internal SPA routes (path starts with "/") always use history.push,
-        // even when the menu row was seeded with new_window=true. The flag
-        // only fires window.open() for true external URLs (http(s)://, mailto:, etc.).
         const isInternalUrl = menuItem.menu.actionURL.startsWith("/");
-        if (menuItem.menu.openInNewWindow && !isInternalUrl) {
-          // noopener,noreferrer prevents reverse-tabnabbing — the new tab
-          // can't navigate this app's window via window.opener.
+        const isHomeUrl = menuItem.menu.actionURL === "/" || 
+                      menuItem.menu.actionURL === "/Dashboard";
+                      
+        if (isHomeUrl) {
+          window.location.href = menuItem.menu.actionURL;
+        } else if (menuItem.menu.openInNewWindow && !isInternalUrl) {
           window.open(menuItem.menu.actionURL, "_blank", "noopener,noreferrer");
         } else {
           history.push(menuItem.menu.actionURL);
