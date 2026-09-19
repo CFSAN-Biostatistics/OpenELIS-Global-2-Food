@@ -47,9 +47,11 @@ const PageBreadCrumb = ({ breadcrumbs }) => {
                 aria-current={isCurrent ? "page" : undefined}
               >
                 {isCurrent || !breadcrumb.link ? (
-                  <span>{label}</span>
-                ) : (
-                  <Link to={breadcrumb.link}>{label}</Link>
+                    <span>{label}</span>
+                  ) : breadcrumb.link === "/" || breadcrumb.link === "/Dashboard" ? (
+                    <a href={breadcrumb.link}>{label}</a>
+                  ) : (
+                    <Link to={breadcrumb.link}>{label}</Link>
                 )}
               </BreadcrumbItem>
             );
