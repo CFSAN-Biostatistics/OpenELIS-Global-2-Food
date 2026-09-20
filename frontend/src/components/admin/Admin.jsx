@@ -85,6 +85,7 @@ import VectorSurveillanceSetup from "./vectorSurveillance/VectorSurveillanceSetu
 import SampleAcceptanceChecklistSetup from "./sampleAcceptance/SampleAcceptanceChecklistSetup";
 import AdminDashboard from "./AdminDashboard";
 import MicrobiologyReferenceAdmin from "./microbiologyReference/MicrobiologyReferenceAdmin";
+import ReloadConfiguration from "./generalConfig/configurationReload/ReloadConfiguration";
 
 function Admin() {
   const { path } = useRouteMatch();
@@ -379,6 +380,10 @@ function Admin() {
       <Route
         path={`${path}/SampleAcceptanceChecklist`}
         component={SampleAcceptanceChecklistSetup}
+      />
+      <Route
+        path={`${path}/configurationReload`}
+        component={ReloadConfiguration}
       />
       <Route
         path={path}

@@ -13,6 +13,7 @@ import {
   ListDropdown,
   Microscope,
   QrCode,
+  Renew,
   ResultNew,
   Settings,
   TableOfContents,
@@ -84,6 +85,11 @@ const ADMIN_DASHBOARD_LINKS = [
     messageId: "notificationtrigger.config.title",
     path: "notificationTriggerConfig",
     icon: Bullhorn,
+  },
+  {
+    messageId: "admin.reloadConfiguration",
+    path: "configurationReload",
+    icon: Renew,
   },
 ];
 
