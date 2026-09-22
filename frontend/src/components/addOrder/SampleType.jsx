@@ -537,7 +537,9 @@ const SampleType = (props) => {
         ? "/rest/environmental-sample-types"
         : domain === "V"
           ? "/rest/vector-sample-types"
-          : "/rest/user-sample-types";
+          : domain === "F"
+            ? "/rest/food-sample-types"
+            : "/rest/user-sample-types";
     getFromOpenElisServer(sampleTypesEndpoint, fetchSamplesTypes);
     return () => {
       componentMounted.current = false;
@@ -552,7 +554,9 @@ const SampleType = (props) => {
         ? "/rest/environmental-sample-types"
         : domain === "V"
           ? "/rest/vector-sample-types"
-          : "/rest/user-sample-types";
+          : domain === "F"
+            ? "/rest/food-sample-types"
+            : "/rest/user-sample-types";
     setLoading(true);
     getFromOpenElisServer(sampleTypesEndpoint, (res) => {
       if (componentMounted.current && fetchId === domainFetchRef.current) {
