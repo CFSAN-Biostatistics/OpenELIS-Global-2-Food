@@ -16,16 +16,6 @@
 
     <changeSet id="local-add-food-domain-test-constraint" author="errol.strain">
         <comment>Update test domain constraint to include FOOD</comment>
-        <preConditions onFail="MARK_RAN">
-            <sqlCheck expectedResult="1">
-                SELECT COUNT(*) 
-                FROM information_schema.table_constraints 
-                WHERE constraint_name = 'test_domain_chk' 
-                AND table_schema = 'clinlims' 
-                AND table_name = 'test'
-            </sqlCheck>
-        </preConditions>
-        
         <sql>
             ALTER TABLE clinlims.test DROP CONSTRAINT IF EXISTS test_domain_chk;
             ALTER TABLE clinlims.test 
@@ -45,16 +35,6 @@
 
     <changeSet id="local-add-food-domain-test-section-constraint" author="errol.strain">
         <comment>Update test_section domain constraint to include FOOD</comment>
-        <preConditions onFail="MARK_RAN">
-            <sqlCheck expectedResult="1">
-                SELECT COUNT(*) 
-                FROM information_schema.table_constraints 
-                WHERE constraint_name = 'test_section_domain_chk' 
-                AND table_schema = 'clinlims' 
-                AND table_name = 'test_section'
-            </sqlCheck>
-        </preConditions>
-        
         <sql>
             ALTER TABLE clinlims.test_section DROP CONSTRAINT IF EXISTS test_section_domain_chk;
             ALTER TABLE clinlims.test_section 
@@ -74,16 +54,6 @@
 
     <changeSet id="local-add-food-domain-panel-constraint" author="errol.strain">
         <comment>Update panel domain constraint to include FOOD</comment>
-        <preConditions onFail="MARK_RAN">
-            <sqlCheck expectedResult="1">
-                SELECT COUNT(*) 
-                FROM information_schema.table_constraints 
-                WHERE constraint_name = 'panel_domain_chk' 
-                AND table_schema = 'clinlims' 
-                AND table_name = 'panel'
-            </sqlCheck>
-        </preConditions>
-        
         <sql>
             ALTER TABLE clinlims.panel DROP CONSTRAINT IF EXISTS panel_domain_chk;
             ALTER TABLE clinlims.panel 
@@ -102,7 +72,6 @@
     </changeSet>
 
     <changeSet id="local-add-food-domain-sample-acceptance-category" author="errol.strain">
-        <comment>Add FOOD dictionary category for Sample Acceptance Checklist</comment>
         <preConditions onFail="MARK_RAN">
             <sqlCheck expectedResult="0">
                 SELECT COUNT(*) 
@@ -110,6 +79,7 @@
                 WHERE name = 'SampleAcceptanceItem_FOOD'
             </sqlCheck>
         </preConditions>
+        <comment>Add FOOD dictionary category for Sample Acceptance Checklist</comment>
         
         <insert tableName="dictionary_category" schemaName="clinlims">
             <column name="id" valueSequenceNext="dictionary_category_seq" />
@@ -127,7 +97,6 @@
     </changeSet>
 
     <changeSet id="local-add-food-domain-sample-acceptance-config" author="errol.strain">
-        <comment>Add FOOD sample acceptance enforcement setting (default OPTIONAL)</comment>
         <preConditions onFail="MARK_RAN">
             <sqlCheck expectedResult="0">
                 SELECT COUNT(*) 
@@ -140,6 +109,7 @@
                 WHERE name = 'sampleEntryConfig'
             </sqlCheck>
         </preConditions>
+        <comment>Add FOOD sample acceptance enforcement setting (default OPTIONAL)</comment>
         
         <insert tableName="site_information" schemaName="clinlims">
             <column name="id" valueSequenceNext="site_information_seq" />
