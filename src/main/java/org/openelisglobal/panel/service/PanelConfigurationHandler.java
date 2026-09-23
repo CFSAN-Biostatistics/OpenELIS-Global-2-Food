@@ -58,7 +58,8 @@ public class PanelConfigurationHandler implements DomainConfigurationHandler {
 
     private static final String LOCALIZATION_COLUMN_PREFIX = "localization:";
 
-    private static final Set<String> DOMAINS = Set.of("CLINICAL", "ENVIRONMENTAL", "VECTOR");
+    /*private static final Set<String> DOMAINS = Set.of("CLINICAL", "ENVIRONMENTAL", "VECTOR");*/
+    private static final Set<String> DOMAINS = Set.of("CLINICAL", "ENVIRONMENTAL", "VECTOR", "FOOD");
 
     @Autowired
     private PanelService panelService;

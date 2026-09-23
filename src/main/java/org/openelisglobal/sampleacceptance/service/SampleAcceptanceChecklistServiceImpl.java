@@ -28,10 +28,13 @@ public class SampleAcceptanceChecklistServiceImpl implements SampleAcceptanceChe
     private static final Set<String> VALID_ENFORCEMENT = Set.of("MANDATORY", "OPTIONAL", "OFF");
 
     /** The three domains that carry a configurable enforcement mode. */
-    private static final Set<String> ENFORCEABLE_DOMAINS = Set.of("CLINICAL", "ENVIRONMENTAL", "VECTOR");
+    /**private static final Set<String> ENFORCEABLE_DOMAINS = Set.of("CLINICAL", "ENVIRONMENTAL", "VECTOR");*/
 
     /** Valid navigation targets for the admin view / item editing. */
-    private static final Set<String> VALID_VIEW_DOMAINS = Set.of(ALL_DOMAINS, "CLINICAL", "ENVIRONMENTAL", "VECTOR");
+    /**private static final Set<String> VALID_VIEW_DOMAINS = Set.of(ALL_DOMAINS, "CLINICAL", "ENVIRONMENTAL", "VECTOR");*/
+
+    private static final Set<String> ENFORCEABLE_DOMAINS = Set.of("CLINICAL", "ENVIRONMENTAL", "VECTOR", "FOOD");
+    private static final Set<String> VALID_VIEW_DOMAINS = Set.of(ALL_DOMAINS, "CLINICAL", "ENVIRONMENTAL", "VECTOR", "FOOD");
 
     /**
      * Maximum label length. Bounded by {@code dictionary.local_abbrev}

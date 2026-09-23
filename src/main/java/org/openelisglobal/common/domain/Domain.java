@@ -6,7 +6,7 @@ package org.openelisglobal.common.domain;
  * served to the UI by {@code GET /rest/domains} so nothing hard-codes the list.
  *
  * <p>
- * Stored form is the enum name (CLINICAL / ENVIRONMENTAL / VECTOR). Sample
+ * Stored form is the enum name (CLINICAL / ENVIRONMENTAL / VECTOR / FOOD). Sample
  * types may still present a legacy one-character {@code sample_domain} code
  * (D-030, OGC-1145) from un-migrated or plugin-inserted rows — H uman and N
  * ewborn fold into CLINICAL, E nvironmental into ENVIRONMENTAL, A nimal into
@@ -16,7 +16,10 @@ package org.openelisglobal.common.domain;
  */
 public enum Domain {
 
-    CLINICAL("label.domain.CLINICAL"), ENVIRONMENTAL("label.domain.ENVIRONMENTAL"), VECTOR("label.domain.VECTOR");
+    CLINICAL("label.domain.CLINICAL"), 
+    ENVIRONMENTAL("label.domain.ENVIRONMENTAL"), 
+    VECTOR("label.domain.VECTOR"),
+    FOOD("label.domain.FOOD"); // Added FOOD domain
 
     /** Default when a raw value is blank or unrecognized. */
     public static final Domain DEFAULT = CLINICAL;
@@ -54,6 +57,9 @@ public enum Domain {
         case "N":
         case "CLINICAL":
             return CLINICAL;
+        case "F": // Optional: map 'F' to FOOD if you ever use single chars
+        case "FOOD":
+            return FOOD;
         default:
             return null;
         }

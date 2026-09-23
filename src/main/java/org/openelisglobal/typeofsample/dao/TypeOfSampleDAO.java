@@ -31,7 +31,7 @@ import org.openelisglobal.typeofsample.valueholder.TypeOfSample;
 public interface TypeOfSampleDAO extends BaseDAO<TypeOfSample, String> {
 
     public enum SampleDomain {
-        HUMAN, ANIMAL, ENVIRONMENTAL, VECTOR
+        HUMAN, ANIMAL, ENVIRONMENTAL, VECTOR, FOOD
     }
 
     String getNameForTypeOfSampleId(String id);
