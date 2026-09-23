@@ -85,7 +85,7 @@
             <column name="id" valueSequenceNext="dictionary_category_seq" />
             <column name="description" value="Sample Acceptance Checklist items — Food" />
             <column name="lastupdated" valueComputed="${now}" />
-            <column name="local_abbrev" value="SAcceptFood" />
+            <column name="local_abbrev" value="SAcceptFod" />
             <column name="name" value="SampleAcceptanceItem_FOOD" />
         </insert>
         
