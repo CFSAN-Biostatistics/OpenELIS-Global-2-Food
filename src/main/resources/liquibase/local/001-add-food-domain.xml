@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+    http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <property name="now" value="now()" dbms="postgresql" />
+
+    <!-- ========================================================================
+         SITE CUSTOMIZATION: Add FOOD domain support
+         - Updates CHECK constraints on test, test_section, panel
+         - Adds FOOD sample acceptance checklist category
+         - Adds FOOD sample acceptance enforcement config
+         ======================================================================== -->
+
+    <changeSet id="local-add-food-domain-test-constraint" author="errol.strain">
+        <comment>Update test domain constraint to include FOOD</comment>
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="1">
+                SELECT COUNT(*) 
+                FROM information_schema.table_constraints 
+                WHERE constraint_name = 'test_domain_chk' 
+                AND table_schema = 'clinlims' 
+                AND table_name = 'test'
+            </sqlCheck>
+        </preConditions>
+        
+        <sql>
+            ALTER TABLE clinlims.test DROP CONSTRAINT IF EXISTS test_domain_chk;
+            ALTER TABLE clinlims.test 
+                ADD CONSTRAINT test_domain_chk 
+                CHECK (domain IN ('CLINICAL', 'ENVIRONMENTAL', 'VECTOR', 'FOOD'));
+        </sql>
+        
+        <rollback>
+            <sql>
+                ALTER TABLE clinlims.test DROP CONSTRAINT IF EXISTS test_domain_chk;
+                ALTER TABLE clinlims.test 
+                    ADD CONSTRAINT test_domain_chk 
+                    CHECK (domain IN ('CLINICAL', 'ENVIRONMENTAL', 'VECTOR'));
+            </sql>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="local-add-food-domain-test-section-constraint" author="errol.strain">
+        <comment>Update test_section domain constraint to include FOOD</comment>
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="1">
+                SELECT COUNT(*) 
+                FROM information_schema.table_constraints 
+                WHERE constraint_name = 'test_section_domain_chk' 
+                AND table_schema = 'clinlims' 
+                AND table_name = 'test_section'
+            </sqlCheck>
+        </preConditions>
+        
+        <sql>
+            ALTER TABLE clinlims.test_section DROP CONSTRAINT IF EXISTS test_section_domain_chk;
+            ALTER TABLE clinlims.test_section 
+                ADD CONSTRAINT test_section_domain_chk 
+                CHECK (domain IN ('CLINICAL', 'ENVIRONMENTAL', 'VECTOR', 'FOOD'));
+        </sql>
+        
+        <rollback>
+            <sql>
+                ALTER TABLE clinlims.test_section DROP CONSTRAINT IF EXISTS test_section_domain_chk;
+                ALTER TABLE clinlims.test_section 
+                    ADD CONSTRAINT test_section_domain_chk 
+                    CHECK (domain IN ('CLINICAL', 'ENVIRONMENTAL', 'VECTOR'));
+            </sql>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="local-add-food-domain-panel-constraint" author="errol.strain">
+        <comment>Update panel domain constraint to include FOOD</comment>
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="1">
+                SELECT COUNT(*) 
+                FROM information_schema.table_constraints 
+                WHERE constraint_name = 'panel_domain_chk' 
+                AND table_schema = 'clinlims' 
+                AND table_name = 'panel'
+            </sqlCheck>
+        </preConditions>
+        
+        <sql>
+            ALTER TABLE clinlims.panel DROP CONSTRAINT IF EXISTS panel_domain_chk;
+            ALTER TABLE clinlims.panel 
+                ADD CONSTRAINT panel_domain_chk 
+                CHECK (domain IN ('CLINICAL', 'ENVIRONMENTAL', 'VECTOR', 'FOOD'));
+        </sql>
+        
+        <rollback>
+            <sql>
+                ALTER TABLE clinlims.panel DROP CONSTRAINT IF EXISTS panel_domain_chk;
+                ALTER TABLE clinlims.panel 
+                    ADD CONSTRAINT panel_domain_chk 
+                    CHECK (domain IN ('CLINICAL', 'ENVIRONMENTAL', 'VECTOR'));
+            </sql>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="local-add-food-domain-sample-acceptance-category" author="errol.strain">
+        <comment>Add FOOD dictionary category for Sample Acceptance Checklist</comment>
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="0">
+                SELECT COUNT(*) 
+                FROM clinlims.dictionary_category 
+                WHERE name = 'SampleAcceptanceItem_FOOD'
+            </sqlCheck>
+        </preConditions>
+        
+        <insert tableName="dictionary_category" schemaName="clinlims">
+            <column name="id" valueSequenceNext="dictionary_category_seq" />
+            <column name="description" value="Sample Acceptance Checklist items — Food" />
+            <column name="lastupdated" valueComputed="${now}" />
+            <column name="local_abbrev" value="SAcceptFood" />
+            <column name="name" value="SampleAcceptanceItem_FOOD" />
+        </insert>
+        
+        <rollback>
+            <delete tableName="dictionary_category" schemaName="clinlims">
+                <where>name = 'SampleAcceptanceItem_FOOD'</where>
+            </delete>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="local-add-food-domain-sample-acceptance-config" author="errol.strain">
+        <comment>Add FOOD sample acceptance enforcement setting (default OPTIONAL)</comment>
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="0">
+                SELECT COUNT(*) 
+                FROM clinlims.site_information 
+                WHERE name = 'sampleAcceptCheck.food'
+            </sqlCheck>
+            <sqlCheck expectedResult="1">
+                SELECT COUNT(*) 
+                FROM clinlims.site_information_domain 
+                WHERE name = 'sampleEntryConfig'
+            </sqlCheck>
+        </preConditions>
+        
+        <insert tableName="site_information" schemaName="clinlims">
+            <column name="id" valueSequenceNext="site_information_seq" />
+            <column name="name" value="sampleAcceptCheck.food" />
+            <column name="value" value="OPTIONAL" />
+            <column name="description" value="Enforcement level for the Food sample acceptance checklist (MANDATORY/OPTIONAL/OFF)" />
+            <column name="value_type" value="text" />
+            <column name="domain_id" valueComputed="(SELECT id FROM clinlims.site_information_domain WHERE name = 'sampleEntryConfig')" />
+            <column name="lastupdated" valueComputed="${now}" />
+        </insert>
+        
+        <rollback>
+            <delete tableName="site_information" schemaName="clinlims">
+                <where>name = 'sampleAcceptCheck.food'</where>
+            </delete>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

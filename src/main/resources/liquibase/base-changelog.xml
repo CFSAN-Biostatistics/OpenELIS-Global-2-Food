@@ -36,4 +36,7 @@
   <include file="liquibase/qc/013-create-validation-qc-acknowledgment.xml" />
   <include file="liquibase/qc/014-register-validation-qc-ack-reference-table.xml" />
 
+  <!-- Site-specific customizations (local folder) -->
+  <include file="liquibase/local/base.xml" />
+
 </databaseChangeLog>
