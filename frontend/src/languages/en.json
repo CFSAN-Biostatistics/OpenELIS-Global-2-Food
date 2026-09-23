@@ -2314,6 +2314,7 @@
   "label.domain.CLINICAL": "Clinical",
   "label.domain.ENVIRONMENTAL": "Environmental",
   "label.domain.VECTOR": "Vector",
+  "label.domain.FOOD": "Food",
   "label.sampleType.domain.clinical": "Clinical",
   "label.sampleType.domain.environmental": "Environmental",
   "label.sampleType.domain.helper": "Determines which workflow mode (Clinical or Environmental) this sample type appears in.",
