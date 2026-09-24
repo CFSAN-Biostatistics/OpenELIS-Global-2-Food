@@ -1,5 +1,17 @@
 {
-  "title": "Cote d'Ivoire Regional Laboratory LIS",
+  "title": "Food & Environmental Laboratory LIS",
   "loginRedirect": "/login",
-  "serverBaseUrl": "/api/OpenELIS-Global"
+  "serverBaseUrl": "/api/OpenELIS-Global",
+  "branding": {
+    "primaryColor": "#007CBA", 
+    "secondaryColor": "#f0f2f5", 
+    "headerBackgroundColor": "#222C67", 
+    "headerTitleColor": "#ffffff",
+    "headerIconColor": "#a8b4d8",
+    "headerIconHoverColor": "#ffffff",
+    "sidenavBackgroundColor": "#1a2254", 
+    "sidenavItemColor": "#ffffff", 
+    "sidenavItemHoverColor": "#e0e0e0",
+    "sidenavItemActiveColor": "#007CBA"
+  }
 }
