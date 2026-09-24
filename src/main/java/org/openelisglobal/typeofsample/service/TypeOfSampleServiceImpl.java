@@ -362,10 +362,23 @@ public class TypeOfSampleServiceImpl extends AuditableBaseObjectServiceImpl<Type
         return super.insert(typeOfSample);
     }
 
+    //@Override
+    //@Transactional
+    //public TypeOfSample save(TypeOfSample typeOfSample) {
+    //    if (duplicateTypeOfSampleExists(typeOfSample)) {
+    //        throw new LIMSDuplicateRecordException("Duplicate record exists for " + typeOfSample.getDescription());
+    //    }
+    //    baseObjectDAO.clearMap();
+    //    return super.save(typeOfSample);
+    //}
+
     @Override
     @Transactional
     public TypeOfSample save(TypeOfSample typeOfSample) {
-        if (duplicateTypeOfSampleExists(typeOfSample)) {
+        TypeOfSample existing = baseObjectDAO.getTypeOfSampleByDescriptionAndDomain(typeOfSample, true);
+        
+        // Only throw duplicate exception if the matching record has a DIFFERENT ID
+        if (existing != null && !existing.getId().equals(typeOfSample.getId())) {
             throw new LIMSDuplicateRecordException("Duplicate record exists for " + typeOfSample.getDescription());
         }
         baseObjectDAO.clearMap();
