@@ -395,9 +395,39 @@ public class TypeOfSampleServiceImpl extends AuditableBaseObjectServiceImpl<Type
         return super.update(typeOfSample);
     } 
 
+    //private boolean duplicateTypeOfSampleExists(TypeOfSample typeOfSample) {
+    //    return baseObjectDAO.duplicateTypeOfSampleExists(typeOfSample);
+    //}
+
     private boolean duplicateTypeOfSampleExists(TypeOfSample typeOfSample) {
+        // 1. If this is an existing record being updated:
+        if (typeOfSample.getId() != null) {
+            
+            // Check if ANY OTHER record has the same description in the same domain
+            TypeOfSample existingByDesc = baseObjectDAO.getTypeOfSampleByDescriptionAndDomain(typeOfSample, true);
+            if (existingByDesc != null && !existingByDesc.getId().equals(typeOfSample.getId())) {
+                return true; // True duplicate: a different row has this description!
+            }
+
+            // Check if ANY OTHER record has the same local abbreviation in the same domain
+            if (typeOfSample.getLocalAbbreviation() != null && !typeOfSample.getLocalAbbreviation().trim().isEmpty()) {
+                TypeOfSample existingByAbbrev = baseObjectDAO.getTypeOfSampleByLocalAbbrevAndDomain(
+                    typeOfSample.getLocalAbbreviation().trim(), 
+                    typeOfSample.getDomain()
+                );
+                if (existingByAbbrev != null && !existingByAbbrev.getId().equals(typeOfSample.getId())) {
+                    return true; // True duplicate: a different row has this abbreviation!
+                }
+            }
+
+            // Safe to save! No other row has this name or abbreviation.
+            return false;
+        }
+
+        // 2. For brand new records (id == null), fall back to the default DAO check
         return baseObjectDAO.duplicateTypeOfSampleExists(typeOfSample);
     }
+
 
     @Override
     @Transactional(readOnly = true)
