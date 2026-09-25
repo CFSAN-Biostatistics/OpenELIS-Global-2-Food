@@ -393,7 +393,7 @@ public class TypeOfSampleServiceImpl extends AuditableBaseObjectServiceImpl<Type
         }
         baseObjectDAO.clearMap();
         return super.update(typeOfSample);
-    }git 
+    } 
 
     private boolean duplicateTypeOfSampleExists(TypeOfSample typeOfSample) {
         return baseObjectDAO.duplicateTypeOfSampleExists(typeOfSample);
