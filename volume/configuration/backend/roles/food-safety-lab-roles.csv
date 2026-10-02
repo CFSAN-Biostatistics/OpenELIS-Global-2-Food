@@ -1,0 +1,28 @@
+# Food Safety Lab Roles Configuration
+# Display keys requiring i18n entries in Phase 0C:
+# - role.lab.staff
+# - role.lab.analyst
+# - role.sample.manager
+# - role.test.manager
+# - role.results.entry
+# - role.reporting
+# - role.qc
+# - role.lab.admin
+# - role.bench.supervisor
+# - role.section.supervisor
+# - role.quality.manager
+# - role.lab.director
+name,description,displayKey,active,editable,isGroupingRole,groupingParent
+Lab Staff,Grouping role for all laboratory staff,role.lab.staff,Y,N,Y,
+Lab Analyst,Food safety lab analyst with sample, test, and reporting access,role.lab.analyst,Y,Y,N,Lab Staff
+Sample Manager,Manages sample receipt, storage, and tracking,role.sample.manager,Y,Y,N,Lab Staff
+Test Manager,Manages test catalog and test result entry,role.test.manager,Y,Y,N,Lab Staff
+Results Entry,Enters and reviews test results,role.results.entry,Y,Y,N,Lab Staff
+Reporting,Generates and reviews lab reports,role.reporting,Y,Y,N,Lab Staff
+Quality Control,Manages quality control and proficiency testing,role.qc,Y,Y,N,Lab Staff
+Lab Administrator,Manages food safety lab configuration and user accounts,role.lab.admin,Y,Y,N,Lab Staff
+Lab Supervisors,Grouping role for all supervisory positions,role.lab.supervisors,Y,N,Y,Lab Staff
+Bench Supervisor,First-line supervisor with day-to-day oversight of lab analysts,role.bench.supervisor,Y,Y,N,Lab Supervisors
+Section Supervisor,Second-line supervisor with section-level management authority,role.section.supervisor,Y,Y,N,Lab Supervisors
+Quality Manager,Owns the QA program, approves SOPs, and interfaces with regulatory agencies,role.quality.manager,Y,Y,N,Lab Supervisors
+Lab Director,Overall lab authority, scientific signatory, and primary FDA contact,role.lab.director,Y,Y,N,Lab Supervisors

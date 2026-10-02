@@ -1,0 +1,1325 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <!-- 
+        Food Safety Lab Role Permissions
+        
+        This changeset grants permissions to food safety roles while
+        excluding patient management, billing, epidemiology, and clinical microbiology.
+        Uses additive grants only - roles without a row for a module
+        cannot access that module.
+        
+        Excluded modules: Cytology, MicrobiologyTBView, Pathology, ReportCovid,
+        VectorManualEntryFieldMap, VectorManualEntryHelper, VectorSurveillanceDashboard
+    -->
+
+    <!-- ========================================================================
+         LAB STAFF - Grouping role for all food safety lab staff
+         NO DIRECT PERMISSIONS - this is a grouping role only
+         ======================================================================== -->
+    <changeSet author="phase-0b" id="food-safety-lab-staff-permissions">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="system_role_module" schemaName="clinlims" />
+            <sqlCheck expectedResult="0">
+                SELECT COUNT(*) FROM clinlims.system_role_module srm 
+                WHERE srm.system_role_id = (SELECT id FROM clinlims.system_role WHERE name = 'Lab Staff')
+            </sqlCheck>
+        </preConditions>
+        <comment>Lab Staff is a grouping role with no direct permissions</comment>
+    </changeSet>
+
+    <!-- ========================================================================
+         LAB ANALYST - Primary food safety lab technician
+         ======================================================================== -->
+    <changeSet author="phase-0b" id="lab-analyst-permissions">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="system_role_module" schemaName="clinlims" />
+            <sqlCheck expectedResult="0">
+                SELECT COUNT(*) FROM clinlims.system_role_module srm 
+                WHERE srm.system_role_id = (SELECT id FROM clinlims.system_role WHERE name = 'Lab Analyst')
+            </sqlCheck>
+        </preConditions>
+        <comment>Grant Lab Analyst base access to sample, test, and result management</comment>
+        
+        <!-- Base modules -->
+        <insert tableName="system_role_module" schemaName="clinlims">
+            <column name="id" valueSequenceNext="system_role_module_seq"/>
+            <column name="has_select" value="Y"/>
+            <column name="has_add" value="Y"/>
+            <column name="has_update" value="Y"/>
+            <column name="has_delete" value="N"/>
+            <column name="system_role_id" valueComputed="(SELECT id FROM clinlims.system_role WHERE name = 'Lab Analyst')"/>
+            <column name="system_module_id" valueComputed="(SELECT id FROM clinlims.system_module WHERE name = 'GenericSampleView')"/>
+        </insert>
+        
+        <insert tableName="system_role_module" schemaName="clinlims">
+            <column name="id" valueSequenceNext="system_role_module_seq"/>
+            <column name="has_select" value="Y"/>
+            <column name="has_add" value="Y"/>
+            <column name="has_update" value="Y"/>
+            <column name="has_delete" value="N"/>
+            <column name="system_role_id" valueComputed="(SELECT id FROM clinlims.system_role WHERE name = 'Lab Analyst')"/>
+            <column name="system_module_id" valueComputed="(SELECT id FROM clinlims.system_module WHERE name = 'ResultsValidationGeneral')"/>
+        </insert>
+        
+        <insert tableName="system_role_module" schemaName="clinlims">
+            <column name="id" valueSequenceNext="system_role_module_seq"/>
+            <column name="has_select" value="Y"/>
+            <column name="has_add" value="Y"/>
+            <column name="has_update" value="Y"/>
+            <column name="has_delete" value="N"/>
+            <column name="system_role_id" valueComputed="(SELECT id FROM clinlims.system_role WHERE name = 'Lab Analyst')"/>
+            <column name="system_module_id" valueComputed="(SELECT id FROM clinlims.system_module WHERE name = 'RangeResults')"/>
+        </insert>
+        
+        <insert tableName="system_role_module" schemaName="clinlims">
+            <column name="id" valueSequenceNext="system_role_module_seq"/>
+            <column name="has_select" value="Y"/>
+            <column name="has_add" value="N"/>
+            <column name="has_update" value="N"/>
+            <column name="has_delete" value="N"/>
+            <column name="system_role_id" valueComputed="(SELECT id FROM clinlims.system_role WHERE name = 'Lab Analyst')"/>
+            <column name="system_module_id" valueComputed="(SELECT id FROM clinlims.system_module WHERE name = 'TATReport')"/>
+        </insert>
+        
+        <insert tableName="system_role_module" schemaName="clinlims">
+            <column name="id" valueSequenceNext="system_role_module_seq"/>
+            <column name="has_select" value="Y"/>
+            <column name="has_add" value="N"/>
+            <column name="has_update" value="N"/>
+            <column name="has_delete" value="N"/>
+            <column name="system_role_id" valueComputed="(SELECT id FROM clinlims.system_role WHERE name = 'Lab Analyst')"/>
+            <column name="system_module_id" valueComputed="(SELECT id FROM clinlims.system_module WHERE name = 'Report:RoutineExport')"/>
+        </insert>
+        
+        <insert tableName="system_role_module" schemaName="clinlims">
+            <column name="id" valueSequenceNext="system_role_module_seq"/>
+            <column name="has_select" value="Y"/>
+            <column name="has_add" value="Y"/>
+            <column name="has_update" value="Y"/>
+            <column name="has_delete" value="N"/>
+            <column name="system_role_id" valueComputed="(SELECT id FROM clinlims.system_role WHERE name = 'Lab Analyst')"/>
+            <column name="system_module_id" valueComputed="(SELECT id FROM clinlims.system_module WHERE name = 'BarcodeConfig')"/>
+        </insert>
+    </changeSet>
+
+    <!-- ========================================================================
+         SAMPLE MANAGER - Manages sample receipt, storage, and tracking
+         ======================================================================== -->
+    <changeSet author="phase-0b" id="sample-manager-permissions">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="system_role_module" schemaName="clinlims" />
+            <sqlCheck expectedResult="0">
+                SELECT COUNT(*) FROM clinlims.system_role_module srm 
+                WHERE srm.system_role_id = (SELECT id FROM clinlims.system_role WHERE name = 'Sample Manager')
+            </sqlCheck>
+        </preConditions>
+        <comment>Grant Sample Manager base modules plus SampleShipmentManagement</comment>
+        
+        <!-- Base modules -->
+        <insert tableName="system_role_module" schemaName="clinlims">
+            <column name="id" valueSequenceNext="system_role_module_seq"/>
+            <column name="has_select" value="Y"/>
+            <column name="has_add" value="Y"/>
+            <column name="has_update" value="Y"/>
+            <column name="has_delete" value="N"/>
+            <column name="system_role_id" valueComputed="(SELECT id FROM clinlims.system_role WHERE name = 'Sample Manager')"/>
+            <column name="system_module_id" valueComputed="(SELECT id FROM clinlims.system_module WHERE name = 'GenericSampleView')"/>
+        </insert>
+        
+        <insert tableName="system_role_module" schemaName="clinlims">
+            <column name="id" valueSequenceNext="system_role_module_seq"/>
+            <column name="has_select" value="Y"/>
+            <column name="has_add" value="Y"/>
+            <column name="has_update" value="Y"/>
+            <column name="has_delete" value="N"/>
+            <column name="system_role_id" valueComputed="(SELECT id FROM clinlims.system_role WHERE name = 'Sample Manager')"/>
+            <column name="system_module_id" valueComputed="(SELECT id FROM clinlims.system_module WHERE name = 'ResultsValidationGeneral')"/>
+        </insert>
+        
+        <insert tableName="system_role_module" schemaName="clinlims">
+            <column name="id" valueSequenceNext="system_role_module_seq"/>
+            <column name="has_select" value="Y"/>
+            <column name="has_add" value="Y"/>
+            <column name="has_update" value="Y"/>
+            <column name="has_delete" value="N"/>
+            <column name="system_role_id" valueComputed="(SELECT id FROM clinlims.system_role WHERE name = 'Sample Manager')"/>
+            <column name="system_module_id" valueComputed="(SELECT id FROM clinlims.system_module WHERE name = 'RangeResults')"/>
+        </insert>
+        
+        <insert tableName="system_role_module" schemaName="clinlims">
+            <column name="id" valueSequenceNext="system_role_module_seq"/>
+            <column name="has_select" value="Y"/>
+            <column name="has_add" value="N"/>
+            <column name="has_update" value="N"/>
+            <column name="has_delete" value="N"/>
+            <column name="system_role_id" valueComputed="(SELECT id FROM clinlims.system_role WHERE name = 'Sample Manager')"/>
+            <column name="system_module_id" valueComputed="(SELECT id FROM clinlims.system_module WHERE name = 'TATReport')"/>
+        </insert>
+        
+        <insert tableName="system_role_module" schemaName="clinlims">
+            <column name="id" valueSequenceNext="system_role_module_seq"/>
+            <column name="has_select" value="Y"/>
+            <column name="has_add" value="N"/>
+            <column name="has_update" value="N"/>
+            <column name="has_delete" value="N"/>
+            <column name="system_role_id" valueComputed="(SELECT id FROM clinlims.system_role WHERE name = 'Sample Manager')"/>
+            <column name="system_module_id" valueComputed="(SELECT id FROM clinlims.system_module WHERE name = 'Report:RoutineExport')"/>
+        </insert>
+        
+        <insert tableName="system_role_module" schemaName="clinlims">
+            <column name="id" valueSequenceNext="system_role_module_seq"/>
+            <column name="has_select" value="Y"/>
+            <column name="has_add" value="Y"/>
+            <column name="has_update" value="Y"/>
+            <column name="has_delete" value="N"/>
+            <column name="system_role_id" valueComputed="(SELECT id FROM clinlims.system_role WHERE name = 'Sample Manager')"/>
+            <column name="system_module_id" valueComputed="(SELECT id FROM clinlims.system_module WHERE name = 'BarcodeConfig')"/>
+        </insert>
+        
+        <!-- SampleShipmentManagement - role-specific -->
+        <insert tableName="system_role_module" schemaName="clinlims">
+            <column name="id" valueSequenceNext="system_role_module_seq"/>
+            <column name="has_select" value="Y"/>
+            <column name="has_add" value="Y"/>
+            <column name="has_update" value="Y"/>
+            <column name="has_delete" value="N"/>
+            <column name="system_role_id" valueComputed="(SELECT id FROM clinlims.system_role WHERE name = 'Sample Manager')"/>
+            <column name="system_module_id" valueComputed="(SELECT id FROM clinlims.system_module WHERE name = 'SampleShipmentManagement')"/>
+        </insert>
+    </changeSet>
+
+    <!-- ========================================================================
+         TEST MANAGER - Manages test catalog and test result entry
+         ======================================================================== -->
+    <changeSet author="phase-0b" id="test-manager-permissions">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="system_role_module" schemaName="clinlims" />
+            <sqlCheck expectedResult="0">
+                SELECT COUNT(*) FROM clinlims.system_role_module srm 
+                WHERE srm.system_role_id = (SELECT id FROM clinlims.system_role WHERE name = 'Test Manager')
+            </sqlCheck>
+        </preConditions>
+        <comment>Grant Test Manager base modules plus ValidationConfig and RangeResults</comment>
+        
+        <!-- Base modules -->
+        <insert tableName="system_role_module" schemaName="clinlims">
+            <column name="id" valueSequenceNext="system_role_module_seq"/>
+            <column name="has_select" value="Y"/>
+            <column name="has_add" value="Y"/>
+            <column name="has_update" value="Y"/>
+            <column name="has_delete" value="N"/>
+            <column name="system_role_id" valueComputed="(SELECT id FROM clinlims.system_role WHERE name = 'Test Manager')"/>
+            <column name="system_module_id" valueComputed="(SELECT id FROM clinlims.system_module WHERE name = 'GenericSampleView')"/>
+        </insert>
+        
+        <insert tableName="system_role_module" schemaName="clinlims">
+            <column name="id" valueSequenceNext="system_role_module_seq"/>
+            <column name="has_select" value="Y"/>
+            <column name="has_add" value="Y"/>
+            <column name="has_update" value="Y"/>
+            <column name="has_delete" value="N"/>
+            <column name="system_role_id" valueComputed="(SELECT id FROM clinlims.system_role WHERE name = 'Test Manager')"/>
+            <column name="system_module_id" valueComputed="(SELECT id FROM clinlims.system_module WHERE name = 'ResultsValidationGeneral')"/>
+        </insert>
+        
+        <insert tableName="system_role_module" schemaName="clinlims">
+            <column name="id" valueSequenceNext="system_role_module_seq"/>
+            <column name="has_select" value="Y"/>
+            <column name="has_add" value="Y"/>
+            <column name="has_update" value="Y"/>
+            <column name="has_delete" value="N"/>
+            <column name="system_role_id" valueComputed="(SELECT id FROM clinlims.system_role WHERE name = 'Test Manager')"/>
+            <column name="system_module_id" valueComputed="(SELECT id FROM clinlims.system_module WHERE name = 'RangeResults')"/>
+        </insert>
+        
+        <insert tableName="system_role_module" schemaName="clinlims">
+            <column name="id" valueSequenceNext="system_role_module_seq"/>
+            <column name="has_select" value="Y"/>
+            <column name="has_add" value="N"/>
+            <column name="has_update" value="N"/>
+            <column name="has_delete" value="N"/>
+            <column name="system_role_id" valueComputed="(SELECT id FROM clinlims.system_role WHERE name = 'Test Manager')"/>
+            <column name="system_module_id" valueComputed="(SELECT id FROM clinlims.system_module WHERE name = 'TATReport')"/>
+        </insert>
+        
+        <insert tableName="system_role_module" schemaName="clinlims">
+            <column name="id" valueSequenceNext="system_role_module_seq"/>
+            <column name="has_select" value="Y"/>
+            <column name="has_add" value="N"/>
+            <column name="has_update" value="N"/>
+            <column name="has_delete" value="N"/>
+            <column name="system_role_id" valueComputed="(SELECT id FROM clinlims.system_role WHERE name = 'Test Manager')"/>
+            <column name="system_module_id" valueComputed="(SELECT id FROM clinlims.system_module WHERE name = 'Report:RoutineExport')"/>
+        </insert>
+        
+        <insert tableName="system_role_module" schemaName="clinlims">
+            <column name="id" valueSequenceNext="system_role_module_seq"/>
+            <column name="has_select" value="Y"/>
+            <column name="has_add" value="Y"/>
+            <column name="has_update" value="Y"/>
+            <column name="has_delete" value="N"/>
+            <column name="system_role_id" valueComputed="(SELECT id FROM clinlims.system_role WHERE name = 'Test Manager')"/>
+            <column name="system_module_id" valueComputed="(SELECT id FROM clinlims.system_module WHERE name = 'BarcodeConfig')"/>
+        </insert>
+        
+        <!-- ValidationConfig - supervisory module -->
+        <insert tableName="system_role_module" schemaName="clinlims">
+            <column name="id" valueSequenceNext="system_role_module_seq"/>
+            <column name="has_select" value="Y"/>
+            <column name="has_add" value="Y"/>
+            <column name="has_update" value="Y"/>
+            <column name="has_delete" value="N"/>
+            <column name="system_role_id" valueComputed="(SELECT id FROM clinlims.system_role WHERE name = 'Test Manager')"/>
+            <column name="system_module_id" valueComputed="(SELECT id FROM clinlims.system_module WHERE name = 'ValidationConfig')"/>
+        </insert>
+    </changeSet>
+
+    <!-- ========================================================================
+         RESULTS ENTRY - Enters and reviews test results
+         ======================================================================== -->
+    <changeSet author="phase-0b" id="results-entry-permissions">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="system_role_module" schemaName="clinlims" />
+            <sqlCheck expectedResult="0">
+                SELECT COUNT(*) FROM clinlims.system_role_module srm 
+                WHERE srm.system_role_id = (SELECT id FROM clinlims.system_role WHERE name = 'Results Entry')
+            </sqlCheck>
+        </preConditions>
+        <comment>Grant Results Entry access to result validation and entry</comment>
+        
+        <insert tableName="system_role_module" schemaName="clinlims">
+            <column name="id" valueSequenceNext="system_role_module_seq"/>
+            <column name="has_select" value="Y"/>
+            <column name="has_add" value="Y"/>
+            <column name="has_update" value="Y"/>
+            <column name="has_delete" value="N"/>
+            <column name="system_role_id" valueComputed="(SELECT id FROM clinlims.system_role WHERE name = 'Results Entry')"/>
+            <column name="system_module_id" valueComputed="(SELECT id FROM clinlims.system_module WHERE name = 'GenericSampleView')"/>
+        </insert>
+        
+        <insert tableName="system_role_module" schemaName="clinlims">
+            <column name="id" valueSequenceNext="system_role_module_seq"/>
+            <column name="has_select" value="Y"/>
+            <column name="has_add" value="Y"/>
+            <column name="has_update" value="Y"/>
+            <column name="has_delete" value="N"/>
+            <column name="system_role_id" valueComputed="(SELECT id FROM clinlims.system_role WHERE name = 'Results Entry')"/>
+            <column name="system_module_id" valueComputed="(SELECT id FROM clinlims.system_module WHERE name = 'ResultsValidationGeneral')"/>
+        </insert>
+        
+        <insert tableName="system_role_module" schemaName="clinlims">
+            <column name="id" valueSequenceNext="system_role_module_seq"/>
+            <column name="has_select" value="Y"/>
+            <column name="has_add" value="Y"/>
+            <column name="has_update" value="Y"/>
+            <column name="has_delete" value="N"/>
+            <column name="system_role_id" valueComputed="(SELECT id FROM clinlims.system_role WHERE name = 'Results Entry')"/>
+            <column name="system_module_id" valueComputed="(SELECT id FROM clinlims.system_module WHERE name = 'RangeResults')"/>
+        </insert>
+        
+        <insert tableName="system_role_module" schemaName="clinlims">
+            <column name="id" valueSequenceNext="system_role_module_seq"/>
+            <column name="has_select" value="Y"/>
+            <column name="has_add" value="Y"/>
+            <column name="has_update" value="Y"/>
+            <column name="has_delete" value="N"/>
+            <column name="system_role_id" valueComputed="(SELECT id FROM clinlims.system_role WHERE name = 'Results Entry')"/>
+            <column name="system_module_id" valueComputed="(SELECT id FROM clinlims.system_module WHERE name = 'BarcodeConfig')"/>
+        </insert>
+    </changeSet>
+
+    <!-- ========================================================================
+         REPORTING - Generates and reviews lab reports
+         ======================================================================== -->
+    <changeSet author="phase-0b" id="reporting-permissions">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="system_role_module" schemaName="clinlims" />
+            <sqlCheck expectedResult="0">
+                SELECT COUNT(*) FROM clinlims.system_role_module srm 
+                WHERE srm.system_role_id = (SELECT id FROM clinlims.system_role WHERE name = 'Reporting')
+            </sqlCheck>
+        </preConditions>
+        <comment>Grant Reporting access to reports and configuration</comment>
+        
+        <insert tableName="system_role_module" schemaName="clinlims">
+            <column name="id" valueSequenceNext="system_role_module_seq"/>
+            <column name="has_select" value="Y"/>
+            <column name="has_add" value="N"/>
+            <column name="has_update" value="N"/>
+            <column name="has_delete" value="N"/>
+            <column name="system_role_id" valueComputed="(SELECT id FROM clinlims.system_role WHERE name = 'Reporting')"/>
+            <column name="system_module_id" valueComputed="(SELECT id FROM clinlims.system_module WHERE name = 'GenericSampleView')"/>
+        </insert>
+        
+        <insert tableName="system_role_module" schemaName="clinlims">
+            <column name="id" valueSequenceNext="system_role_module_seq"/>
+            <column name="has_select" value="Y"/>
+            <column name="has_add" value="N"/>
+            <column name="has_update" value="N"/>
+            <column name="has_delete" value="N"/>
+            <column name="system_role_id" valueComputed="(SELECT id FROM clinlims.system_role WHERE name = 'Reporting')"/>
+            <column name="system_module_id" valueComputed="(SELECT id FROM clinlims.system_module WHERE name = 'TATReport')"/>
+        </insert>
+        
+        <insert tableName="system_role_module" schemaName="clinlims">
+            <column name="id" valueSequenceNext="system_role_module_seq"/>
+            <column name="has_select" value="Y"/>
+            <column name="has_add" value="N"/>
+            <column name="has_update" value="N"/>
+            <column name="has_delete" value="N"/>
+            <column name="system_role_id" valueComputed="(SELECT id FROM clinlims.system_role WHERE name = 'Reporting')"/>
+            <column name="system_module_id" valueComputed="(SELECT id FROM clinlims.system_module WHERE name = 'Report:RoutineExport')"/>
+        </insert>
+        
+        <insert tableName="system_role_module" schemaName="clinlims">
+            <column name="id" valueSequenceNext="system_role_module_seq"/>
+            <column name="has_select" value="Y"/>
+            <column name="has_add" value="N"/>
+            <column name="has_update" value="N"/>
+            <column name="has_delete" value="N"/>
+            <column name="system_role_id" valueComputed="(SELECT id FROM clinlims.system_role WHERE name = 'Reporting')"/>
+            <column name="system_module_id" valueComputed="(SELECT id FROM clinlims.system_module WHERE name = 'ReportConfig')"/>
+        </insert>
+    </changeSet>
+
+    <!-- ========================================================================
+         QUALITY CONTROL - Manages quality control and proficiency testing
+         ======================================================================== -->
+    <changeSet author="phase-0b" id="quality-control-permissions">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="system_role_module" schemaName="clinlims" />
+            <sqlCheck expectedResult="0">
+                SELECT COUNT(*) FROM clinlims.system_role_module srm 
+                WHERE srm.system_role_id = (SELECT id FROM clinlims.system_role WHERE name = 'Quality Control')
+            </sqlCheck>
+        </preConditions>
+        <comment>Grant Quality Control base modules plus EQAView and ValidationConfig</comment>
+        
+        <!-- Base modules -->
+        <insert tableName="system_role_module" schemaName="clinlims">
+            <column name="id" valueSequenceNext="system_role_module_seq"/>
+            <column name="has_select" value="Y"/>
+            <column name="has_add" value="Y"/>
+            <column name="has_update" value="Y"/>
+            <column name="has_delete" value="N"/>
+            <column name="system_role_id" valueComputed="(SELECT id FROM clinlims.system_role WHERE name = 'Quality Control')"/>
+            <column name="system_module_id" valueComputed="(SELECT id FROM clinlims.system_module WHERE name = 'GenericSampleView')"/>
+        </insert>
+        
+        <insert tableName="system_role_module" schemaName="clinlims">
+            <column name="id" valueSequenceNext="system_role_module_seq"/>
+            <column name="has_select" value="Y"/>
+            <column name="has_add" value="Y"/>
+            <column name="has_update" value="Y"/>
+            <column name="has_delete" value="N"/>
+            <column name="system_role_id" valueComputed="(SELECT id FROM clinlims.system_role WHERE name = 'Quality Control')"/>
+            <column name="system_module_id" valueComputed="(SELECT id FROM clinlims.system_module WHERE name = 'ResultsValidationGeneral')"/>
+        </insert>
+        
+        <insert tableName="system_role_module" schemaName="clinlims">
+            <column name="id" valueSequenceNext="system_role_module_seq"/>
+            <column name="has_select" value="Y"/>
+            <column name="has_add" value="Y"/>
+            <column name="has_update" value="Y"/>
+            <column name="has_delete" value="N"/>
+            <column name="system_role_id" valueComputed="(SELECT id FROM clinlims.system_role WHERE name = 'Quality Control')"/>
+            <column name="system_module_id" valueComputed="(SELECT id FROM clinlims.system_module WHERE name = 'RangeResults')"/>
+        </insert>
+        
+        <insert tableName="system_role_module" schemaName="clinlims">
+            <column name="id" valueSequenceNext="system_role_module_seq"/>
+            <column name="has_select" value="Y"/>
+            <column name="has_add" value="N"/>
+            <column name="has_update" value="N"/>
+            <column name="has_delete" value="N"/>
+            <column name="system_role_id" valueComputed="(SELECT id FROM clinlims.system_role WHERE name = 'Quality Control')"/>
+            <column name="system_module_id" valueComputed="(SELECT id FROM clinlims.system_module WHERE name = 'TATReport')"/>
+        </insert>
+        
+        <insert tableName="system_role_module" schemaName="clinlims">
+            <column name="id" valueSequenceNext="system_role_module_seq"/>
+            <column name="has_select" value="Y"/>
+            <column name="has_add" value="N"/>
+            <column name="has_update" value="N"/>
+            <column name="has_delete" value="N"/>
+            <column name="system_role_id" valueComputed="(SELECT id FROM clinlims.system_role WHERE name = 'Quality Control')"/>
+            <column name="system_module_id" valueComputed="(SELECT id FROM clinlims.system_module WHERE name = 'Report:RoutineExport')"/>
+        </insert>
+        
+        <insert tableName="system_role_module" schemaName="clinlims">
+            <column name="id" valueSequenceNext="system_role_module_seq"/>
+            <column name="has_select" value="Y"/>
+            <column name="has_add" value="Y"/>
+            <column name="has_update" value="Y"/>
+            <column name="has_delete" value="N"/>
+            <column name="system_role_id" valueComputed="(SELECT id FROM clinlims.system_role WHERE name = 'Quality Control')"/>
+            <column name="system_module_id" valueComputed="(SELECT id FROM clinlims.system_module WHERE name = 'BarcodeConfig')"/>
+        </insert>
+        
+        <!-- EQAView - supervisory module -->
+        <insert tableName="system_role_module" schemaName="clinlims">
+            <column name="id" valueSequenceNext="system_role_module_seq"/>
+            <column name="has_select" value="Y"/>
+            <column name="has_add" value="Y"/>
+            <column name="has_update" value="Y"/>
+            <column name="has_delete" value="N"/>
+            <column name="system_role_id" valueComputed="(SELECT id FROM clinlims.system_role WHERE name = 'Quality Control')"/>
+            <column name="system_module_id" valueComputed="(SELECT id FROM clinlims.system_module WHERE name = 'EQAView')"/>
+        </insert>
+        
+        <!-- ValidationConfig - supervisory module -->
+        <insert tableName="system_role_module" schemaName="clinlims">
+            <column name="id" valueSequenceNext="system_role_module_seq"/>
+            <column name="has_select" value="Y"/>
+            <column name="has_add" value="Y"/>
+            <column name="has_update" value="Y"/>
+            <column name="has_delete" value="N"/>
+            <column name="system_role_id" valueComputed="(SELECT id FROM clinlims.system_role WHERE name = 'Quality Control')"/>
+            <column name="system_module_id" valueComputed="(SELECT id FROM clinlims.system_module WHERE name = 'ValidationConfig')"/>
+        </insert>
+    </changeSet>
+
+    <!-- ========================================================================
+         LAB SUPERVISORS - Grouping role for supervisory positions
+         NO DIRECT PERMISSIONS - this is a grouping role only
+         ======================================================================== -->
+    <changeSet author="phase-0b" id="lab-supervisors-permissions">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="system_role_module" schemaName="clinlims" />
+            <sqlCheck expectedResult="0">
+                SELECT COUNT(*) FROM clinlims.system_role_module srm 
+                WHERE srm.system_role_id = (SELECT id FROM clinlims.system_role WHERE name = 'Lab Supervisors')
+            </sqlCheck>
+        </preConditions>
+        <comment>Lab Supervisors is a grouping role with no direct permissions</comment>
+    </changeSet>
+
+    <!-- ========================================================================
+         BENCH SUPERVISOR - First-line supervisor with day-to-day oversight
+         ======================================================================== -->
+    <changeSet author="phase-0b" id="bench-supervisor-permissions">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="system_role_module" schemaName="clinlims" />
+            <sqlCheck expectedResult="0">
+                SELECT COUNT(*) FROM clinlims.system_role_module srm 
+                WHERE srm.system_role_id = (SELECT id FROM clinlims.system_role WHERE name = 'Bench Supervisor')
+            </sqlCheck>
+        </preConditions>
+        <comment>Grant Bench Supervisor base modules plus all supervisory modules</comment>
+        
+        <!-- Base modules -->
+        <insert tableName="system_role_module" schemaName="clinlims">
+            <column name="id" valueSequenceNext="system_role_module_seq"/>
+            <column name="has_select" value="Y"/>
+            <column name="has_add" value="Y"/>
+            <column name="has_update" value="Y"/>
+            <column name="has_delete" value="N"/>
+            <column name="system_role_id" valueComputed="(SELECT id FROM clinlims.system_role WHERE name = 'Bench Supervisor')"/>
+            <column name="system_module_id" valueComputed="(SELECT id FROM clinlims.system_module WHERE name = 'GenericSampleView')"/>
+        </insert>
+        
+        <insert tableName="system_role_module" schemaName="clinlims">
+            <column name="id" valueSequenceNext="system_role_module_seq"/>
+            <column name="has_select" value="Y"/>
+            <column name="has_add" value="Y"/>
+            <column name="has_update" value="Y"/>
+            <column name="has_delete" value="N"/>
+            <column name="system_role_id" valueComputed="(SELECT id FROM clinlims.system_role WHERE name = 'Bench Supervisor')"/>
+            <column name="system_module_id" valueComputed="(SELECT id FROM clinlims.system_module WHERE name = 'ResultsValidationGeneral')"/>
+        </insert>
+        
+        <insert tableName="system_role_module" schemaName="clinlims">
+            <column name="id" valueSequenceNext="system_role_module_seq"/>
+            <column name="has_select" value="Y"/>
+            <column name="has_add" value="Y"/>
+            <column name="has_update" value="Y"/>
+            <column name="has_delete" value="N"/>
+            <column name="system_role_id" valueComputed="(SELECT id FROM clinlims.system_role WHERE name = 'Bench Supervisor')"/>
+            <column name="system_module_id" valueComputed="(SELECT id FROM clinlims.system_module WHERE name = 'RangeResults')"/>
+        </insert>
+        
+        <insert tableName="system_role_module" schemaName="clinlims">
+            <column name="id" valueSequenceNext="system_role_module_seq"/>
+            <column name="has_select" value="Y"/>
+            <column name="has_add" value="N"/>
+            <column name="has_update" value="N"/>
+            <column name="has_delete" value="N"/>
+            <column name="system_role_id" valueComputed="(SELECT id FROM clinlims.system_role WHERE name = 'Bench Supervisor')"/>
+            <column name="system_module_id" valueComputed="(SELECT id FROM clinlims.system_module WHERE name = 'TATReport')"/>
+        </insert>
+        
+        <insert tableName="system_role_module" schemaName="clinlims">
+            <column name="id" valueSequenceNext="system_role_module_seq"/>
+            <column name="has_select" value="Y"/>
+            <column name="has_add" value="N"/>
+            <column name="has_update" value="N"/>
+            <column name="has_delete" value="N"/>
+            <column name="system_role_id" valueComputed="(SELECT id FROM clinlims.system_role WHERE name = 'Bench Supervisor')"/>
+            <column name="system_module_id" valueComputed="(SELECT id FROM clinlims.system_module WHERE name = 'Report:RoutineExport')"/>
+        </insert>
+        
+        <insert tableName="system_role_module" schemaName="clinlims">
+            <column name="id" valueSequenceNext="system_role_module_seq"/>
+            <column name="has_select" value="Y"/>
+            <column name="has_add" value="Y"/>
+            <column name="has_update" value="Y"/>
+            <column name="has_delete" value="N"/>
+            <column name="system_role_id" valueComputed="(SELECT id FROM clinlims.system_role WHERE name = 'Bench Supervisor')"/>
+            <column name="system_module_id" valueComputed="(SELECT id FROM clinlims.system_module WHERE name = 'BarcodeConfig')"/>
+        </insert>
+        
+        <!-- Supervisory modules -->
+        <insert tableName="system_role_module" schemaName="clinlims">
+            <column name="id" valueSequenceNext="system_role_module_seq"/>
+            <column name="has_select" value="Y"/>
+            <column name="has_add" value="Y"/>
+            <column name="has_update" value="Y"/>
+            <column name="has_delete" value="N"/>
+            <column name="system_role_id" valueComputed="(SELECT id FROM clinlims.system_role WHERE name = 'Bench Supervisor')"/>
+            <column name="system_module_id" valueComputed="(SELECT id FROM clinlims.system_module WHERE name = 'ReportConfig')"/>
+        </insert>
+        
+        <insert tableName="system_role_module" schemaName="clinlims">
+            <column name="id" valueSequenceNext="system_role_module_seq"/>
+            <column name="has_select" value="Y"/>
+            <column name="has_add" value="Y"/>
+            <column name="has_update" value="Y"/>
+            <column name="has_delete" value="N"/>
+            <column name="system_role_id" valueComputed="(SELECT id FROM clinlims.system_role WHERE name = 'Bench Supervisor')"/>
+            <column name="system_module_id" valueComputed="(SELECT id FROM clinlims.system_module WHERE name = 'ValidationConfig')"/>
+        </insert>
+        
+        <insert tableName="system_role_module" schemaName="clinlims">
+            <column name="id" valueSequenceNext="system_role_module_seq"/>
+            <column name="has_select" value="Y"/>
+            <column name="has_add" value="Y"/>
+            <column name="has_update" value="Y"/>
+            <column name="has_delete" value="N"/>
+            <column name="system_role_id" valueComputed="(SELECT id FROM clinlims.system_role WHERE name = 'Bench Supervisor')"/>
+            <column name="system_module_id" valueComputed="(SELECT id FROM clinlims.system_module WHERE name = 'BatchTestReassignment')"/>
+        </insert>
+        
+        <insert tableName="system_role_module" schemaName="clinlims">
+            <column name="id" valueSequenceNext="system_role_module_seq"/>
+            <column name="has_select" value="Y"/>
+            <column name="has_add" value="Y"/>
+            <column name="has_update" value="Y"/>
+            <column name="has_delete" value="N"/>
+            <column name="system_role_id" valueComputed="(SELECT id FROM clinlims.system_role WHERE name = 'Bench Supervisor')"/>
+            <column name="system_module_id" valueComputed="(SELECT id FROM clinlims.system_module WHERE name = 'CalendarManagement')"/>
+        </insert>
+        
+        <insert tableName="system_role_module" schemaName="clinlims">
+            <column name="id" valueSequenceNext="system_role_module_seq"/>
+            <column name="has_select" value="Y"/>
+            <column name="has_add" value="Y"/>
+            <column name="has_update" value="Y"/>
+            <column name="has_delete" value="N"/>
+            <column name="system_role_id" valueComputed="(SELECT id FROM clinlims.system_role WHERE name = 'Bench Supervisor')"/>
+            <column name="system_module_id" valueComputed="(SELECT id FROM clinlims.system_module WHERE name = 'ExternalConnection')"/>
+        </insert>
+        
+        <insert tableName="system_role_module" schemaName="clinlims">
+            <column name="id" valueSequenceNext="system_role_module_seq"/>
+            <column name="has_select" value="Y"/>
+            <column name="has_add" value="Y"/>
+            <column name="has_update" value="Y"/>
+            <column name="has_delete" value="N"/>
+            <column name="system_role_id" valueComputed="(SELECT id FROM clinlims.system_role WHERE name = 'Bench Supervisor')"/>
+            <column name="system_module_id" valueComputed="(SELECT id FROM clinlims.system_module WHERE name = 'ListPlugins')"/>
+        </insert>
+        
+        <insert tableName="system_role_module" schemaName="clinlims">
+            <column name="id" valueSequenceNext="system_role_module_seq"/>
+            <column name="has_select" value="Y"/>
+            <column name="has_add" value="Y"/>
+            <column name="has_update" value="Y"/>
+            <column name="has_delete" value="N"/>
+            <column name="system_role_id" valueComputed="(SELECT id FROM clinlims.system_role WHERE name = 'Bench Supervisor')"/>
+            <column name="system_module_id" valueComputed="(SELECT id FROM clinlims.system_module WHERE name = 'SampleShipmentManagement')"/>
+        </insert>
+        
+        <insert tableName="system_role_module" schemaName="clinlims">
+            <column name="id" valueSequenceNext="system_role_module_seq"/>
+            <column name="has_select" value="Y"/>
+            <column name="has_add" value="Y"/>
+            <column name="has_update" value="Y"/>
+            <column name="has_delete" value="N"/>
+            <column name="system_role_id" valueComputed="(SELECT id FROM clinlims.system_role WHERE name = 'Bench Supervisor')"/>
+            <column name="system_module_id" valueComputed="(SELECT id FROM clinlims.system_module WHERE name = 'EQAView')"/>
+        </insert>
+    </changeSet>
+
+    <!-- ========================================================================
+         SECTION SUPERVISOR - Second-line supervisor with section-level authority
+         ======================================================================== -->
+    <changeSet author="phase-0b" id="section-supervisor-permissions">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="system_role_module" schemaName="clinlims" />
+            <sqlCheck expectedResult="0">
+                SELECT COUNT(*) FROM clinlims.system_role_module srm 
+                WHERE srm.system_role_id = (SELECT id FROM clinlims.system_role WHERE name = 'Section Supervisor')
+            </sqlCheck>
+        </preConditions>
+        <comment>Grant Section Supervisor base modules plus all supervisory modules</comment>
+        
+        <!-- Base modules -->
+        <insert tableName="system_role_module" schemaName="clinlims">
+            <column name="id" valueSequenceNext="system_role_module_seq"/>
+            <column name="has_select" value="Y"/>
+            <column name="has_add" value="Y"/>
+            <column name="has_update" value="Y"/>
+            <column name="has_delete" value="N"/>
+            <column name="system_role_id" valueComputed="(SELECT id FROM clinlims.system_role WHERE name = 'Section Supervisor')"/>
+            <column name="system_module_id" valueComputed="(SELECT id FROM clinlims.system_module WHERE name = 'GenericSampleView')"/>
+        </insert>
+        
+        <insert tableName="system_role_module" schemaName="clinlims">
+            <column name="id" valueSequenceNext="system_role_module_seq"/>
+            <column name="has_select" value="Y"/>
+            <column name="has_add" value="Y"/>
+            <column name="has_update" value="Y"/>
+            <column name="has_delete" value="N"/>
+            <column name="system_role_id" valueComputed="(SELECT id FROM clinlims.system_role WHERE name = 'Section Supervisor')"/>
+            <column name="system_module_id" valueComputed="(SELECT id FROM clinlims.system_module WHERE name = 'ResultsValidationGeneral')"/>
+        </insert>
+        
+        <insert tableName="system_role_module" schemaName="clinlims">
+            <column name="id" valueSequenceNext="system_role_module_seq"/>
+            <column name="has_select" value="Y"/>
+            <column name="has_add" value="Y"/>
+            <column name="has_update" value="Y"/>
+            <column name="has_delete" value="N"/>
+            <column name="system_role_id" valueComputed="(SELECT id FROM clinlims.system_role WHERE name = 'Section Supervisor')"/>
+            <column name="system_module_id" valueComputed="(SELECT id FROM clinlims.system_module WHERE name = 'RangeResults')"/>
+        </insert>
+        
+        <insert tableName="system_role_module" schemaName="clinlims">
+            <column name="id" valueSequenceNext="system_role_module_seq"/>
+            <column name="has_select" value="Y"/>
+            <column name="has_add" value="N"/>
+            <column name="has_update" value="N"/>
+            <column name="has_delete" value="N"/>
+            <column name="system_role_id" valueComputed="(SELECT id FROM clinlims.system_role WHERE name = 'Section Supervisor')"/>
+            <column name="system_module_id" valueComputed="(SELECT id FROM clinlims.system_module WHERE name = 'TATReport')"/>
+        </insert>
+        
+        <insert tableName="system_role_module" schemaName="clinlims">
+            <column name="id" valueSequenceNext="system_role_module_seq"/>
+            <column name="has_select" value="Y"/>
+            <column name="has_add" value="N"/>
+            <column name="has_update" value="N"/>
+            <column name="has_delete" value="N"/>
+            <column name="system_role_id" valueComputed="(SELECT id FROM clinlims.system_role WHERE name = 'Section Supervisor')"/>
+            <column name="system_module_id" valueComputed="(SELECT id FROM clinlims.system_module WHERE name = 'Report:RoutineExport')"/>
+        </insert>
+        
+        <insert tableName="system_role_module" schemaName="clinlims">
+            <column name="id" valueSequenceNext="system_role_module_seq"/>
+            <column name="has_select" value="Y"/>
+            <column name="has_add" value="Y"/>
+            <column name="has_update" value="Y"/>
+            <column name="has_delete" value="N"/>
+            <column name="system_role_id" valueComputed="(SELECT id FROM clinlims.system_role WHERE name = 'Section Supervisor')"/>
+            <column name="system_module_id" valueComputed="(SELECT id FROM clinlims.system_module WHERE name = 'BarcodeConfig')"/>
+        </insert>
+        
+        <!-- Supervisory modules -->
+        <insert tableName="system_role_module" schemaName="clinlims">
+            <column name="id" valueSequenceNext="system_role_module_seq"/>
+            <column name="has_select" value="Y"/>
+            <column name="has_add" value="Y"/>
+            <column name="has_update" value="Y"/>
+            <column name="has_delete" value="N"/>
+            <column name="system_role_id" valueComputed="(SELECT id FROM clinlims.system_role WHERE name = 'Section Supervisor')"/>
+            <column name="system_module_id" valueComputed="(SELECT id FROM clinlims.system_module WHERE name = 'ReportConfig')"/>
+        </insert>
+        
+        <insert tableName="system_role_module" schemaName="clinlims">
+            <column name="id" valueSequenceNext="system_role_module_seq"/>
+            <column name="has_select" value="Y"/>
+            <column name="has_add" value="Y"/>
+            <column name="has_update" value="Y"/>
+            <column name="has_delete" value="N"/>
+            <column name="system_role_id" valueComputed="(SELECT id FROM clinlims.system_role WHERE name = 'Section Supervisor')"/>
+            <column name="system_module_id" valueComputed="(SELECT id FROM clinlims.system_module WHERE name = 'ValidationConfig')"/>
+        </insert>
+        
+        <insert tableName="system_role_module" schemaName="clinlims">
+            <column name="id" valueSequenceNext="system_role_module_seq"/>
+            <column name="has_select" value="Y"/>
+            <column name="has_add" value="Y"/>
+            <column name="has_update" value="Y"/>
+            <column name="has_delete" value="N"/>
+            <column name="system_role_id" valueComputed="(SELECT id FROM clinlims.system_role WHERE name = 'Section Supervisor')"/>
+            <column name="system_module_id" valueComputed="(SELECT id FROM clinlims.system_module WHERE name = 'BatchTestReassignment')"/>
+        </insert>
+        
+        <insert tableName="system_role_module" schemaName="clinlims">
+            <column name="id" valueSequenceNext="system_role_module_seq"/>
+            <column name="has_select" value="Y"/>
+            <column name="has_add" value="Y"/>
+            <column name="has_update" value="Y"/>
+            <column name="has_delete" value="N"/>
+            <column name="system_role_id" valueComputed="(SELECT id FROM clinlims.system_role WHERE name = 'Section Supervisor')"/>
+            <column name="system_module_id" valueComputed="(SELECT id FROM clinlims.system_module WHERE name = 'CalendarManagement')"/>
+        </insert>
+        
+        <insert tableName="system_role_module" schemaName="clinlims">
+            <column name="id" valueSequenceNext="system_role_module_seq"/>
+            <column name="has_select" value="Y"/>
+            <column name="has_add" value="Y"/>
+            <column name="has_update" value="Y"/>
+            <column name="has_delete" value="N"/>
+            <column name="system_role_id" valueComputed="(SELECT id FROM clinlims.system_role WHERE name = 'Section Supervisor')"/>
+            <column name="system_module_id" valueComputed="(SELECT id FROM clinlims.system_module WHERE name = 'ExternalConnection')"/>
+        </insert>
+        
+        <insert tableName="system_role_module" schemaName="clinlims">
+            <column name="id" valueSequenceNext="system_role_module_seq"/>
+            <column name="has_select" value="Y"/>
+            <column name="has_add" value="Y"/>
+            <column name="has_update" value="Y"/>
+            <column name="has_delete" value="N"/>
+            <column name="system_role_id" valueComputed="(SELECT id FROM clinlims.system_role WHERE name = 'Section Supervisor')"/>
+            <column name="system_module_id" valueComputed="(SELECT id FROM clinlims.system_module WHERE name = 'ListPlugins')"/>
+        </insert>
+        
+        <insert tableName="system_role_module" schemaName="clinlims">
+            <column name="id" valueSequenceNext="system_role_module_seq"/>
+            <column name="has_select" value="Y"/>
+            <column name="has_add" value="Y"/>
+            <column name="has_update" value="Y"/>
+            <column name="has_delete" value="N"/>
+            <column name="system_role_id" valueComputed="(SELECT id FROM clinlims.system_role WHERE name = 'Section Supervisor')"/>
+            <column name="system_module_id" valueComputed="(SELECT id FROM clinlims.system_module WHERE name = 'SampleShipmentManagement')"/>
+        </insert>
+        
+        <insert tableName="system_role_module" schemaName="clinlims">
+            <column name="id" valueSequenceNext="system_role_module_seq"/>
+            <column name="has_select" value="Y"/>
+            <column name="has_add" value="Y"/>
+            <column name="has_update" value="Y"/>
+            <column name="has_delete" value="N"/>
+            <column name="system_role_id" valueComputed="(SELECT id FROM clinlims.system_role WHERE name = 'Section Supervisor')"/>
+            <column name="system_module_id" valueComputed="(SELECT id FROM clinlims.system_module WHERE name = 'EQAView')"/>
+        </insert>
+    </changeSet>
+
+    <!-- ========================================================================
+         QUALITY MANAGER - Owns the QA program, approves SOPs, interfaces with regulatory agencies
+         ======================================================================== -->
+    <changeSet author="phase-0b" id="quality-manager-permissions">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="system_role_module" schemaName="clinlims" />
+            <sqlCheck expectedResult="0">
+                SELECT COUNT(*) FROM clinlims.system_role_module srm 
+                WHERE srm.system_role_id = (SELECT id FROM clinlims.system_role WHERE name = 'Quality Manager')
+            </sqlCheck>
+        </preConditions>
+        <comment>Grant Quality Manager base modules plus all supervisory modules</comment>
+        
+        <!-- Base modules -->
+        <insert tableName="system_role_module" schemaName="clinlims">
+            <column name="id" valueSequenceNext="system_role_module_seq"/>
+            <column name="has_select" value="Y"/>
+            <column name="has_add" value="Y"/>
+            <column name="has_update" value="Y"/>
+            <column name="has_delete" value="N"/>
+            <column name="system_role_id" valueComputed="(SELECT id FROM clinlims.system_role WHERE name = 'Quality Manager')"/>
+            <column name="system_module_id" valueComputed="(SELECT id FROM clinlims.system_module WHERE name = 'GenericSampleView')"/>
+        </insert>
+        
+        <insert tableName="system_role_module" schemaName="clinlims">
+            <column name="id" valueSequenceNext="system_role_module_seq"/>
+            <column name="has_select" value="Y"/>
+            <column name="has_add" value="Y"/>
+            <column name="has_update" value="Y"/>
+            <column name="has_delete" value="N"/>
+            <column name="system_role_id" valueComputed="(SELECT id FROM clinlims.system_role WHERE name = 'Quality Manager')"/>
+            <column name="system_module_id" valueComputed="(SELECT id FROM clinlims.system_module WHERE name = 'ResultsValidationGeneral')"/>
+        </insert>
+        
+        <insert tableName="system_role_module" schemaName="clinlims">
+            <column name="id" valueSequenceNext="system_role_module_seq"/>
+            <column name="has_select" value="Y"/>
+            <column name="has_add" value="Y"/>
+            <column name="has_update" value="Y"/>
+            <column name="has_delete" value="N"/>
+            <column name="system_role_id" valueComputed="(SELECT id FROM clinlims.system_role WHERE name = 'Quality Manager')"/>
+            <column name="system_module_id" valueComputed="(SELECT id FROM clinlims.system_module WHERE name = 'RangeResults')"/>
+        </insert>
+        
+        <insert tableName="system_role_module" schemaName="clinlims">
+            <column name="id" valueSequenceNext="system_role_module_seq"/>
+            <column name="has_select" value="Y"/>
+            <column name="has_add" value="N"/>
+            <column name="has_update" value="N"/>
+            <column name="has_delete" value="N"/>
+            <column name="system_role_id" valueComputed="(SELECT id FROM clinlims.system_role WHERE name = 'Quality Manager')"/>
+            <column name="system_module_id" valueComputed="(SELECT id FROM clinlims.system_module WHERE name = 'TATReport')"/>
+        </insert>
+        
+        <insert tableName="system_role_module" schemaName="clinlims">
+            <column name="id" valueSequenceNext="system_role_module_seq"/>
+            <column name="has_select" value="Y"/>
+            <column name="has_add" value="N"/>
+            <column name="has_update" value="N"/>
+            <column name="has_delete" value="N"/>
+            <column name="system_role_id" valueComputed="(SELECT id FROM clinlims.system_role WHERE name = 'Quality Manager')"/>
+            <column name="system_module_id" valueComputed="(SELECT id FROM clinlims.system_module WHERE name = 'Report:RoutineExport')"/>
+        </insert>
+        
+        <insert tableName="system_role_module" schemaName="clinlims">
+            <column name="id" valueSequenceNext="system_role_module_seq"/>
+            <column name="has_select" value="Y"/>
+            <column name="has_add" value="Y"/>
+            <column name="has_update" value="Y"/>
+            <column name="has_delete" value="N"/>
+            <column name="system_role_id" valueComputed="(SELECT id FROM clinlims.system_role WHERE name = 'Quality Manager')"/>
+            <column name="system_module_id" valueComputed="(SELECT id FROM clinlims.system_module WHERE name = 'BarcodeConfig')"/>
+        </insert>
+        
+        <!-- Supervisory modules -->
+        <insert tableName="system_role_module" schemaName="clinlims">
+            <column name="id" valueSequenceNext="system_role_module_seq"/>
+            <column name="has_select" value="Y"/>
+            <column name="has_add" value="Y"/>
+            <column name="has_update" value="Y"/>
+            <column name="has_delete" value="N"/>
+            <column name="system_role_id" valueComputed="(SELECT id FROM clinlims.system_role WHERE name = 'Quality Manager')"/>
+            <column name="system_module_id" valueComputed="(SELECT id FROM clinlims.system_module WHERE name = 'ReportConfig')"/>
+        </insert>
+        
+        <insert tableName="system_role_module" schemaName="clinlims">
+            <column name="id" valueSequenceNext="system_role_module_seq"/>
+            <column name="has_select" value="Y"/>
+            <column name="has_add" value="Y"/>
+            <column name="has_update" value="Y"/>
+            <column name="has_delete" value="N"/>
+            <column name="system_role_id" valueComputed="(SELECT id FROM clinlims.system_role WHERE name = 'Quality Manager')"/>
+            <column name="system_module_id" valueComputed="(SELECT id FROM clinlims.system_module WHERE name = 'ValidationConfig')"/>
+        </insert>
+        
+        <insert tableName="system_role_module" schemaName="clinlims">
+            <column name="id" valueSequenceNext="system_role_module_seq"/>
+            <column name="has_select" value="Y"/>
+            <column name="has_add" value="Y"/>
+            <column name="has_update" value="Y"/>
+            <column name="has_delete" value="N"/>
+            <column name="system_role_id" valueComputed="(SELECT id FROM clinlims.system_role WHERE name = 'Quality Manager')"/>
+            <column name="system_module_id" valueComputed="(SELECT id FROM clinlims.system_module WHERE name = 'BatchTestReassignment')"/>
+        </insert>
+        
+        <insert tableName="system_role_module" schemaName="clinlims">
+            <column name="id" valueSequenceNext="system_role_module_seq"/>
+            <column name="has_select" value="Y"/>
+            <column name="has_add" value="Y"/>
+            <column name="has_update" value="Y"/>
+            <column name="has_delete" value="N"/>
+            <column name="system_role_id" valueComputed="(SELECT id FROM clinlims.system_role WHERE name = 'Quality Manager')"/>
+            <column name="system_module_id" valueComputed="(SELECT id FROM clinlims.system_module WHERE name = 'CalendarManagement')"/>
+        </insert>
+        
+        <insert tableName="system_role_module" schemaName="clinlims">
+            <column name="id" valueSequenceNext="system_role_module_seq"/>
+            <column name="has_select" value="Y"/>
+            <column name="has_add" value="Y"/>
+            <column name="has_update" value="Y"/>
+            <column name="has_delete" value="N"/>
+            <column name="system_role_id" valueComputed="(SELECT id FROM clinlims.system_role WHERE name = 'Quality Manager')"/>
+            <column name="system_module_id" valueComputed="(SELECT id FROM clinlims.system_module WHERE name = 'ExternalConnection')"/>
+        </insert>
+        
+        <insert tableName="system_role_module" schemaName="clinlims">
+            <column name="id" valueSequenceNext="system_role_module_seq"/>
+            <column name="has_select" value="Y"/>
+            <column name="has_add" value="Y"/>
+            <column name="has_update" value="Y"/>
+            <column name="has_delete" value="N"/>
+            <column name="system_role_id" valueComputed="(SELECT id FROM clinlims.system_role WHERE name = 'Quality Manager')"/>
+            <column name="system_module_id" valueComputed="(SELECT id FROM clinlims.system_module WHERE name = 'ListPlugins')"/>
+        </insert>
+        
+        <insert tableName="system_role_module" schemaName="clinlims">
+            <column name="id" valueSequenceNext="system_role_module_seq"/>
+            <column name="has_select" value="Y"/>
+            <column name="has_add" value="Y"/>
+            <column name="has_update" value="Y"/>
+            <column name="has_delete" value="N"/>
+            <column name="system_role_id" valueComputed="(SELECT id FROM clinlims.system_role WHERE name = 'Quality Manager')"/>
+            <column name="system_module_id" valueComputed="(SELECT id FROM clinlims.system_module WHERE name = 'SampleShipmentManagement')"/>
+        </insert>
+        
+        <insert tableName="system_role_module" schemaName="clinlims">
+            <column name="id" valueSequenceNext="system_role_module_seq"/>
+            <column name="has_select" value="Y"/>
+            <column name="has_add" value="Y"/>
+            <column name="has_update" value="Y"/>
+            <column name="has_delete" value="N"/>
+            <column name="system_role_id" valueComputed="(SELECT id FROM clinlims.system_role WHERE name = 'Quality Manager')"/>
+            <column name="system_module_id" valueComputed="(SELECT id FROM clinlims.system_module WHERE name = 'EQAView')"/>
+        </insert>
+    </changeSet>
+
+    <!-- ========================================================================
+         LAB ADMINISTRATOR - Manages lab configuration and user accounts
+         ======================================================================== -->
+    <changeSet author="phase-0b" id="lab-administrator-permissions">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="system_role_module" schemaName="clinlims" />
+            <sqlCheck expectedResult="0">
+                SELECT COUNT(*) FROM clinlims.system_role_module srm 
+                WHERE srm.system_role_id = (SELECT id FROM clinlims.system_role WHERE name = 'Lab Administrator')
+            </sqlCheck>
+        </preConditions>
+        <comment>Grant Lab Administrator full access to all food safety modules plus StudyElectronicOrderView</comment>
+        
+        <!-- System User Management -->
+        <insert tableName="system_role_module" schemaName="clinlims">
+            <column name="id" valueSequenceNext="system_role_module_seq"/>
+            <column name="has_select" value="Y"/>
+            <column name="has_add" value="Y"/>
+            <column name="has_update" value="Y"/>
+            <column name="has_delete" value="Y"/>
+            <column name="system_role_id" valueComputed="(SELECT id FROM clinlims.system_role WHERE name = 'Lab Administrator')"/>
+            <column name="system_module_id" valueComputed="(SELECT id FROM clinlims.system_module WHERE name = 'SystemUser')"/>
+        </insert>
+        
+        <!-- Base modules -->
+        <insert tableName="system_role_module" schemaName="clinlims">
+            <column name="id" valueSequenceNext="system_role_module_seq"/>
+            <column name="has_select" value="Y"/>
+            <column name="has_add" value="Y"/>
+            <column name="has_update" value="Y"/>
+            <column name="has_delete" value="N"/>
+            <column name="system_role_id" valueComputed="(SELECT id FROM clinlims.system_role WHERE name = 'Lab Administrator')"/>
+            <column name="system_module_id" valueComputed="(SELECT id FROM clinlims.system_module WHERE name = 'GenericSampleView')"/>
+        </insert>
+        
+        <insert tableName="system_role_module" schemaName="clinlims">
+            <column name="id" valueSequenceNext="system_role_module_seq"/>
+            <column name="has_select" value="Y"/>
+            <column name="has_add" value="Y"/>
+            <column name="has_update" value="Y"/>
+            <column name="has_delete" value="N"/>
+            <column name="system_role_id" valueComputed="(SELECT id FROM clinlims.system_role WHERE name = 'Lab Administrator')"/>
+            <column name="system_module_id" valueComputed="(SELECT id FROM clinlims.system_module WHERE name = 'ResultsValidationGeneral')"/>
+        </insert>
+        
+        <insert tableName="system_role_module" schemaName="clinlims">
+            <column name="id" valueSequenceNext="system_role_module_seq"/>
+            <column name="has_select" value="Y"/>
+            <column name="has_add" value="Y"/>
+            <column name="has_update" value="Y"/>
+            <column name="has_delete" value="N"/>
+            <column name="system_role_id" valueComputed="(SELECT id FROM clinlims.system_role WHERE name = 'Lab Administrator')"/>
+            <column name="system_module_id" valueComputed="(SELECT id FROM clinlims.system_module WHERE name = 'RangeResults')"/>
+        </insert>
+        
+        <insert tableName="system_role_module" schemaName="clinlims">
+            <column name="id" valueSequenceNext="system_role_module_seq"/>
+            <column name="has_select" value="Y"/>
+            <column name="has_add" value="N"/>
+            <column name="has_update" value="N"/>
+            <column name="has_delete" value="N"/>
+            <column name="system_role_id" valueComputed="(SELECT id FROM clinlims.system_role WHERE name = 'Lab Administrator')"/>
+            <column name="system_module_id" valueComputed="(SELECT id FROM clinlims.system_module WHERE name = 'TATReport')"/>
+        </insert>
+        
+        <insert tableName="system_role_module" schemaName="clinlims">
+            <column name="id" valueSequenceNext="system_role_module_seq"/>
+            <column name="has_select" value="Y"/>
+            <column name="has_add" value="N"/>
+            <column name="has_update" value="N"/>
+            <column name="has_delete" value="N"/>
+            <column name="system_role_id" valueComputed="(SELECT id FROM clinlims.system_role WHERE name = 'Lab Administrator')"/>
+            <column name="system_module_id" valueComputed="(SELECT id FROM clinlims.system_module WHERE name = 'Report:RoutineExport')"/>
+        </insert>
+        
+        <insert tableName="system_role_module" schemaName="clinlims">
+            <column name="id" valueSequenceNext="system_role_module_seq"/>
+            <column name="has_select" value="Y"/>
+            <column name="has_add" value="Y"/>
+            <column name="has_update" value="Y"/>
+            <column name="has_delete" value="N"/>
+            <column name="system_role_id" valueComputed="(SELECT id FROM clinlims.system_role WHERE name = 'Lab Administrator')"/>
+            <column name="system_module_id" valueComputed="(SELECT id FROM clinlims.system_module WHERE name = 'BarcodeConfig')"/>
+        </insert>
+        
+        <!-- Supervisory modules -->
+        <insert tableName="system_role_module" schemaName="clinlims">
+            <column name="id" valueSequenceNext="system_role_module_seq"/>
+            <column name="has_select" value="Y"/>
+            <column name="has_add" value="Y"/>
+            <column name="has_update" value="Y"/>
+            <column name="has_delete" value="N"/>
+            <column name="system_role_id" valueComputed="(SELECT id FROM clinlims.system_role WHERE name = 'Lab Administrator')"/>
+            <column name="system_module_id" valueComputed="(SELECT id FROM clinlims.system_module WHERE name = 'ReportConfig')"/>
+        </insert>
+        
+        <insert tableName="system_role_module" schemaName="clinlims">
+            <column name="id" valueSequenceNext="system_role_module_seq"/>
+            <column name="has_select" value="Y"/>
+            <column name="has_add" value="Y"/>
+            <column name="has_update" value="Y"/>
+            <column name="has_delete" value="N"/>
+            <column name="system_role_id" valueComputed="(SELECT id FROM clinlims.system_role WHERE name = 'Lab Administrator')"/>
+            <column name="system_module_id" valueComputed="(SELECT id FROM clinlims.system_module WHERE name = 'ValidationConfig')"/>
+        </insert>
+        
+        <insert tableName="system_role_module" schemaName="clinlims">
+            <column name="id" valueSequenceNext="system_role_module_seq"/>
+            <column name="has_select" value="Y"/>
+            <column name="has_add" value="Y"/>
+            <column name="has_update" value="Y"/>
+            <column name="has_delete" value="N"/>
+            <column name="system_role_id" valueComputed="(SELECT id FROM clinlims.system_role WHERE name = 'Lab Administrator')"/>
+            <column name="system_module_id" valueComputed="(SELECT id FROM clinlims.system_module WHERE name = 'BatchTestReassignment')"/>
+        </insert>
+        
+        <insert tableName="system_role_module" schemaName="clinlims">
+            <column name="id" valueSequenceNext="system_role_module_seq"/>
+            <column name="has_select" value="Y"/>
+            <column name="has_add" value="Y"/>
+            <column name="has_update" value="Y"/>
+            <column name="has_delete" value="N"/>
+            <column name="system_role_id" valueComputed="(SELECT id FROM clinlims.system_role WHERE name = 'Lab Administrator')"/>
+            <column name="system_module_id" valueComputed="(SELECT id FROM clinlims.system_module WHERE name = 'CalendarManagement')"/>
+        </insert>
+        
+        <insert tableName="system_role_module" schemaName="clinlims">
+            <column name="id" valueSequenceNext="system_role_module_seq"/>
+            <column name="has_select" value="Y"/>
+            <column name="has_add" value="Y"/>
+            <column name="has_update" value="Y"/>
+            <column name="has_delete" value="N"/>
+            <column name="system_role_id" valueComputed="(SELECT id FROM clinlims.system_role WHERE name = 'Lab Administrator')"/>
+            <column name="system_module_id" valueComputed="(SELECT id FROM clinlims.system_module WHERE name = 'ExternalConnection')"/>
+        </insert>
+        
+        <insert tableName="system_role_module" schemaName="clinlims">
+            <column name="id" valueSequenceNext="system_role_module_seq"/>
+            <column name="has_select" value="Y"/>
+            <column name="has_add" value="Y"/>
+            <column name="has_update" value="Y"/>
+            <column name="has_delete" value="N"/>
+            <column name="system_role_id" valueComputed="(SELECT id FROM clinlims.system_role WHERE name = 'Lab Administrator')"/>
+            <column name="system_module_id" valueComputed="(SELECT id FROM clinlims.system_module WHERE name = 'ListPlugins')"/>
+        </insert>
+        
+        <insert tableName="system_role_module" schemaName="clinlims">
+            <column name="id" valueSequenceNext="system_role_module_seq"/>
+            <column name="has_select" value="Y"/>
+            <column name="has_add" value="Y"/>
+            <column name="has_update" value="Y"/>
+            <column name="has_delete" value="N"/>
+            <column name="system_role_id" valueComputed="(SELECT id FROM clinlims.system_role WHERE name = 'Lab Administrator')"/>
+            <column name="system_module_id" valueComputed="(SELECT id FROM clinlims.system_module WHERE name = 'SampleShipmentManagement')"/>
+        </insert>
+        
+        <insert tableName="system_role_module" schemaName="clinlims">
+            <column name="id" valueSequenceNext="system_role_module_seq"/>
+            <column name="has_select" value="Y"/>
+            <column name="has_add" value="Y"/>
+            <column name="has_update" value="Y"/>
+            <column name="has_delete" value="N"/>
+            <column name="system_role_id" valueComputed="(SELECT id FROM clinlims.system_role WHERE name = 'Lab Administrator')"/>
+            <column name="system_module_id" valueComputed="(SELECT id FROM clinlims.system_module WHERE name = 'EQAView')"/>
+        </insert>
+        
+        <!-- StudyElectronicOrderView - Lab Administrator + Lab Director only -->
+        <insert tableName="system_role_module" schemaName="clinlims">
+            <column name="id" valueSequenceNext="system_role_module_seq"/>
+            <column name="has_select" value="Y"/>
+            <column name="has_add" value="Y"/>
+            <column name="has_update" value="Y"/>
+            <column name="has_delete" value="N"/>
+            <column name="system_role_id" valueComputed="(SELECT id FROM clinlims.system_role WHERE name = 'Lab Administrator')"/>
+            <column name="system_module_id" valueComputed="(SELECT id FROM clinlims.system_module WHERE name = 'StudyElectronicOrderView')"/>
+        </insert>
+    </changeSet>
+
+    <!-- ========================================================================
+         LAB DIRECTOR - Overall lab authority, scientific signatory, primary FDA contact
+         ======================================================================== -->
+    <changeSet author="phase-0b" id="lab-director-permissions">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="system_role_module" schemaName="clinlims" />
+            <sqlCheck expectedResult="0">
+                SELECT COUNT(*) FROM clinlims.system_role_module srm 
+                WHERE srm.system_role_id = (SELECT id FROM clinlims.system_role WHERE name = 'Lab Director')
+            </sqlCheck>
+        </preConditions>
+        <comment>Grant Lab Director full access to all food safety modules plus StudyElectronicOrderView</comment>
+        
+        <!-- System User Management -->
+        <insert tableName="system_role_module" schemaName="clinlims">
+            <column name="id" valueSequenceNext="system_role_module_seq"/>
+            <column name="has_select" value="Y"/>
+            <column name="has_add" value="Y"/>
+            <column name="has_update" value="Y"/>
+            <column name="has_delete" value="Y"/>
+            <column name="system_role_id" valueComputed="(SELECT id FROM clinlims.system_role WHERE name = 'Lab Director')"/>
+            <column name="system_module_id" valueComputed="(SELECT id FROM clinlims.system_module WHERE name = 'SystemUser')"/>
+        </insert>
+        
+        <!-- Base modules -->
+        <insert tableName="system_role_module" schemaName="clinlims">
+            <column name="id" valueSequenceNext="system_role_module_seq"/>
+            <column name="has_select" value="Y"/>
+            <column name="has_add" value="Y"/>
+            <column name="has_update" value="Y"/>
+            <column name="has_delete" value="N"/>
+            <column name="system_role_id" valueComputed="(SELECT id FROM clinlims.system_role WHERE name = 'Lab Director')"/>
+            <column name="system_module_id" valueComputed="(SELECT id FROM clinlims.system_module WHERE name = 'GenericSampleView')"/>
+        </insert>
+        
+        <insert tableName="system_role_module" schemaName="clinlims">
+            <column name="id" valueSequenceNext="system_role_module_seq"/>
+            <column name="has_select" value="Y"/>
+            <column name="has_add" value="Y"/>
+            <column name="has_update" value="Y"/>
+            <column name="has_delete" value="N"/>
+            <column name="system_role_id" valueComputed="(SELECT id FROM clinlims.system_role WHERE name = 'Lab Director')"/>
+            <column name="system_module_id" valueComputed="(SELECT id FROM clinlims.system_module WHERE name = 'ResultsValidationGeneral')"/>
+        </insert>
+        
+        <insert tableName="system_role_module" schemaName="clinlims">
+            <column name="id" valueSequenceNext="system_role_module_seq"/>
+            <column name="has_select" value="Y"/>
+            <column name="has_add" value="Y"/>
+            <column name="has_update" value="Y"/>
+            <column name="has_delete" value="N"/>
+            <column name="system_role_id" valueComputed="(SELECT id FROM clinlims.system_role WHERE name = 'Lab Director')"/>
+            <column name="system_module_id" valueComputed="(SELECT id FROM clinlims.system_module WHERE name = 'RangeResults')"/>
+        </insert>
+        
+        <insert tableName="system_role_module" schemaName="clinlims">
+            <column name="id" valueSequenceNext="system_role_module_seq"/>
+            <column name="has_select" value="Y"/>
+            <column name="has_add" value="N"/>
+            <column name="has_update" value="N"/>
+            <column name="has_delete" value="N"/>
+            <column name="system_role_id" valueComputed="(SELECT id FROM clinlims.system_role WHERE name = 'Lab Director')"/>
+            <column name="system_module_id" valueComputed="(SELECT id FROM clinlims.system_module WHERE name = 'TATReport')"/>
+        </insert>
+        
+        <insert tableName="system_role_module" schemaName="clinlims">
+            <column name="id" valueSequenceNext="system_role_module_seq"/>
+            <column name="has_select" value="Y"/>
+            <column name="has_add" value="N"/>
+            <column name="has_update" value="N"/>
+            <column name="has_delete" value="N"/>
+            <column name="system_role_id" valueComputed="(SELECT id FROM clinlims.system_role WHERE name = 'Lab Director')"/>
+            <column name="system_module_id" valueComputed="(SELECT id FROM clinlims.system_module WHERE name = 'Report:RoutineExport')"/>
+        </insert>
+        
+        <insert tableName="system_role_module" schemaName="clinlims">
+            <column name="id" valueSequenceNext="system_role_module_seq"/>
+            <column name="has_select" value="Y"/>
+            <column name="has_add" value="Y"/>
+            <column name="has_update" value="Y"/>
+            <column name="has_delete" value="N"/>
+            <column name="system_role_id" valueComputed="(SELECT id FROM clinlims.system_role WHERE name = 'Lab Director')"/>
+            <column name="system_module_id" valueComputed="(SELECT id FROM clinlims.system_module WHERE name = 'BarcodeConfig')"/>
+        </insert>
+        
+        <!-- Supervisory modules -->
+        <insert tableName="system_role_module" schemaName="clinlims">
+            <column name="id" valueSequenceNext="system_role_module_seq"/>
+            <column name="has_select" value="Y"/>
+            <column name="has_add" value="Y"/>
+            <column name="has_update" value="Y"/>
+            <column name="has_delete" value="N"/>
+            <column name="system_role_id" valueComputed="(SELECT id FROM clinlims.system_role WHERE name = 'Lab Director')"/>
+            <column name="system_module_id" valueComputed="(SELECT id FROM clinlims.system_module WHERE name = 'ReportConfig')"/>
+        </insert>
+        
+        <insert tableName="system_role_module" schemaName="clinlims">
+            <column name="id" valueSequenceNext="system_role_module_seq"/>
+            <column name="has_select" value="Y"/>
+            <column name="has_add" value="Y"/>
+            <column name="has_update" value="Y"/>
+            <column name="has_delete" value="N"/>
+            <column name="system_role_id" valueComputed="(SELECT id FROM clinlims.system_role WHERE name = 'Lab Director')"/>
+            <column name="system_module_id" valueComputed="(SELECT id FROM clinlims.system_module WHERE name = 'ValidationConfig')"/>
+        </insert>
+        
+        <insert tableName="system_role_module" schemaName="clinlims">
+            <column name="id" valueSequenceNext="system_role_module_seq"/>
+            <column name="has_select" value="Y"/>
+            <column name="has_add" value="Y"/>
+            <column name="has_update" value="Y"/>
+            <column name="has_delete" value="N"/>
+            <column name="system_role_id" valueComputed="(SELECT id FROM clinlims.system_role WHERE name = 'Lab Director')"/>
+            <column name="system_module_id" valueComputed="(SELECT id FROM clinlims.system_module WHERE name = 'BatchTestReassignment')"/>
+        </insert>
+        
+        <insert tableName="system_role_module" schemaName="clinlims">
+            <column name="id" valueSequenceNext="system_role_module_seq"/>
+            <column name="has_select" value="Y"/>
+            <column name="has_add" value="Y"/>
+            <column name="has_update" value="Y"/>
+            <column name="has_delete" value="N"/>
+            <column name="system_role_id" valueComputed="(SELECT id FROM clinlims.system_role WHERE name = 'Lab Director')"/>
+            <column name="system_module_id" valueComputed="(SELECT id FROM clinlims.system_module WHERE name = 'CalendarManagement')"/>
+        </insert>
+        
+        <insert tableName="system_role_module" schemaName="clinlims">
+            <column name="id" valueSequenceNext="system_role_module_seq"/>
+            <column name="has_select" value="Y"/>
+            <column name="has_add" value="Y"/>
+            <column name="has_update" value="Y"/>
+            <column name="has_delete" value="N"/>
+            <column name="system_role_id" valueComputed="(SELECT id FROM clinlims.system_role WHERE name = 'Lab Director')"/>
+            <column name="system_module_id" valueComputed="(SELECT id FROM clinlims.system_module WHERE name = 'ExternalConnection')"/>
+        </insert>
+        
+        <insert tableName="system_role_module" schemaName="clinlims">
+            <column name="id" valueSequenceNext="system_role_module_seq"/>
+            <column name="has_select" value="Y"/>
+            <column name="has_add" value="Y"/>
+            <column name="has_update" value="Y"/>
+            <column name="has_delete" value="N"/>
+            <column name="system_role_id" valueComputed="(SELECT id FROM clinlims.system_role WHERE name = 'Lab Director')"/>
+            <column name="system_module_id" valueComputed="(SELECT id FROM clinlims.system_module WHERE name = 'ListPlugins')"/>
+        </insert>
+        
+        <insert tableName="system_role_module" schemaName="clinlims">
+            <column name="id" valueSequenceNext="system_role_module_seq"/>
+            <column name="has_select" value="Y"/>
+            <column name="has_add" value="Y"/>
+            <column name="has_update" value="Y"/>
+            <column name="has_delete" value="N"/>
+            <column name="system_role_id" valueComputed="(SELECT id FROM clinlims.system_role WHERE name = 'Lab Director')"/>
+            <column name="system_module_id" valueComputed="(SELECT id FROM clinlims.system_module WHERE name = 'SampleShipmentManagement')"/>
+        </insert>
+        
+        <insert tableName="system_role_module" schemaName="clinlims">
+            <column name="id" valueSequenceNext="system_role_module_seq"/>
+            <column name="has_select" value="Y"/>
+            <column name="has_add" value="Y"/>
+            <column name="has_update" value="Y"/>
+            <column name="has_delete" value="N"/>
+            <column name="system_role_id" valueComputed="(SELECT id FROM clinlims.system_role WHERE name = 'Lab Director')"/>
+            <column name="system_module_id" valueComputed="(SELECT id FROM clinlims.system_module WHERE name = 'EQAView')"/>
+        </insert>
+        
+        <!-- StudyElectronicOrderView - Lab Administrator + Lab Director only -->
+        <insert tableName="system_role_module" schemaName="clinlims">
+            <column name="id" valueSequenceNext="system_role_module_seq"/>
+            <column name="has_select" value="Y"/>
+            <column name="has_add" value="Y"/>
+            <column name="has_update" value="Y"/>
+            <column name="has_delete" value="N"/>
+            <column name="system_role_id" valueComputed="(SELECT id FROM clinlims.system_role WHERE name = 'Lab Director')"/>
+            <column name="system_module_id" valueComputed="(SELECT id FROM clinlims.system_module WHERE name = 'StudyElectronicOrderView')"/>
+        </insert>
+    </changeSet>
+</databaseChangeLog>

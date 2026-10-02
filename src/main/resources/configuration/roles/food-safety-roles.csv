@@ -1,0 +1,2 @@
+name,description,displayKey,active,editable,isGroupingRole,groupingParent
+Food Safety Technician,Primary role for food safety laboratory technicians,role.food.safety.technician,Y,Y,N,Lab Unit Roles
