@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>FDA LIMS — Dashboard</title>
+    <style>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: "Source Sans Pro", "Helvetica Neue", Helvetica, Arial, sans-serif;
+            background: #f0f2f5;
+            color: #2E2925;
+            min-height: 100vh;
+        }
+        .header {
+            background: #222C67;
+            color: #fff;
+            height: 60px;
+            padding: 0 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 200;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        }
+        .header-left { display: flex; align-items: center; gap: 14px; }
+        .header-logo { height: 36px; width: auto; }
+        .header-wordmark { display: flex; flex-direction: column; line-height: 1.2; }
+        .header-wordmark .sys-name { font-size: 17px; font-weight: 700; color: #fff; }
+        .header-wordmark .sys-sub  { font-size: 10px; color: #a8b4d8; text-transform: uppercase; letter-spacing: 0.6px; }
+        .header-right { display: flex; align-items: center; gap: 20px; }
+        .header-util-link {
+            color: #a8b4d8; text-decoration: none; font-size: 13px;
+            padding: 4px 8px; border-radius: 4px;
+            transition: color .15s, background .15s;
+        }
+        .header-util-link:hover { color: #fff; background: rgba(255,255,255,.1); }
+        .user-chip { display: flex; align-items: center; gap: 8px; font-size: 13px; color: #d0d8f0; }
+        .user-avatar {
+            width: 30px; height: 30px; border-radius: 50%;
+            background: #007CBA;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 12px; font-weight: 700; color: #fff;
+            flex-shrink: 0;
+        }
+        .navbar {
+            background: #007CBA;
+            height: 42px;
+            padding: 0 24px;
+            display: flex;
+            align-items: center;
+            gap: 2px;
+            overflow-x: auto;
+        }
+        .navbar a {
+            color: #cce8f6;
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 600;
+            height: 42px;
+            padding: 0 14px;
+            display: flex;
+            align-items: center;
+            border-bottom: 3px solid transparent;
+            white-space: nowrap;
+            letter-spacing: 0.15px;
+            transition: background .15s, border-color .15s, color .15s;
+        }
+        .navbar a:hover  { background: rgba(255,255,255,.15); border-bottom-color: #fff; color: #fff; }
+        .navbar a.active { background: rgba(255,255,255,.12); border-bottom-color: #fff; color: #fff; }
+        .breadcrumb {
+            background: #fff;
+            border-bottom: 1px solid #dde3ec;
+            padding: 8px 24px;
+            font-size: 12px;
+            color: #6D6E71;
+        }
+        .breadcrumb a { color: #007CBA; text-decoration: none; font-weight: 600; }
+        .page { padding: 22px 24px 40px; max-width: 1440px; margin: 0 auto; }
+        .section-label {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            color: #6D6E71;
+            margin-bottom: 10px;
+            margin-top: 22px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .section-label a { font-size: 11px; color: #007CBA; text-decoration: none; font-weight: 600; }
+        .section-label a:hover { text-decoration: underline; }
+        .actions-row {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 10px;
+        }
+        .action-tile {
+            background: #fff;
+            border: 1px solid #dde3ec;
+            border-radius: 8px;
+            padding: 16px 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+            color: #222C67;
+            transition: box-shadow .15s, border-color .15s, background .15s;
+        }
+        .action-tile:hover {
+            background: #eaf4fb;
+            border-color: #007CBA;
+            box-shadow: 0 2px 10px rgba(0,124,186,.14);
+        }
+        button.action-tile {
+            background: #fff;
+            border: 1px solid #dde3ec;
+            cursor: pointer;
+            font-family: inherit;
+            width: 100%;
+        }
+        button.action-tile:hover {
+            background: #eaf4fb;
+            border-color: #007CBA;
+            box-shadow: 0 2px 10px rgba(0,124,186,.14);
+        }
+        button.action-tile:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        .action-icon {
+            width: 38px; height: 38px;
+            background: #eaf4fb;
+            border-radius: 8px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 20px;
+        }
+        .action-label { font-size: 12px; font-weight: 700; text-align: center; line-height: 1.3; color: #222C67; }
+        .action-sub { font-size: 10px; color: #6D6E71; text-align: center; line-height: 1.3; }
+        .cards-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+        .cards-row-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+        .metric-card {
+            background: #fff;
+            border-radius: 8px;
+            padding: 18px 20px 16px;
+            box-shadow: 0 1px 4px rgba(0,0,0,.07);
+            border-top: 4px solid #007CBA;
+            text-decoration: none;
+            display: block;
+            transition: box-shadow .15s, transform .15s;
+        }
+        .metric-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,.12); transform: translateY(-2px); }
+        .metric-card.c-warn    { border-top-color: #e67e22; }
+        .metric-card.c-success { border-top-color: #27ae60; }
+        .metric-card.c-alert   { border-top-color: #c0392b; }
+        .metric-card.c-neutral { border-top-color: #6D6E71; }
+        .m-label    { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #6D6E71; margin-bottom: 2px; }
+        .m-sublabel { font-size: 10px; color: #aaa; margin-bottom: 10px; }
+        .m-value { font-size: 34px; font-weight: 700; color: #222C67; line-height: 1; margin-bottom: 4px; min-height: 40px; display: flex; align-items: center; }
+        .metric-card.c-warn    .m-value { color: #e67e22; }
+        .metric-card.c-success .m-value { color: #27ae60; }
+        .metric-card.c-alert   .m-value { color: #c0392b; }
+        .skeleton {
+            display: inline-block;
+            width: 60px; height: 34px;
+            background: linear-gradient(90deg, #e8edf3 25%, #f5f7fa 50%, #e8edf3 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.4s infinite;
+            border-radius: 4px;
+        }
+        @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+        .m-note { font-size: 10px; color: #aaa; }
+        .two-col { display: grid; grid-template-columns: 3fr 2fr; gap: 14px; }
+        .panel { background: #fff; border-radius: 8px; box-shadow: 0 1px 4px rgba(0,0,0,.07); overflow: hidden; }
+        .panel-header {
+            background: #f8f9fb;
+            border-bottom: 1px solid #e8edf3;
+            padding: 12px 18px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .panel-title { font-size: 13px; font-weight: 700; color: #222C67; }
+        .panel-badge { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 10px; background: #007CBA; color: #fff; }
+        .panel-badge.b-warn  { background: #e67e22; }
+        .panel-badge.b-alert { background: #c0392b; }
+        table { width: 100%; border-collapse: collapse; font-size: 12px; }
+        th { background: #f0f3f8; color: #6D6E71; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; padding: 9px 14px; text-align: left; border-bottom: 1px solid #dde3ec; }
+        td { padding: 10px 14px; border-bottom: 1px solid #f0f0f0; color: #2E2925; vertical-align: middle; }
+        tr:last-child td { border-bottom: none; }
+        tr:hover td { background: #f7fafd; }
+        .tbl-link { color: #007CBA; text-decoration: none; font-weight: 600; }
+        .tbl-link:hover { text-decoration: underline; }
+        .tbl-empty { text-align: center; padding: 32px 14px; color: #aaa; font-size: 12px; font-style: italic; }
+        .row-skel { height: 14px; border-radius: 4px; background: linear-gradient(90deg, #e8edf3 25%, #f5f7fa 50%, #e8edf3 75%); background-size: 200% 100%; animation: shimmer 1.4s infinite; }
+        footer { text-align: center; font-size: 11px; color: #bbb; padding: 20px; margin-top: 16px; border-top: 1px solid #e0e0e0; }
+        footer a { color: #007CBA; text-decoration: none; }
+        @media (max-width: 1100px) {
+            .cards-row   { grid-template-columns: repeat(2, 1fr); }
+            .cards-row-3 { grid-template-columns: repeat(2, 1fr); }
+            .actions-row { grid-template-columns: repeat(3, 1fr); }
+            .two-col     { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+<header class="header">
+    <div class="header-left">
+        <img src="/api/OpenELIS-Global/branding/fda-logo.png"
+             alt="U.S. Food and Drug Administration"
+             class="header-logo"
+             onerror="this.style.display='none'">
+        <div class="header-wordmark">
+            <span class="sys-name">OLOAS Laboratory LIMS</span>
+            <span class="sys-sub">Human Foods Program · Food &amp; Environmental Testing</span>
+        </div>
+    </div>
+    <div class="header-right">
+        <div class="user-chip">
+            <div class="user-avatar" id="userInitials">—</div>
+            <span id="userName">Loading…</span>
+        </div>
+        <a href="/api/OpenELIS-Global/logout" class="header-util-link">Logout</a>
+    </div>
+</header>
+
+<nav class="navbar">
+    <a href="/" class="active">Dashboard</a>
+    <a href="/order/enter">Order</a>
+    <a href="/LogbookResults?type=">Results</a>
+    <a href="/ResultValidation?type=&test=">Validation</a>
+    <a href="/WorkPlanByTest?type=test">Workplan</a>
+    <a href="/NceDashboard">Non-Conform</a>
+    <a href="/RoutineReports">Reports</a>
+    <a href="/Storage/sample-items">Storage</a>
+    <a href="/analyzers">Analyzers</a>
+    <a href="/MasterListsPage">Admin</a>
+</nav>
+
+<div class="breadcrumb">
+    <a href="/">Home</a> / Dashboard
+</div>
+
+<main class="page">
+
+    <div class="section-label">Quick Actions</div>
+    <div class="actions-row">
+        <a href="/order/enter" class="action-tile">
+            <div class="action-icon">📥</div>
+            <span class="action-label">New Order</span>
+            <span class="action-sub">Receive &amp; accession sample</span>
+        </a>
+        <a href="/LogbookResults?type=" class="action-tile">
+            <div class="action-icon">🔬</div>
+            <span class="action-label">Enter Results</span>
+            <span class="action-sub">Record test results</span>
+        </a>
+        <a href="/WorkPlanByTest?type=test" class="action-tile">
+            <div class="action-icon">📋</div>
+            <span class="action-label">Workplan</span>
+            <span class="action-sub">Assign &amp; manage tests</span>
+        </a>
+        <a href="/ResultValidation?type=&test=" class="action-tile">
+            <div class="action-icon">✅</div>
+            <span class="action-label">Validate Results</span>
+            <span class="action-sub">Review &amp; approve</span>
+        </a>
+        <a href="/NceDashboard" class="action-tile">
+            <div class="action-icon">⚠️</div>
+            <span class="action-label">Non-Conformance</span>
+            <span class="action-sub">Log NCE event</span>
+        </a>
+    </div>
+
+    <div class="section-label">
+        Today's Workload
+        <a href="/LogbookResults?type=">View all →</a>
+    </div>
+    <div class="cards-row">
+        <a href="/LogbookResults?type=" class="metric-card c-warn">
+            <div class="m-label">In Progress</div>
+            <div class="m-sublabel">Awaiting result entry</div>
+            <div class="m-value"><span class="skeleton" id="val-inprogress"></span></div>
+            <div class="m-note" id="note-inprogress"></div>
+        </a>
+        <a href="/ResultValidation?type=&test=" class="metric-card c-success">
+            <div class="m-label">Ready for Validation</div>
+            <div class="m-sublabel">Awaiting review</div>
+            <div class="m-value"><span class="skeleton" id="val-validation"></span></div>
+            <div class="m-note" id="note-validation"></div>
+        </a>
+        <a href="/LogbookResults?type=" class="metric-card">
+            <div class="m-label">Completed Today</div>
+            <div class="m-sublabel">Orders completed</div>
+            <div class="m-value"><span class="skeleton" id="val-completed"></span></div>
+            <div class="m-note" id="note-completed"></div>
+        </a>
+        <a href="/LogbookResults?type=" class="metric-card c-alert">
+            <div class="m-label">Delayed</div>
+            <div class="m-sublabel">More than 96 hours</div>
+            <div class="m-value"><span class="skeleton" id="val-delayed"></span></div>
+            <div class="m-note" id="note-delayed"></div>
+        </a>
+    </div>
+
+    <div class="section-label">Activity</div>
+    <div class="cards-row-3">
+        <a href="/LogbookResults?type=" class="metric-card">
+            <div class="m-label">Entered By You Today</div>
+            <div class="m-sublabel">Orders you entered</div>
+            <div class="m-value"><span class="skeleton" id="val-userorders"></span></div>
+            <div class="m-note" id="note-userorders"></div>
+        </a>
+        <a href="/LogbookResults?type=" class="metric-card c-alert">
+            <div class="m-label">Rejected Today</div>
+            <div class="m-sublabel">Orders rejected</div>
+            <div class="m-value"><span class="skeleton" id="val-rejected"></span></div>
+            <div class="m-note" id="note-rejected"></div>
+        </a>
+        <a href="/AuditTrailReport?type=order" class="metric-card c-neutral">
+            <div class="m-label">Avg. Turnaround</div>
+            <div class="m-sublabel">Reception to validation</div>
+            <div class="m-value"><span class="skeleton" id="val-tat"></span></div>
+            <div class="m-note" id="note-tat"></div>
+        </a>
+    </div>
+
+    <div class="section-label">Queues</div>
+    <div class="two-col">
+
+        <div class="panel">
+            <div class="panel-header">
+                <span class="panel-title">Orders In Progress</span>
+                <span class="panel-badge b-warn" id="queue-badge">—</span>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Lab Number</th>
+                        <th>Order Date</th>
+                        <th>Sample ID</th>
+                        <th>Test</th>
+                        <th>Priority</th>
+                    </tr>
+                </thead>
+                <tbody id="queue-tbody">
+                    <tr><td><div class="row-skel" style="width:90px"></div></td><td><div class="row-skel" style="width:70px"></div></td><td><div class="row-skel" style="width:60px"></div></td><td><div class="row-skel" style="width:80px"></div></td><td><div class="row-skel" style="width:40px"></div></td></tr>
+                    <tr><td><div class="row-skel" style="width:90px"></div></td><td><div class="row-skel" style="width:70px"></div></td><td><div class="row-skel" style="width:60px"></div></td><td><div class="row-skel" style="width:80px"></div></td><td><div class="row-skel" style="width:40px"></div></td></tr>
+                    <tr><td><div class="row-skel" style="width:90px"></div></td><td><div class="row-skel" style="width:70px"></div></td><td><div class="row-skel" style="width:60px"></div></td><td><div class="row-skel" style="width:80px"></div></td><td><div class="row-skel" style="width:40px"></div></td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="panel">
+            <div class="panel-header">
+                <span class="panel-title">Ready for Validation</span>
+                <span class="panel-badge b-alert" id="nce-badge">—</span>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Lab Number</th>
+                        <th>Order Date</th>
+                        <th>Test</th>
+                    </tr>
+                </thead>
+                <tbody id="validation-tbody">
+                    <tr><td><div class="row-skel" style="width:90px"></div></td><td><div class="row-skel" style="width:70px"></div></td><td><div class="row-skel" style="width:80px"></div></td></tr>
+                    <tr><td><div class="row-skel" style="width:90px"></div></td><td><div class="row-skel" style="width:70px"></div></td><td><div class="row-skel" style="width:80px"></div></td></tr>
+                    <tr><td><div class="row-skel" style="width:90px"></div></td><td><div class="row-skel" style="width:70px"></div></td><td><div class="row-skel" style="width:80px"></div></td></tr>
+                </tbody>
+            </table>
+        </div>
+
+    </div>
+
+</main>
+
+<footer>
+    FDA Laboratory LIMS &nbsp;|&nbsp;
+    Version <span id="build-version">3.2.1.11</span> &nbsp;|&nbsp;
+    Powered by <a href="https://openelisglobal.org" target="_blank" rel="noopener">OpenELIS Global</a>
+</footer>
+
+<script>
+(function () {
+    "use strict";
+
+    var API = '/api/OpenELIS-Global';
+
+    /* ── Session check & user info ── */
+    fetch(API + '/session')
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (!data.authenticated) { window.location.href = '/login'; return; }
+            var name = ((data.firstName || '') + ' ' + (data.lastName || '')).trim() || data.loginName || 'User';
+            document.getElementById('userName').textContent = name;
+            var initials = name.split(' ').map(function(w) { return w.charAt(0); }).slice(0,2).join('').toUpperCase();
+            document.getElementById('userInitials').textContent = initials || '?';
+        })
+        .catch(function() { window.location.href = '/login'; });
+
+    /* ── Helpers ── */
+    function setVal(id, value, unit) {
+        var el = document.getElementById(id);
+        if (!el) return;
+        var parent = el.parentNode;
+        if (unit) {
+            parent.innerHTML = (value !== null && value !== undefined ? value : '—') +
+                '<span style="font-size:16px;font-weight:400;color:#6D6E71"> ' + unit + '</span>';
+        } else {
+            parent.innerHTML = value !== null && value !== undefined ? value : '—';
+        }
+    }
+
+    function setNote(id, text) {
+        var el = document.getElementById(id);
+        if (el) el.textContent = text;
+    }
+
+    /* ── Dashboard metrics ── */
+    fetch(API + '/rest/home-dashboard/metrics')
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+            var ts = new Date().toLocaleTimeString();
+            setVal('val-inprogress', d.ordersInProgress,         null);
+            setVal('val-validation', d.ordersReadyForValidation,  null);
+            setVal('val-completed',  d.ordersCompletedToday,      null);
+            setVal('val-delayed',    d.delayedTurnAround,         null);
+            setVal('val-userorders', d.orderEnterdByUserToday,    null);
+            setVal('val-rejected',   d.ordersRejectedToday,       null);
+            setVal('val-tat',        d.averageTurnAroudTime,      'hrs');
+            ['inprogress','validation','completed','delayed','userorders','rejected','tat'].forEach(function(k) {
+                setNote('note-' + k, 'As of ' + ts);
+            });
+        })
+        .catch(function() {
+            ['val-inprogress','val-validation','val-completed','val-delayed',
+             'val-userorders','val-rejected','val-tat'].forEach(function(id) { setVal(id, '—', null); });
+        });
+
+    /* ── Orders In Progress table ── */
+    fetch(API + '/rest/home-dashboard/ORDERS_IN_PROGRESS')
+        .then(function(r) { return r.json(); })
+        .then(function(res) {
+            var rows = (res && res.displayItems) ? res.displayItems : [];
+            document.getElementById('queue-badge').textContent = rows.length;
+            var tbody = document.getElementById('queue-tbody');
+            if (rows.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="tbl-empty">No orders in progress.</td></tr>';
+                return;
+            }
+            tbody.innerHTML = rows.slice(0, 10).map(function(s) {
+                var link = '/result?type=order&doRange=false&accessionNumber=' + (s.labNumber || '');
+                return '<tr>' +
+                    '<td><a href="' + link + '" class="tbl-link">' + (s.labNumber || '—') + '</a></td>' +
+                    '<td>' + (s.orderDate || '—') + '</td>' +
+                    '<td>' + (s.sampleId || '—') + '</td>' +
+                    '<td>' + (s.testName  || '—') + '</td>' +
+                    '<td>' + (s.priority  || '—') + '</td>' +
+                '</tr>';
+            }).join('');
+        })
+        .catch(function() {
+            document.getElementById('queue-tbody').innerHTML =
+                '<tr><td colspan="5" class="tbl-empty">Unable to load orders.</td></tr>';
+        });
+
+    /* ── Ready for Validation table ── */
+    fetch(API + '/rest/home-dashboard/ORDERS_READY_FOR_VALIDATION')
+        .then(function(r) { return r.json(); })
+        .then(function(res) {
+            var rows = (res && res.displayItems) ? res.displayItems : [];
+            document.getElementById('nce-badge').textContent = rows.length;
+            var tbody = document.getElementById('validation-tbody');
+            if (rows.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="3" class="tbl-empty">No orders awaiting validation.</td></tr>';
+                return;
+            }
+            tbody.innerHTML = rows.slice(0, 10).map(function(s) {
+                var link = '/validation?type=order&accessionNumber=' + (s.labNumber || '');
+                return '<tr>' +
+                    '<td><a href="' + link + '" class="tbl-link">' + (s.labNumber || '—') + '</a></td>' +
+                    '<td>' + (s.orderDate || '—') + '</td>' +
+                    '<td>' + (s.testName  || '—') + '</td>' +
+                '</tr>';
+            }).join('');
+        })
+        .catch(function() {
+            document.getElementById('validation-tbody').innerHTML =
+                '<tr><td colspan="3" class="tbl-empty">Unable to load orders.</td></tr>';
+        });
+
+})();
+</script>
+
+</body>
+</html>
