@@ -1,0 +1,19 @@
+testName,resultType,resultValue,dictionaryCategory,sortOrder,isQuantifiable,isActive,isNormal,significantDigits,flags
+PCR Product Gel Check,D,Single band ~700bp,PCR_Result,1,N,Y,Y,,
+PCR Product Gel Check,D,Multiple bands,PCR_Result,2,N,Y,N,,A
+PCR Product Gel Check,D,No band,PCR_Result,3,N,Y,N,,A
+PCR Product Gel Check,D,Smeared,PCR_Result,4,N,Y,N,,A
+PCR - COI Amplification,D,Pass,Pass_Fail,1,N,Y,Y,,
+PCR - COI Amplification,D,Fail,Pass_Fail,2,N,Y,N,,A
+PCR Cleanup - ExoSAP-IT,D,Complete,Completion_Status,1,N,Y,Y,,
+PCR Cleanup - ExoSAP-IT,D,Failed,Completion_Status,2,N,Y,N,,A
+Sequencing Cleanup,D,Complete,Completion_Status,1,N,Y,Y,,
+Sequencing Cleanup,D,Failed,Completion_Status,2,N,Y,N,,A
+Cycle Sequencing - Forward,D,Complete,Completion_Status,1,N,Y,Y,,
+Cycle Sequencing - Forward,D,Failed,Completion_Status,2,N,Y,N,,A
+Cycle Sequencing - Reverse,D,Complete,Completion_Status,1,N,Y,Y,,
+Cycle Sequencing - Reverse,D,Failed,Completion_Status,2,N,Y,N,,A
+Fish Species Identification,D,Confirmed - FDA Reference,Match_Quality,1,N,Y,Y,,
+Fish Species Identification,D,Presumptive - Public Database,Match_Quality,2,N,Y,Y,,
+Fish Species Identification,D,Inconclusive,Match_Quality,3,N,Y,N,,A
+Fish Species Identification,D,No Match Found,Match_Quality,4,N,Y,N,,A
