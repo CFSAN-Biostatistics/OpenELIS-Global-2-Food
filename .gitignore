@@ -97,6 +97,7 @@ projects/*/volume/
 !src/main/resources/configuration/test-results/**
 !projects/analyzer-harness/config-templates/test-results/
 !projects/analyzer-harness/config-templates/test-results/harness-test-results.csv
+!volume/configuration/backend/test-results/
 # Note: frontend/playwright/ test sources are tracked (not ignored)
 *.pyc
 __pycache__/
