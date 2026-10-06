@@ -1,0 +1,3 @@
+testSectionName,description,isActive,sortOrder,isExternal,localization:en,localization:fr,localization:es,localization:id
+Molecular Biology,Molecular Biology and DNA Barcoding,Y,1,N,Molecular Biology,Biologie Moléculaire,Biología Molecular,Biologi Molekuler
+DNA Barcoding,DNA Barcoding for Species Identification,Y,2,N,DNA Barcoding,Code-barres ADN,Código de Barras de ADN,Kode Batang DNA

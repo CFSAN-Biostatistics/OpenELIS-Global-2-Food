@@ -1,0 +1,20 @@
+category,dictEntry,localAbbreviation,isActive,sortOrder,loincCode,localization:en,localization:fr,localization:es,localization:id
+PCR_Result,Single band ~700bp,PASS-700BP,Y,1,,Single band ~700bp,Bande unique ~700bp,Banda única ~700bp,Pita tunggal ~700bp
+PCR_Result,Multiple bands,MULT-BAND,Y,2,,Multiple bands,Bandes multiples,Bandas múltiples,Beberapa pita
+PCR_Result,No band,NO-BAND,Y,3,,No band,Aucune bande,Sin banda,Tidak ada pita
+PCR_Result,Smeared,SMEARED,Y,4,,Smeared,Étalé,Manchado,Luntur
+PCR_Result,Negative Control Pass,NEG-CTRL-PASS,Y,5,,Negative Control Pass,Contrôle Négatif Réussi,Control Negativo Aprobado,Kontrol Negatif Lulus
+PCR_Result,Negative Control Fail,NEG-CTRL-FAIL,Y,6,,Negative Control Fail,Contrôle Négatif Échoué,Control Negativo Fallido,Kontrol Negatif Gagal
+Completion_Status,Complete,COMPLETE,Y,1,,Complete,Complet,Completo,Selesai
+Completion_Status,Incomplete,INCOMPLETE,Y,2,,Incomplete,Incomplet,Incompleto,Tidak Lengkap
+Completion_Status,Failed,FAILED,Y,3,,Failed,Échoué,Fallido,Gagal
+Completion_Status,Repeat Required,REPEAT,Y,4,,Repeat Required,Répétition Requise,Repetición Requerida,Perlu Diulang
+Pass_Fail,Pass,PASS,Y,1,,Pass,Réussi,Aprobado,Lulus
+Pass_Fail,Fail,FAIL,Y,2,,Fail,Échoué,Fallido,Gagal
+Match_Quality,Confirmed - FDA Reference,CONFIRMED,Y,1,,Confirmed - FDA Reference,Confirmé - Référence FDA,Confirmado - Referencia FDA,Dikonfirmasi - Referensi FDA
+Match_Quality,Presumptive - Public Database,PRESUMPTIVE,Y,2,,Presumptive - Public Database,Présomptif - Base Publique,Presuntivo - Base Pública,Presumtif - Database Publik
+Match_Quality,Inconclusive,INCONCLUSIVE,Y,3,,Inconclusive,Non Concluant,No Concluyente,Tidak Meyakinkan
+Match_Quality,No Match Found,NO-MATCH,Y,4,,No Match Found,Aucune Correspondance,No se Encontró Coincidencia,Tidak Ditemukan Kecocokan
+Seq_Quality,High Quality (>98%),HQ,Y,1,,High Quality (>98%),Haute Qualité (>98%),Alta Calidad (>98%),Kualitas Tinggi (>98%)
+Seq_Quality,Acceptable Quality (95-98%),ACCEPT,Y,2,,Acceptable Quality (95-98%),Qualité Acceptable (95-98%),Calidad Aceptable (95-98%),Kualitas Dapat Diterima (95-98%)
+Seq_Quality,Low Quality (<95%),LQ,Y,3,,Low Quality (<95%),Basse Qualité (<95%),Baja Calidad (<95%),Kualitas Rendah (<95%)

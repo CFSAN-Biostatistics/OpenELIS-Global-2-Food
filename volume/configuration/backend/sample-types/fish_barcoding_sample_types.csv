@@ -1,0 +1,7 @@
+description,localAbbreviation,domain,isActive,sortOrder,localization:en,localization:fr,localization:es,localization:id
+Fish Muscle Tissue,FISH-MUSC,,Y,1,Fish Muscle Tissue,Tissu Musculaire de Poisson,Tejido Muscular de Pescado,Jaringan Otot Ikan
+Fish Fin Clip,FISH-FIN,,Y,2,Fish Fin Clip,Clip de Nageoire de Poisson,Clip de Aleta de Pescado,Klip Sirip Ikan
+Fish Eye (Larvae),FISH-EYE,,Y,3,Fish Eye (Larvae),Œil de Poisson (Larves),Ojo de Pescado (Larvas),Mata Ikan (Larva)
+Fish Fillet,FISH-FILLET,,Y,4,Fish Fillet,Filet de Poisson,Filete de Pescado,Fillet Ikan
+Seafood Generic,SEAFOOD,,Y,5,Seafood Generic,Fruits de Mer Générique,Mariscos Genérico,Makanan Laut Umum
+DNA Extract,DNA-EXT,,Y,6,DNA Extract,Extrait d'ADN,Extracto de ADN,Ekstrak DNA

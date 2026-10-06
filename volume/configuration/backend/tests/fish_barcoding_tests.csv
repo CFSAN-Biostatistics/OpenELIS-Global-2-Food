@@ -1,0 +1,18 @@
+testName,testSection,sampleType,loinc,isActive,isOrderable,sortOrder,unitOfMeasure,localization:en,localization:fr,localization:es,localization:id
+DNA Extraction - Fish,Molecular Biology,Fish Muscle Tissue;Fish Fin Clip;Fish Eye (Larvae);Fish Fillet;Seafood Generic,48035-3,Y,Y,1,ng/μL,DNA Extraction - Fish,Extraction d'ADN - Poisson,Extracción de ADN - Pescado,Ekstraksi DNA - Ikan
+DNA 260/280 Ratio,Molecular Biology,DNA Extract,,Y,N,2,ratio,DNA 260/280 Ratio,Rapport ADN 260/280,Relación ADN 260/280,Rasio DNA 260/280
+PCR - COI Amplification,Molecular Biology,DNA Extract,,Y,Y,3,,PCR - COI Amplification,PCR - Amplification COI,PCR - Amplificación COI,PCR - Amplifikasi COI
+PCR Product Gel Check,Molecular Biology,DNA Extract,,Y,N,4,,PCR Product Gel Check,Vérification Gel Produit PCR,Verificación Gel Producto PCR,Pemeriksaan Gel Produk PCR
+PCR Cleanup - ExoSAP-IT,Molecular Biology,DNA Extract,,Y,N,5,,PCR Cleanup - ExoSAP-IT,Nettoyage PCR - ExoSAP-IT,Limpieza PCR - ExoSAP-IT,Pembersihan PCR - ExoSAP-IT
+Cycle Sequencing - Forward,Molecular Biology,DNA Extract,,Y,N,6,,Cycle Sequencing - Forward,Séquençage Cyclique - Avant,Secuenciación Cíclica - Adelante,Sekuensing Siklus - Maju
+Cycle Sequencing - Reverse,Molecular Biology,DNA Extract,,Y,N,7,,Cycle Sequencing - Reverse,Séquençage Cyclique - Arrière,Secuenciación Cíclica - Reversa,Sekuensing Siklus - Mundur
+Sequencing Cleanup,Molecular Biology,DNA Extract,,Y,N,8,,Sequencing Cleanup,Nettoyage Séquençage,Limpieza Secuenciación,Pembersihan Sekuensing
+DNA Sequencing - Forward,DNA Barcoding,DNA Extract,,Y,N,9,bp,DNA Sequencing - Forward,Séquençage ADN - Avant,Secuenciación ADN - Adelante,Sekuensing DNA - Maju
+DNA Sequencing - Reverse,DNA Barcoding,DNA Extract,,Y,N,10,bp,DNA Sequencing - Reverse,Séquençage ADN - Arrière,Secuenciación ADN - Reversa,Sekuensing DNA - Mundur
+Sequence Length,DNA Barcoding,DNA Extract,,Y,N,11,bp,Sequence Length,Longueur Séquence,Longitud Secuencia,Panjang Sekuens
+Sequence Quality Score,DNA Barcoding,DNA Extract,,Y,N,12,%,Sequence Quality Score,Score Qualité Séquence,Puntuación Calidad Secuencia,Skor Kualitas Sekuens
+Ambiguous Bases Percent,DNA Barcoding,DNA Extract,,Y,N,13,%,Ambiguous Bases Percent,Pourcentage Bases Ambiguës,Porcentaje Bases Ambiguas,Persen Basis Ambigu
+Fish Species Identification,DNA Barcoding,DNA Extract,,Y,Y,14,,Fish Species Identification,Identification Espèce Poisson,Identificación Especie Pescado,Identifikasi Spesies Ikan
+Species Match Confidence,DNA Barcoding,DNA Extract,,Y,N,15,%,Species Match Confidence,Confiance Correspondance Espèce,Confianza Coincidencia Especie,Keyakinan Kecocokan Spesies
+Pairwise Identity to Reference,DNA Barcoding,DNA Extract,,Y,N,16,%,Pairwise Identity to Reference,Identité Paire à Référence,Identidad Por Pares a Referencia,Identitas Berpasangan ke Referensi
+Pairwise Identity to Label,DNA Barcoding,DNA Extract,,Y,N,17,%,Pairwise Identity to Label,Identité Paire à Étiquette,Identidad Por Pares a Etiqueta,Identitas Berpasangan ke Label
