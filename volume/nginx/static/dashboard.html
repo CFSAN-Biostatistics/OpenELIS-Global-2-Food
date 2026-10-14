@@ -394,113 +394,322 @@
 (function () {
     "use strict";
 
-    var API = '/api/OpenELIS-Global';
+    var API = "/api/OpenELIS-Global";
 
-    /* ── Session check & user info ── */
-    fetch(API + '/session')
-        .then(function(r) { return r.json(); })
-        .then(function(data) {
-            if (!data.authenticated) { window.location.href = '/login'; return; }
-            var name = ((data.firstName || '') + ' ' + (data.lastName || '')).trim() || data.loginName || 'User';
-            document.getElementById('userName').textContent = name;
-            var initials = name.split(' ').map(function(w) { return w.charAt(0); }).slice(0,2).join('').toUpperCase();
-            document.getElementById('userInitials').textContent = initials || '?';
-        })
-        .catch(function() { window.location.href = '/login'; });
+    /*
+     * Fetch JSON using the existing same-origin session.
+     * Returns parsed JSON, not a Response object.
+     */
+    function fetchJSON(path, options) {
+        options = options || {};
 
-    /* ── Helpers ── */
-    function setVal(id, value, unit) {
-        var el = document.getElementById(id);
-        if (!el) return;
-        var parent = el.parentNode;
-        if (unit) {
-            parent.innerHTML = (value !== null && value !== undefined ? value : '—') +
-                '<span style="font-size:16px;font-weight:400;color:#6D6E71"> ' + unit + '</span>';
-        } else {
-            parent.innerHTML = value !== null && value !== undefined ? value : '—';
+        var headers = Object.assign(
+            { Accept: "application/json" },
+            options.headers || {}
+        );
+
+        return fetch(API + path, Object.assign({}, options, {
+            credentials: "same-origin",
+            headers: headers
+        })).then(function (response) {
+            if (response.status === 401 || response.status === 403) {
+                window.location.href = "/login";
+                throw new Error("Authentication required");
+            }
+
+            if (!response.ok) {
+                throw new Error(
+                    "HTTP " + response.status + " for " + path
+                );
+            }
+
+            return response.json();
+        });
+    }
+
+    function byId(id) {
+        return document.getElementById(id);
+    }
+
+    function setText(id, value) {
+        var element = byId(id);
+        if (element) {
+            element.textContent =
+                value === null || value === undefined || value === ""
+                    ? "\u2014"
+                    : String(value);
         }
     }
 
-    function setNote(id, text) {
-        var el = document.getElementById(id);
-        if (el) el.textContent = text;
+    function setMetric(id, value, unit) {
+        var element = byId(id);
+        if (!element) return;
+
+        element.replaceChildren();
+
+        var displayValue =
+            value === null || value === undefined || value === ""
+                ? "\u2014"
+                : String(value);
+
+        element.appendChild(document.createTextNode(displayValue));
+
+        if (unit && displayValue !== "\u2014") {
+            var suffix = document.createElement("span");
+            suffix.style.cssText =
+                "font-size:16px;font-weight:400;color:#6D6E71";
+            suffix.textContent = " " + unit;
+            element.appendChild(suffix);
+        }
     }
 
-    /* ── Dashboard metrics ── */
-    fetch(API + '/rest/home-dashboard/metrics')
-        .then(function(r) { return r.json(); })
-        .then(function(d) {
-            var ts = new Date().toLocaleTimeString();
-            setVal('val-inprogress', d.ordersInProgress,         null);
-            setVal('val-validation', d.ordersReadyForValidation,  null);
-            setVal('val-completed',  d.ordersCompletedToday,      null);
-            setVal('val-delayed',    d.delayedTurnAround,         null);
-            setVal('val-userorders', d.orderEnterdByUserToday,    null);
-            setVal('val-rejected',   d.ordersRejectedToday,       null);
-            setVal('val-tat',        d.averageTurnAroudTime,      'hrs');
-            ['inprogress','validation','completed','delayed','userorders','rejected','tat'].forEach(function(k) {
-                setNote('note-' + k, 'As of ' + ts);
+    function showMetricError() {
+        [
+            "val-inprogress",
+            "val-validation",
+            "val-completed",
+            "val-delayed",
+            "val-userorders",
+            "val-rejected",
+            "val-tat"
+        ].forEach(function (id) {
+            setMetric(id, "\u2014", null);
+        });
+
+        [
+            "note-inprogress",
+            "note-validation",
+            "note-completed",
+            "note-delayed",
+            "note-userorders",
+            "note-rejected",
+            "note-tat"
+        ].forEach(function (id) {
+            setText(id, "Unable to load metric");
+        });
+    }
+
+    function showTableMessage(tbodyId, colspan, message) {
+        var tbody = byId(tbodyId);
+        if (!tbody) return;
+
+        var tr = document.createElement("tr");
+        var td = document.createElement("td");
+
+        td.colSpan = colspan;
+        td.className = "tbl-empty";
+        td.textContent = message;
+
+        tr.appendChild(td);
+        tbody.replaceChildren(tr);
+    }
+
+    /*
+     * Build table cells using textContent rather than HTML concatenation.
+     * This prevents API values from being interpreted as HTML or scripts.
+     */
+    function appendCell(row, value) {
+        var cell = document.createElement("td");
+        cell.textContent =
+            value === null || value === undefined || value === ""
+                ? "\u2014"
+                : String(value);
+
+        row.appendChild(cell);
+        return cell;
+    }
+
+    function appendLabLinkCell(row, labNumber, destination) {
+        var cell = document.createElement("td");
+
+        if (labNumber === null ||
+            labNumber === undefined ||
+            labNumber === "") {
+            cell.textContent = "\u2014";
+        } else {
+            var link = document.createElement("a");
+            link.className = "tbl-link";
+            link.href = destination +
+                encodeURIComponent(String(labNumber));
+            link.textContent = String(labNumber);
+            cell.appendChild(link);
+        }
+
+        row.appendChild(cell);
+    }
+
+    function readRows(response) {
+        if (!response || !Array.isArray(response.displayItems)) {
+            return [];
+        }
+
+        return response.displayItems;
+    }
+
+    /* Session check and user information */
+    fetchJSON("/session")
+        .then(function (data) {
+            if (!data || data.authenticated !== true) {
+                window.location.replace("/login");
+                return;
+            }
+
+            var name = (
+                (data.firstName || "") + " " +
+                (data.lastName || "")
+            ).trim() || data.loginName || "User";
+
+            setText("userName", name);
+
+            var initials = name.split(/\s+/)
+                .filter(Boolean)
+                .map(function (word) {
+                    return word.charAt(0);
+                })
+                .slice(0, 2)
+                .join("")
+                .toUpperCase();
+
+            setText("userInitials", initials || "?");
+        })
+        .catch(function (error) {
+            console.error("Session check failed:", error);
+
+            /*
+             * Authentication failures already redirect in fetchJSON.
+             * Other failures also fail closed rather than showing a
+             * dashboard whose session could not be verified.
+             */
+            if (window.location.pathname !== "/login") {
+                window.location.replace("/login");
+            }
+        });
+
+    /* Dashboard metrics */
+    fetchJSON("/rest/home-dashboard/metrics")
+        .then(function (data) {
+            if (!data || typeof data !== "object") {
+                throw new Error("Invalid metrics response");
+            }
+
+            setMetric("val-inprogress", data.ordersInProgress, null);
+            setMetric("val-validation", data.ordersReadyForValidation, null);
+            setMetric("val-completed", data.ordersCompletedToday, null);
+            setMetric("val-delayed", data.delayedTurnAround, null);
+            setMetric("val-userorders", data.orderEnterdByUserToday, null);
+            setMetric("val-rejected", data.ordersRejectedToday, null);
+            setMetric("val-tat", data.averageTurnAroudTime, "hrs");
+
+            var timestamp = new Date().toLocaleTimeString();
+
+            [
+                "inprogress",
+                "validation",
+                "completed",
+                "delayed",
+                "userorders",
+                "rejected",
+                "tat"
+            ].forEach(function (key) {
+                setText("note-" + key, "As of " + timestamp);
             });
         })
-        .catch(function() {
-            ['val-inprogress','val-validation','val-completed','val-delayed',
-             'val-userorders','val-rejected','val-tat'].forEach(function(id) { setVal(id, '—', null); });
+        .catch(function (error) {
+            console.error("Dashboard metrics failed:", error);
+            showMetricError();
         });
 
-    /* ── Orders In Progress table ── */
-    fetch(API + '/rest/home-dashboard/ORDERS_IN_PROGRESS')
-        .then(function(r) { return r.json(); })
-        .then(function(res) {
-            var rows = (res && res.displayItems) ? res.displayItems : [];
-            document.getElementById('queue-badge').textContent = rows.length;
-            var tbody = document.getElementById('queue-tbody');
+    /* Orders in progress */
+    fetchJSON("/rest/home-dashboard/ORDERS_IN_PROGRESS")
+        .then(function (response) {
+            var rows = readRows(response);
+            setText("queue-badge", rows.length);
+
+            var tbody = byId("queue-tbody");
+            if (!tbody) return;
+
+            tbody.replaceChildren();
+
             if (rows.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5" class="tbl-empty">No orders in progress.</td></tr>';
+                showTableMessage(
+                    "queue-tbody", 5, "No orders in progress."
+                );
                 return;
             }
-            tbody.innerHTML = rows.slice(0, 10).map(function(s) {
-                var link = '/result?type=order&doRange=false&accessionNumber=' + (s.labNumber || '');
-                return '<tr>' +
-                    '<td><a href="' + link + '" class="tbl-link">' + (s.labNumber || '—') + '</a></td>' +
-                    '<td>' + (s.orderDate || '—') + '</td>' +
-                    '<td>' + (s.sampleId || '—') + '</td>' +
-                    '<td>' + (s.testName  || '—') + '</td>' +
-                    '<td>' + (s.priority  || '—') + '</td>' +
-                '</tr>';
-            }).join('');
+
+            rows.slice(0, 10).forEach(function (sample) {
+                var row = document.createElement("tr");
+
+                appendLabLinkCell(
+                    row,
+                    sample.labNumber,
+                    "/result?type=order&doRange=false&accessionNumber="
+                );
+
+                appendCell(row, sample.orderDate);
+                appendCell(row, sample.sampleId);
+                appendCell(row, sample.testName);
+                appendCell(row, sample.priority);
+
+                tbody.appendChild(row);
+            });
         })
-        .catch(function() {
-            document.getElementById('queue-tbody').innerHTML =
-                '<tr><td colspan="5" class="tbl-empty">Unable to load orders.</td></tr>';
+        .catch(function (error) {
+            console.error("Orders-in-progress request failed:", error);
+            setText("queue-badge", "\u2014");
+            showTableMessage(
+                "queue-tbody", 5, "Unable to load orders."
+            );
         });
 
-    /* ── Ready for Validation table ── */
-    fetch(API + '/rest/home-dashboard/ORDERS_READY_FOR_VALIDATION')
-        .then(function(r) { return r.json(); })
-        .then(function(res) {
-            var rows = (res && res.displayItems) ? res.displayItems : [];
-            document.getElementById('nce-badge').textContent = rows.length;
-            var tbody = document.getElementById('validation-tbody');
+    /* Orders ready for validation */
+    fetchJSON("/rest/home-dashboard/ORDERS_READY_FOR_VALIDATION")
+        .then(function (response) {
+            var rows = readRows(response);
+            setText("nce-badge", rows.length);
+
+            var tbody = byId("validation-tbody");
+            if (!tbody) return;
+
+            tbody.replaceChildren();
+
             if (rows.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="3" class="tbl-empty">No orders awaiting validation.</td></tr>';
+                showTableMessage(
+                    "validation-tbody",
+                    3,
+                    "No orders awaiting validation."
+                );
                 return;
             }
-            tbody.innerHTML = rows.slice(0, 10).map(function(s) {
-                var link = '/validation?type=order&accessionNumber=' + (s.labNumber || '');
-                return '<tr>' +
-                    '<td><a href="' + link + '" class="tbl-link">' + (s.labNumber || '—') + '</a></td>' +
-                    '<td>' + (s.orderDate || '—') + '</td>' +
-                    '<td>' + (s.testName  || '—') + '</td>' +
-                '</tr>';
-            }).join('');
+
+            rows.slice(0, 10).forEach(function (sample) {
+                var row = document.createElement("tr");
+
+                appendLabLinkCell(
+                    row,
+                    sample.labNumber,
+                    "/validation?type=order&accessionNumber="
+                );
+
+                appendCell(row, sample.orderDate);
+                appendCell(row, sample.testName);
+
+                tbody.appendChild(row);
+            });
         })
-        .catch(function() {
-            document.getElementById('validation-tbody').innerHTML =
-                '<tr><td colspan="3" class="tbl-empty">Unable to load orders.</td></tr>';
+        .catch(function (error) {
+            console.error("Validation queue request failed:", error);
+            setText("nce-badge", "\u2014");
+            showTableMessage(
+                "validation-tbody",
+                3,
+                "Unable to load validation queue."
+            );
         });
 
 })();
 </script>
+
 
 </body>
 </html>
