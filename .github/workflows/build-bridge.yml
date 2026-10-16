@@ -1,0 +1,79 @@
+name: Build and Publish Bridge
+
+on:
+  push:
+    branches: [food-env]
+    paths:
+      - 'src/**'
+      - 'pom.xml'
+      - 'Dockerfile'
+  workflow_dispatch:
+
+jobs:
+  build-and-publish:
+    name: Build + Publish Bridge Image
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Cache local Maven repository
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-
+
+      # Inject safe, public configuration properties that map directly to environments
+      - name: Inject Public Configuration Framework
+        run: |
+          mkdir -p src/main/resources
+          cat << 'EOF' > src/main/resources/application.yml
+          # Safe, public defaults. Overridden at runtime on the host via Docker Compose.
+          org:
+            itech:
+              ahb:
+                forward-http-server:
+                  uri: "${FORWARD_URI:https://localhost:8443}"
+                  health-uri: "${FORWARD_HEALTH_URI:https://localhost:8443/health}"
+                  insecure-tls: ${FORWARD_INSECURE_TLS:false}
+          management:
+            endpoint:
+              health:
+                show-details: "${HEALTH_SHOW_DETAILS:never}"
+          bridge:
+            security:
+              password: "${BRIDGE_PASS:changeme}"
+              username: "${BRIDGE_USER:bridge}"
+            auth:
+              password: "${BRIDGE_PASS:changeme}"
+              username: "${BRIDGE_USER:bridge}"
+          EOF
+
+      - name: Build main project
+        run: mvn clean package -DskipTests
+
+      - name: Authenticate to Quay.io
+        uses: docker/login-action@v3
+        with:
+          registry: quay.io
+          username: ${{ secrets.QUAY_USER }}
+          password: ${{ secrets.QUAY_PASSWORD }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push Docker image
+        run: |
+          docker build -t quay.io/galaxytrakr/openelis-analyzer-bridge:latest .
+          docker push quay.io/galaxytrakr/openelis-analyzer-bridge:latest
