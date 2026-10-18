@@ -8,23 +8,24 @@ import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.Base64;
+import org.openelisglobal.config.HttpClientConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 /**
- * The single HTTP client for every OE2 → analyzer-bridge call.
+ * Shared HTTP client for OpenELIS-to-Bridge calls.
  *
  * <p>
- * Durable profile, connection, probe, and runtime-command calls share this
- * connection and TLS setup.
+ * Certificate mode uses the OpenELIS key material and truststore configured
+ * through HttpClientConfig. Server certificate trust and hostname verification
+ * remain enabled, and Basic authentication is omitted.
  *
  * <p>
- * The bridge presents a self-signed cert on the internal OE2↔bridge hop, so
- * this trusts all certificates. That is acceptable for that private hop only;
- * production hardening (a real truststore / pinned CA) belongs here, in this
- * one place, rather than in five.
+ * Legacy mode preserves Basic authentication and the existing trust-all
+ * certificate configuration for unpaired Bridges.
  */
 @Component
 public class BridgeHttpClient {
@@ -35,37 +36,73 @@ public class BridgeHttpClient {
     private final HttpClient httpClient;
     private final String username;
     private final String password;
+    private final boolean basicAuthentication;
 
-    public BridgeHttpClient(@Value("${analyzer.bridge.username:}") String username,
-            @Value("${analyzer.bridge.password:}") String password) {
+    @Autowired
+    public BridgeHttpClient(
+            @Value("${analyzer.bridge.username:}") String username,
+            @Value("${analyzer.bridge.password:}") String password,
+            @Value("${analyzer.bridge.client-certificate-enabled:false}") boolean clientCertificateEnabled,
+            HttpClientConfig tlsConfig) throws Exception {
+        this.httpClient = clientCertificateEnabled
+                ? HttpClient.newBuilder()
+                        .connectTimeout(CONNECT_TIMEOUT)
+                        .sslContext(tlsConfig.sslContext())
+                        .build()
+                : buildTrustAllClient();
+        this.username = username;
+        this.password = password;
+        this.basicAuthentication = !clientCertificateEnabled;
+    }
+
+    /**
+     * Preserves compatibility with existing callers and Basic-authentication tests.
+     */
+    public BridgeHttpClient(String username, String password) {
         this.httpClient = buildTrustAllClient();
         this.username = username;
         this.password = password;
+        this.basicAuthentication = true;
     }
 
     private static HttpClient buildTrustAllClient() {
         try {
             javax.net.ssl.SSLContext sslContext = javax.net.ssl.SSLContext.getInstance("TLS");
-            sslContext.init(null, new javax.net.ssl.TrustManager[] { new javax.net.ssl.X509TrustManager() {
-                public java.security.cert.X509Certificate[] getAcceptedIssuers() {
-                    return new java.security.cert.X509Certificate[0];
-                }
+            sslContext.init(null, new javax.net.ssl.TrustManager[] {
+                    new javax.net.ssl.X509TrustManager() {
+                        @Override
+                        public java.security.cert.X509Certificate[] getAcceptedIssuers() {
+                            return new java.security.cert.X509Certificate[0];
+                        }
 
-                public void checkClientTrusted(java.security.cert.X509Certificate[] c, String s) {
-                }
+                        @Override
+                        public void checkClientTrusted(
+                                java.security.cert.X509Certificate[] chain, String authType) {
+                        }
 
-                public void checkServerTrusted(java.security.cert.X509Certificate[] c, String s) {
-                }
-            } }, new java.security.SecureRandom());
-            return HttpClient.newBuilder().connectTimeout(CONNECT_TIMEOUT).sslContext(sslContext).build();
+                        @Override
+                        public void checkServerTrusted(
+                                java.security.cert.X509Certificate[] chain, String authType) {
+                        }
+                    }
+            }, new java.security.SecureRandom());
+
+            return HttpClient.newBuilder()
+                    .connectTimeout(CONNECT_TIMEOUT)
+                    .sslContext(sslContext)
+                    .build();
         } catch (Exception e) {
-            logger.warn("Bridge SSL context init failed; using default HttpClient (self-signed bridge calls will"
-                    + " fail PKIX): {}", e.getMessage());
-            return HttpClient.newBuilder().connectTimeout(CONNECT_TIMEOUT).build();
+            logger.warn(
+                    "Bridge SSL context init failed; using default HttpClient "
+                            + "(self-signed bridge calls will fail PKIX): {}",
+                    e.getMessage());
+            return HttpClient.newBuilder()
+                    .connectTimeout(CONNECT_TIMEOUT)
+                    .build();
         }
     }
 
-    /** Status + body of a bridge call. Callers interpret the body themselves. */
+    /** Status and body of a Bridge call. Callers interpret the response. */
     public static final class BridgeResponse {
         public final int status;
         public final String body;
@@ -97,14 +134,21 @@ public class BridgeHttpClient {
     }
 
     /**
-     * Issue a request to the bridge. {@code jsonBody == null} sends no body (GET /
-     * DELETE); otherwise the body is sent as {@code application/json}. Returns the
-     * status and body regardless of status code — the caller decides what counts as
-     * success — so error responses are returned, not thrown (matching the prior
-     * read-the-error-stream behavior of the call sites this replaces).
+     * Sends a request and returns its HTTP status and body, including non-2xx
+     * responses. Transport failures propagate as IOException.
      */
-    public BridgeResponse send(String method, String url, String jsonBody, Duration readTimeout) throws IOException {
-        HttpRequest.Builder builder = HttpRequest.newBuilder().uri(URI.create(url)).timeout(readTimeout);
+    public BridgeResponse send(
+            String method, String url, String jsonBody, Duration readTimeout) throws IOException {
+        URI uri = URI.create(url);
+        if (!basicAuthentication && !"https".equalsIgnoreCase(uri.getScheme())) {
+            throw new IllegalArgumentException(
+                    "Certificate-authenticated Bridge requests require HTTPS");
+        }
+
+        HttpRequest.Builder builder = HttpRequest.newBuilder()
+                .uri(uri)
+                .timeout(readTimeout);
+
         HttpRequest.BodyPublisher publisher;
         if (jsonBody == null) {
             publisher = HttpRequest.BodyPublishers.noBody();
@@ -112,11 +156,19 @@ public class BridgeHttpClient {
             publisher = HttpRequest.BodyPublishers.ofString(jsonBody);
             builder.header("Content-Type", "application/json");
         }
-        builder.header("Authorization", authorizationHeader());
+
+        if (basicAuthentication) {
+            builder.header("Authorization", authorizationHeader());
+        }
+
         builder.method(method, publisher);
+
         try {
-            HttpResponse<String> response = httpClient.send(builder.build(), HttpResponse.BodyHandlers.ofString());
-            return new BridgeResponse(response.statusCode(), response.body() != null ? response.body() : "");
+            HttpResponse<String> response = httpClient.send(
+                    builder.build(), HttpResponse.BodyHandlers.ofString());
+            return new BridgeResponse(
+                    response.statusCode(),
+                    response.body() != null ? response.body() : "");
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new IOException(method + " " + url + " interrupted", e);
@@ -125,12 +177,16 @@ public class BridgeHttpClient {
 
     private String authorizationHeader() {
         if (username == null || username.isBlank()) {
-            throw new IllegalArgumentException("Analyzer Bridge username must be configured");
+            throw new IllegalArgumentException(
+                    "Analyzer Bridge username must be configured");
         }
         if (password == null || password.isBlank()) {
-            throw new IllegalArgumentException("Analyzer Bridge password must be configured");
+            throw new IllegalArgumentException(
+                    "Analyzer Bridge password must be configured");
         }
+
         String credentials = username + ":" + password;
-        return "Basic " + Base64.getEncoder().encodeToString(credentials.getBytes(StandardCharsets.UTF_8));
+        return "Basic " + Base64.getEncoder().encodeToString(
+                credentials.getBytes(StandardCharsets.UTF_8));
     }
 }
