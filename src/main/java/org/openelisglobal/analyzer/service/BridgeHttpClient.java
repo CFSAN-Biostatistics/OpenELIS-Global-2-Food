@@ -8,7 +8,6 @@ import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.Base64;
-import org.openelisglobal.config.HttpClientConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,7 +19,7 @@ import org.springframework.stereotype.Component;
  *
  * <p>
  * Certificate mode uses the OpenELIS key material and truststore configured
- * through HttpClientConfig. Server certificate trust and hostname verification
+ * through BridgeTlsConfig. Server certificate trust and hostname verification
  * remain enabled, and Basic authentication is omitted.
  *
  * <p>
@@ -43,7 +42,7 @@ public class BridgeHttpClient {
             @Value("${analyzer.bridge.username:}") String username,
             @Value("${analyzer.bridge.password:}") String password,
             @Value("${analyzer.bridge.client-certificate-enabled:false}") boolean clientCertificateEnabled,
-            HttpClientConfig tlsConfig) throws Exception {
+            BridgeTlsConfig tlsConfig) throws Exception {
         this.httpClient = clientCertificateEnabled
                 ? HttpClient.newBuilder()
                         .connectTimeout(CONNECT_TIMEOUT)
